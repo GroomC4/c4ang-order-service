@@ -1,7 +1,8 @@
 package com.groom.order.presentation.web
 
-import com.groom.order.common.util.AuthenticationContext
+import com.groom.order.common.util.IstioHeaderExtractor
 import com.groom.order.application.dto.CancelOrderCommand
+import jakarta.servlet.http.HttpServletRequest
 import com.groom.order.application.dto.CreateOrderCommand
 import com.groom.order.application.dto.RefundOrderCommand
 import com.groom.order.application.service.CancelOrderService
@@ -20,7 +21,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
-import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -43,7 +43,7 @@ class OrderCommandController(
     private val createOrderService: CreateOrderService,
     private val cancelOrderService: CancelOrderService,
     private val refundOrderService: RefundOrderService,
-    private val authenticationContext: AuthenticationContext,
+    private val istioHeaderExtractor: IstioHeaderExtractor,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -75,11 +75,12 @@ class OrderCommandController(
     )
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('CUSTOMER')")
+    // Istio Gateway handles authorization
     fun createOrder(
         @Valid @RequestBody request: CreateOrderRequest,
+        httpRequest: HttpServletRequest,
     ): CreateOrderResponse {
-        val userId = authenticationContext.getCurrentUserId()
+        val userId = istioHeaderExtractor.extractUserId(httpRequest)
         logger.info { "Creating order for user: $userId, idempotencyKey: ${request.idempotencyKey}" }
 
         val command =
@@ -134,12 +135,13 @@ class OrderCommandController(
         ],
     )
     @PatchMapping("/{orderId}/cancel")
-    @PreAuthorize("hasRole('CUSTOMER')")
+    // Istio Gateway handles authorization
     fun cancelOrder(
         @PathVariable orderId: UUID,
         @Valid @RequestBody request: CancelOrderRequest,
+        httpRequest: HttpServletRequest,
     ): CancelOrderResponse {
-        val userId = authenticationContext.getCurrentUserId()
+        val userId = istioHeaderExtractor.extractUserId(httpRequest)
         logger.info { "Cancelling order: $orderId, user: $userId" }
 
         val command =
@@ -187,12 +189,13 @@ class OrderCommandController(
         ],
     )
     @PatchMapping("/{orderId}/refund")
-    @PreAuthorize("hasRole('CUSTOMER')")
+    // Istio Gateway handles authorization
     fun refundOrder(
         @PathVariable orderId: UUID,
         @Valid @RequestBody request: RefundOrderRequest,
+        httpRequest: HttpServletRequest,
     ): RefundOrderResponse {
-        val userId = authenticationContext.getCurrentUserId()
+        val userId = istioHeaderExtractor.extractUserId(httpRequest)
         logger.info { "Refunding order: $orderId, user: $userId" }
 
         val command =

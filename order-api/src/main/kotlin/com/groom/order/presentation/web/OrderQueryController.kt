@@ -1,7 +1,8 @@
 package com.groom.order.presentation.web
 
-import com.groom.order.common.util.AuthenticationContext
+import com.groom.order.common.util.IstioHeaderExtractor
 import com.groom.order.application.dto.GetOrderDetailQuery
+import jakarta.servlet.http.HttpServletRequest
 import com.groom.order.application.dto.ListOrdersQuery
 import com.groom.order.application.service.GetOrderDetailService
 import com.groom.order.application.service.ListOrdersService
@@ -13,7 +14,6 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
-import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -33,7 +33,7 @@ import java.util.UUID
 class OrderQueryController(
     private val getOrderDetailService: GetOrderDetailService,
     private val listOrdersService: ListOrdersService,
-    private val authenticationContext: AuthenticationContext,
+    private val istioHeaderExtractor: IstioHeaderExtractor,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -58,11 +58,12 @@ class OrderQueryController(
         ],
     )
     @GetMapping
-    @PreAuthorize("hasRole('CUSTOMER')")
+    // Istio Gateway handles authorization
     fun listOrders(
         @RequestParam(required = false) status: OrderStatus?,
+        httpRequest: HttpServletRequest,
     ): ListOrdersResponse {
-        val userId = authenticationContext.getCurrentUserId()
+        val userId = istioHeaderExtractor.extractUserId(httpRequest)
         logger.info { "Listing orders for user: $userId, status filter: $status" }
 
         val query =
@@ -101,11 +102,12 @@ class OrderQueryController(
         ],
     )
     @GetMapping("/{orderId}")
-    @PreAuthorize("hasRole('CUSTOMER')")
+    // Istio Gateway handles authorization
     fun getOrderDetail(
         @PathVariable orderId: UUID,
+        httpRequest: HttpServletRequest,
     ): GetOrderDetailResponse {
-        val userId = authenticationContext.getCurrentUserId()
+        val userId = istioHeaderExtractor.extractUserId(httpRequest)
         logger.info { "Retrieving order detail: orderId=$orderId, user=$userId" }
 
         val query =
