@@ -1,4 +1,4 @@
-package com.groom.ecommerce.common.exception
+package com.groom.order.common.exception
 
 import java.util.UUID
 

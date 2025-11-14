@@ -1,4 +1,4 @@
-package com.groom.ecommerce.common.domain.model
+package com.groom.order.common.domain.model
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

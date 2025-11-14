@@ -1,9 +1,10 @@
 package com.groom.order.infrastructure.scheduler
 
-import com.groom.ecommerce.common.TransactionApplier
-import com.groom.ecommerce.common.annotation.IntegrationTest
+import com.groom.order.common.TransactionApplier
+import com.groom.order.common.annotation.IntegrationTest
 import com.groom.order.domain.model.OrderStatus
-import com.groom.order.infrastructure.repository.OrderRepositoryImpl
+import com.groom.order.domain.port.LoadOrderPort
+import com.groom.order.domain.port.SaveOrderPort
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull

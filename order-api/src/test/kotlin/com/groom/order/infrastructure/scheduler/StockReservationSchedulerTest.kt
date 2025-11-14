@@ -1,6 +1,6 @@
 package com.groom.order.infrastructure.scheduler
 
-import com.groom.ecommerce.common.annotation.UnitTest
+import com.groom.order.common.annotation.UnitTest
 import com.groom.order.infrastructure.stock.StockReservationService
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.BehaviorSpec

@@ -1,4 +1,4 @@
-package com.groom.order.infrastructure.adapter
+package com.groom.order.adapter.out.client
 
 import com.groom.order.domain.model.StoreInfo
 import com.groom.order.domain.port.StorePort
@@ -18,7 +18,7 @@ import java.util.UUID
 class StoreAdapter(
     private val storeReader: StoreReader,
 ) : StorePort {
-    override fun findById(storeId: UUID): StoreInfo? =
+    override fun loadById(storeId: UUID): StoreInfo? =
         storeReader
             .findById(storeId)
             .map { store ->

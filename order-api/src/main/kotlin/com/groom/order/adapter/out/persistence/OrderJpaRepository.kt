@@ -1,17 +1,21 @@
-package com.groom.order.infrastructure.repository
+package com.groom.order.adapter.out.persistence
 
 import com.groom.order.domain.model.Order
 import com.groom.order.domain.model.OrderStatus
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
-import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 import java.util.Optional
 import java.util.UUID
 
-@Repository
-interface OrderRepositoryImpl : JpaRepository<Order, UUID> {
+/**
+ * Order JPA Repository
+ *
+ * Order 엔티티에 대한 JPA 인터페이스입니다.
+ * 이 인터페이스는 Adapter 내부에서만 사용되며, Domain은 Port를 통해 접근합니다.
+ */
+interface OrderJpaRepository : JpaRepository<Order, UUID> {
     fun findByOrderNumber(orderNumber: String): Optional<Order>
 
     @Query(

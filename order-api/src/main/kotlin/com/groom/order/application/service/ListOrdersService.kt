@@ -2,7 +2,8 @@ package com.groom.order.application.service
 
 import com.groom.order.application.dto.ListOrdersQuery
 import com.groom.order.application.dto.ListOrdersResult
-import com.groom.order.infrastructure.repository.OrderRepositoryImpl
+import com.groom.order.domain.port.LoadOrderPort
+import com.groom.order.domain.port.SaveOrderPort
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -17,7 +18,8 @@ import org.springframework.transaction.annotation.Transactional
  */
 @Service
 class ListOrdersService(
-    private val orderRepository: OrderRepositoryImpl,
+    private val loadOrderPort: LoadOrderPort,
+    private val saveOrderPort: SaveOrderPort,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -28,12 +30,12 @@ class ListOrdersService(
         // 상태 필터링 여부에 따라 다른 조회
         val orders =
             if (query.status != null) {
-                orderRepository.findByUserExternalIdAndStatus(
+                loadOrderPort.loadByUserExternalIdAndStatus(
                     query.requestUserId,
                     query.status,
                 )
             } else {
-                orderRepository.findByUserExternalId(query.requestUserId)
+                loadOrderPort.loadByUserExternalId(query.requestUserId)
             }
 
         logger.info { "Found ${orders.size} orders for user: ${query.requestUserId}" }

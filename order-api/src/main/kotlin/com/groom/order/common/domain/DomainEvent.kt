@@ -1,4 +1,4 @@
-package com.groom.ecommerce.common.domain
+package com.groom.order.common.domain
 
 import java.time.LocalDateTime
 

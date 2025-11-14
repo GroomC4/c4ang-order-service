@@ -1,4 +1,4 @@
-package com.groom.ecommerce.common.exception.handler
+package com.groom.order.common.exception.handler
 
 import io.swagger.v3.oas.annotations.media.Schema
 

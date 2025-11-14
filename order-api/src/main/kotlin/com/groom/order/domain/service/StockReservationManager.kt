@@ -1,6 +1,6 @@
 package com.groom.order.domain.service
 
-import com.groom.ecommerce.common.exception.OrderException
+import com.groom.order.common.exception.OrderException
 import com.groom.order.domain.model.ReservationResult
 import com.groom.order.domain.model.StockReservation
 import com.groom.order.domain.model.StockReservation.ReservationItem

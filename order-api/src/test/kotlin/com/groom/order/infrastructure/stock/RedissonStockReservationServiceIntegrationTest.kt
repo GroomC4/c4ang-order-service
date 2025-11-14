@@ -1,6 +1,6 @@
 package com.groom.order.infrastructure.stock
 
-import com.groom.ecommerce.common.annotation.IntegrationTest
+import com.groom.order.common.annotation.IntegrationTest
 import com.groom.order.domain.model.ReservationResult
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach

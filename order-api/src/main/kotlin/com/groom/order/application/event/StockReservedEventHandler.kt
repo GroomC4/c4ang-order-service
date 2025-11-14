@@ -7,7 +7,7 @@ import com.groom.order.domain.model.StockReservationLog
 import com.groom.order.domain.model.StockReservationStatus
 import com.groom.order.domain.service.OrderAuditRecorder
 import com.groom.order.infrastructure.persistence.StockReservationLogJpaEntity
-import com.groom.order.infrastructure.repository.StockReservationLogRepositoryImpl
+import com.groom.order.domain.port.SaveStockReservationLogPort
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Propagation
@@ -25,7 +25,7 @@ import java.util.UUID
  */
 @Component
 class StockReservedEventHandler(
-    private val stockReservationLogRepository: StockReservationLogRepositoryImpl,
+    private val saveStockReservationLogPort: SaveStockReservationLogPort,
     private val orderAuditRecorder: OrderAuditRecorder,
 ) {
     private val logger = KotlinLogging.logger {}
@@ -50,7 +50,7 @@ class StockReservedEventHandler(
                 updatedAt = event.occurredAt,
             )
 
-        stockReservationLogRepository.save(StockReservationLogJpaEntity.from(stockReservationLog))
+        saveStockReservationLogPort.save(StockReservationLogJpaEntity.from(stockReservationLog))
         logger.info { "Stock reservation log saved: reservationId=${event.reservationId}" }
 
         // 2. 주문 감사 로그 기록

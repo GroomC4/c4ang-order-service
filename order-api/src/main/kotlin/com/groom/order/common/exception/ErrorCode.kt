@@ -1,4 +1,4 @@
-package com.groom.ecommerce.common.exception
+package com.groom.order.common.exception
 
 /**
  * API 에러 코드 상수

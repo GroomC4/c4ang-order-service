@@ -1,4 +1,4 @@
-package com.groom.ecommerce.common.domain
+package com.groom.order.common.domain
 
 /**
  * 도메인 이벤트를 발행하는 인터페이스.

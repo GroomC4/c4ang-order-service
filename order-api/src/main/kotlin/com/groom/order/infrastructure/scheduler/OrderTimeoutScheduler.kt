@@ -1,9 +1,10 @@
 package com.groom.order.infrastructure.scheduler
 
-import com.groom.ecommerce.common.domain.DomainEventPublisher
+import com.groom.order.common.domain.DomainEventPublisher
 import com.groom.order.domain.event.OrderTimeoutEvent
 import com.groom.order.domain.model.OrderStatus
-import com.groom.order.infrastructure.repository.OrderRepositoryImpl
+import com.groom.order.domain.port.LoadOrderPort
+import com.groom.order.domain.port.SaveOrderPort
 import com.groom.order.infrastructure.stock.StockReservationService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
@@ -27,7 +28,8 @@ import java.time.LocalDateTime
  */
 @Component
 class OrderTimeoutScheduler(
-    private val orderRepository: OrderRepositoryImpl,
+    private val loadOrderPort: LoadOrderPort,
+    private val saveOrderPort: SaveOrderPort,
     private val stockReservationService: StockReservationService,
     private val domainEventPublisher: DomainEventPublisher,
 ) {
@@ -56,7 +58,7 @@ class OrderTimeoutScheduler(
         try {
             // 1. 결제 대기/처리 중 상태의 만료된 주문 조회
             val expiredOrders =
-                orderRepository.findExpiredOrders(
+                loadOrderPort.loadExpiredOrders(
                     statuses =
                         listOf(
                             OrderStatus.PAYMENT_PENDING,

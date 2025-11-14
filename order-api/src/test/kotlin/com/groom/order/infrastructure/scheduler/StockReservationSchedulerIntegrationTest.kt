@@ -1,6 +1,6 @@
 package com.groom.order.infrastructure.scheduler
 
-import com.groom.ecommerce.common.annotation.IntegrationTest
+import com.groom.order.common.annotation.IntegrationTest
 import com.groom.order.infrastructure.stock.StockReservationService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull

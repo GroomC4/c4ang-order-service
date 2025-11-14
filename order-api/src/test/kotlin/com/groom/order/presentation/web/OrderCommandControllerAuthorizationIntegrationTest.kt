@@ -3,7 +3,7 @@ package com.groom.order.presentation.web
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.groom.order.common.util.jwt.AuthorizationData
 import com.groom.order.common.util.jwt.JwtTokenProvider
-import com.groom.ecommerce.common.annotation.IntegrationTest
+import com.groom.order.common.annotation.IntegrationTest
 import com.groom.order.presentation.web.dto.CancelOrderRequest
 import com.groom.order.presentation.web.dto.CreateOrderRequest
 import com.groom.order.presentation.web.dto.RefundOrderRequest

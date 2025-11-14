@@ -1,14 +1,14 @@
-package com.groom.ecommerce.common.exception.handler
+package com.groom.order.common.exception.handler
 
-import com.groom.ecommerce.common.exception.AuthenticationException
-import com.groom.ecommerce.common.exception.ErrorCode
-import com.groom.ecommerce.common.exception.OrderException
-import com.groom.ecommerce.common.exception.PermissionException
-import com.groom.ecommerce.common.exception.ProductException
-import com.groom.ecommerce.common.exception.RefreshTokenException
-import com.groom.ecommerce.common.exception.ResourceException
-import com.groom.ecommerce.common.exception.StoreException
-import com.groom.ecommerce.common.exception.UserException
+import com.groom.order.common.exception.AuthenticationException
+import com.groom.order.common.exception.ErrorCode
+import com.groom.order.common.exception.OrderException
+import com.groom.order.common.exception.PermissionException
+import com.groom.order.common.exception.ProductException
+import com.groom.order.common.exception.RefreshTokenException
+import com.groom.order.common.exception.ResourceException
+import com.groom.order.common.exception.StoreException
+import com.groom.order.common.exception.UserException
 import com.groom.product.domain.port.ProductDescriptionGenerationException
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.http.HttpStatus

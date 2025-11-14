@@ -1,10 +1,11 @@
 package com.groom.order.application.service
 
-import com.groom.ecommerce.common.exception.OrderException
+import com.groom.order.common.exception.OrderException
 import com.groom.order.application.dto.GetOrderDetailQuery
 import com.groom.order.application.dto.GetOrderDetailResult
 import com.groom.order.domain.service.OrderPolicy
-import com.groom.order.infrastructure.repository.OrderRepositoryImpl
+import com.groom.order.domain.port.LoadOrderPort
+import com.groom.order.domain.port.SaveOrderPort
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -21,7 +22,8 @@ import org.springframework.transaction.annotation.Transactional
  */
 @Service
 class GetOrderDetailService(
-    private val orderRepository: OrderRepositoryImpl,
+    private val loadOrderPort: LoadOrderPort,
+    private val saveOrderPort: SaveOrderPort,
     private val orderPolicy: OrderPolicy,
 ) {
     private val logger = KotlinLogging.logger {}

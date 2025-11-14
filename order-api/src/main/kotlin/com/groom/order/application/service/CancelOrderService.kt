@@ -1,11 +1,12 @@
 package com.groom.order.application.service
 
-import com.groom.ecommerce.common.domain.DomainEventPublisher
-import com.groom.ecommerce.common.exception.OrderException
+import com.groom.order.common.domain.DomainEventPublisher
+import com.groom.order.common.exception.OrderException
 import com.groom.order.application.dto.CancelOrderCommand
 import com.groom.order.application.dto.CancelOrderResult
 import com.groom.order.domain.service.OrderManager
-import com.groom.order.infrastructure.repository.OrderRepositoryImpl
+import com.groom.order.domain.port.LoadOrderPort
+import com.groom.order.domain.port.SaveOrderPort
 import com.groom.order.infrastructure.stock.StockReservationService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
@@ -25,7 +26,8 @@ import java.time.LocalDateTime
  */
 @Service
 class CancelOrderService(
-    private val orderRepository: OrderRepositoryImpl,
+    private val loadOrderPort: LoadOrderPort,
+    private val saveOrderPort: SaveOrderPort,
     private val stockReservationService: StockReservationService,
     private val orderManager: OrderManager,
     private val domainEventPublisher: DomainEventPublisher,
@@ -60,7 +62,7 @@ class CancelOrderService(
         }
 
         // 4. 주문 저장 (JPA dirty checking)
-        orderRepository.save(order)
+        saveOrderPort.save(order)
         orderRepository.flush()
 
         logger.info { "Order cancelled successfully: ${order.orderNumber}" }

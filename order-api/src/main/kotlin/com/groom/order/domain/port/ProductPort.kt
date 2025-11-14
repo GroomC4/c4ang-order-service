@@ -16,7 +16,7 @@ interface ProductPort {
      * @param productId 상품 ID
      * @return 조회된 상품 정보 (없으면 null)
      */
-    fun findById(productId: UUID): ProductInfo?
+    fun loadById(productId: UUID): ProductInfo?
 
     /**
      * 여러 상품 ID로 상품 목록을 조회합니다.
@@ -24,5 +24,5 @@ interface ProductPort {
      * @param productIds 상품 ID 목록
      * @return 조회된 상품 목록
      */
-    fun findAllById(productIds: List<UUID>): List<ProductInfo>
+    fun loadAllById(productIds: List<UUID>): List<ProductInfo>
 }

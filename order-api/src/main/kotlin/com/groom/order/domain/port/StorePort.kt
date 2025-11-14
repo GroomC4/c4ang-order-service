@@ -16,7 +16,7 @@ interface StorePort {
      * @param storeId 스토어 ID
      * @return 조회된 스토어 정보 (없으면 null)
      */
-    fun findById(storeId: UUID): StoreInfo?
+    fun loadById(storeId: UUID): StoreInfo?
 
     /**
      * 스토어 존재 여부를 확인합니다.

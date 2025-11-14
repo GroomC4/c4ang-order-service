@@ -2,7 +2,7 @@ package com.groom.order.domain.service
 
 import com.groom.order.domain.model.OrderAudit
 import com.groom.order.domain.model.OrderAuditEventType
-import com.groom.order.infrastructure.repository.OrderAuditRepositoryImpl
+import com.groom.order.domain.port.SaveOrderAuditPort
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
@@ -18,7 +18,7 @@ import java.util.UUID
  */
 @Service
 class OrderAuditRecorder(
-    private val orderAuditRepository: OrderAuditRepositoryImpl,
+    private val saveOrderAuditPort: SaveOrderAuditPort,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -50,7 +50,7 @@ class OrderAuditRecorder(
                     metadata = metadata,
                 )
 
-            orderAuditRepository.save(audit)
+            saveOrderAuditPort.save(audit)
 
             logger.debug { "Order audit recorded: orderId=$orderId, eventType=$eventType" }
         } catch (e: Exception) {
@@ -90,7 +90,7 @@ class OrderAuditRecorder(
                     metadata = metadata,
                 )
 
-            orderAuditRepository.save(audit)
+            saveOrderAuditPort.save(audit)
 
             logger.debug { "Order item audit recorded: orderId=$orderId, orderItemId=$orderItemId, eventType=$eventType" }
         } catch (e: Exception) {

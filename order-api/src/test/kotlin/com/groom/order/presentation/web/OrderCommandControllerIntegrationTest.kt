@@ -1,8 +1,8 @@
 package com.groom.order.presentation.web
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.groom.ecommerce.common.TransactionApplier
-import com.groom.ecommerce.common.annotation.IntegrationTest
+import com.groom.order.common.TransactionApplier
+import com.groom.order.common.annotation.IntegrationTest
 import com.groom.order.presentation.web.dto.CancelOrderRequest
 import com.groom.order.presentation.web.dto.CreateOrderRequest
 import com.groom.order.presentation.web.dto.RefundOrderRequest

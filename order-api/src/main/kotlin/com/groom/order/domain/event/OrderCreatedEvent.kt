@@ -1,6 +1,6 @@
 package com.groom.order.domain.event
 
-import com.groom.ecommerce.common.domain.DomainEvent
+import com.groom.order.common.domain.DomainEvent
 import com.groom.order.domain.model.OrderStatus
 import java.math.BigDecimal
 import java.time.LocalDateTime

@@ -1,6 +1,6 @@
 package com.groom.order.domain.model
 
-import com.groom.ecommerce.common.annotation.UnitTest
+import com.groom.order.common.annotation.UnitTest
 import com.groom.order.fixture.OrderTestFixture
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec

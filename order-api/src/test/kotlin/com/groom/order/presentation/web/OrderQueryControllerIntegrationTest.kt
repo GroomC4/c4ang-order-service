@@ -2,7 +2,7 @@ package com.groom.order.presentation.web
 
 import com.groom.order.common.util.jwt.AuthorizationData
 import com.groom.order.common.util.jwt.JwtTokenProvider
-import com.groom.ecommerce.common.annotation.IntegrationTest
+import com.groom.order.common.annotation.IntegrationTest
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired

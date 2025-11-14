@@ -1,6 +1,6 @@
 package com.groom.order.presentation.web
 
-import com.groom.ecommerce.common.annotation.IntegrationTest
+import com.groom.order.common.annotation.IntegrationTest
 import org.hamcrest.CoreMatchers.not
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test

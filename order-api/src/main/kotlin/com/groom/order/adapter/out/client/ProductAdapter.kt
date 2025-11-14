@@ -1,4 +1,4 @@
-package com.groom.order.infrastructure.adapter
+package com.groom.order.adapter.out.client
 
 import com.groom.order.domain.model.ProductInfo
 import com.groom.order.domain.port.ProductPort
@@ -18,7 +18,7 @@ import java.util.UUID
 class ProductAdapter(
     private val productRepository: ProductRepositoryImpl,
 ) : ProductPort {
-    override fun findById(productId: UUID): ProductInfo? =
+    override fun loadById(productId: UUID): ProductInfo? =
         productRepository
             .findById(productId)
             .map { product ->
@@ -31,7 +31,7 @@ class ProductAdapter(
                 )
             }.orElse(null)
 
-    override fun findAllById(productIds: List<UUID>): List<ProductInfo> =
+    override fun loadAllById(productIds: List<UUID>): List<ProductInfo> =
         productRepository
             .findAllById(productIds)
             .map { product ->

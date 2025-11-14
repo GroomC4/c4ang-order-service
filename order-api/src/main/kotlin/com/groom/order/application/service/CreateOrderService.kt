@@ -1,10 +1,10 @@
 package com.groom.order.application.service
 
-import com.groom.ecommerce.common.domain.DomainEventPublisher
-import com.groom.ecommerce.common.exception.OrderException
-import com.groom.ecommerce.common.exception.ProductException
-import com.groom.ecommerce.common.exception.StoreException
-import com.groom.ecommerce.common.idempotency.IdempotencyService
+import com.groom.order.common.domain.DomainEventPublisher
+import com.groom.order.common.exception.OrderException
+import com.groom.order.common.exception.ProductException
+import com.groom.order.common.exception.StoreException
+import com.groom.order.common.idempotency.IdempotencyService
 import com.groom.order.application.dto.CreateOrderCommand
 import com.groom.order.application.dto.CreateOrderResult
 import com.groom.order.domain.event.OrderCreatedEvent
@@ -15,7 +15,8 @@ import com.groom.order.domain.port.StorePort
 import com.groom.order.domain.service.OrderManager
 import com.groom.order.domain.service.OrderPolicy
 import com.groom.order.domain.service.StockReservationManager
-import com.groom.order.infrastructure.repository.OrderRepositoryImpl
+import com.groom.order.domain.port.LoadOrderPort
+import com.groom.order.domain.port.SaveOrderPort
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -34,7 +35,8 @@ import java.time.LocalDateTime
  */
 @Service
 class CreateOrderService(
-    private val orderRepository: OrderRepositoryImpl,
+    private val loadOrderPort: LoadOrderPort,
+    private val saveOrderPort: SaveOrderPort,
     private val productPort: ProductPort,
     private val storePort: StorePort,
     private val stockReservationManager: StockReservationManager,
@@ -132,7 +134,7 @@ class CreateOrderService(
                 ).let { order ->
                     // 재고 예약 성공 시 즉시 상태를 STOCK_RESERVED로 변경
                     order.markStockReserved()
-                    orderRepository.save(order)
+                    saveOrderPort.save(order)
                     orderRepository.flush()
                     order
                 }

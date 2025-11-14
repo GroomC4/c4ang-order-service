@@ -1,0 +1,31 @@
+# Build artifacts
+.gradle/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE configuration
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Kotlin tooling
+.kotlin/
+
+# Logs and reports
+*.log
+hs_err_pid*
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Local overrides
+local.properties
+
+# Local data directory
+data/
+
+.claude
+CLAUDE.md
