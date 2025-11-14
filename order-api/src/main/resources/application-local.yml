@@ -30,12 +30,11 @@ spring:
 logging:
   level:
     # 프로젝트 패키지 - DEBUG 레벨 (상세 개발 로그)
-    com.groom.ecommerce: DEBUG
+    com.groom.order: DEBUG
 
     # Spring Framework
     org.springframework: INFO
     org.springframework.web: DEBUG  # HTTP 요청/응답 디버깅
-    org.springframework.security: DEBUG  # 인증/인가 디버깅
 
     # Hibernate/JPA - SQL 쿼리 디버깅
     org.hibernate: INFO
@@ -46,12 +45,15 @@ logging:
   file:
     path: ./logs
 
-security:
-  jwt:
-    secret: local-development-secret-please-change
-    issuer: ecommerce-service-api
-    accessTokenExpirationMinutes: 60
-    refreshTokenExpirationDays: 3
+# ====================================
+# 로컬 개발환경 설정
+# ====================================
+# LocalDevAuthFilter가 활성화되어 Istio 헤더를 자동 주입합니다.
+# - X-User-Id: 00000000-0000-0000-0000-000000000001
+# - X-User-Role: CUSTOMER
+#
+# 커스텀 헤더로 테스트하려면:
+# curl -H "X-User-Id: your-uuid" -H "X-User-Role: CUSTOMER" http://localhost:8082/api/v1/orders
 
 feign:
   clients:

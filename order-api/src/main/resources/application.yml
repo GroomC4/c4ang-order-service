@@ -24,12 +24,11 @@ logging:
     root: INFO
 
     # 프로젝트 패키지 - INFO 레벨
-    com.groom.ecommerce: INFO
+    com.groom.order: INFO
 
     # Spring Framework - INFO
     org.springframework: INFO
     org.springframework.web: INFO
-    org.springframework.security: INFO
 
     # Hibernate/JPA - WARN (기본값)
     org.hibernate: WARN
@@ -41,13 +40,6 @@ logging:
 encryption:
   encoder:
     bcrypt-strength: 10
-
-security:
-  jwt:
-    secret: local-development-secret-please-change
-    issuer: ecommerce-service-api
-    accessTokenExpirationMinutes: 5
-    refreshTokenExpirationDays: 3
 
 springdoc:
   api-docs:
