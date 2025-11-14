@@ -1,7 +1,7 @@
 package com.groom.order.presentation.web
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.groom.order.common.annotation.IntegrationTest
+import com.groom.platform.testSupport.IntegrationTest
 import com.groom.order.presentation.web.dto.CancelOrderRequest
 import com.groom.order.presentation.web.dto.CreateOrderRequest
 import com.groom.order.presentation.web.dto.RefundOrderRequest
@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpHeaders
+import com.groom.order.common.util.IstioHeaderExtractor
 import org.springframework.http.MediaType
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.SqlGroup
@@ -33,15 +34,15 @@ import java.util.UUID
  */
 @SqlGroup(
     Sql(
-        scripts = ["/sql/order/cleanup-order-command-controller.sql"],
+        scripts = ["/sql/cleanup-order-command-controller.sql"],
         executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS,
     ),
     Sql(
-        scripts = ["/sql/order/init-order-command-controller.sql"],
+        scripts = ["/sql/init-order-command-controller.sql"],
         executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS,
     ),
     Sql(
-        scripts = ["/sql/order/cleanup-order-command-controller.sql"],
+        scripts = ["/sql/cleanup-order-command-controller.sql"],
         executionPhase = Sql.ExecutionPhase.AFTER_TEST_CLASS,
     ),
 )
@@ -165,7 +166,7 @@ class OrderCommandControllerAuthorizationIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
-            .andExpect(status().is(not(401))).andExpect(status().is(not(403)))
+            .andExpect(status().`is`(not(401))).andExpect(status().`is`(not(403)))
     }
 
     // ========== PATCH /api/v1/orders/{orderId}/cancel (주문 취소) ==========
@@ -224,7 +225,7 @@ class OrderCommandControllerAuthorizationIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
-            .andExpect(status().is(not(401))).andExpect(status().is(not(403)))
+            .andExpect(status().`is`(not(401))).andExpect(status().`is`(not(403)))
     }
 
     // ========== PATCH /api/v1/orders/{orderId}/refund (주문 환불) ==========
@@ -283,6 +284,6 @@ class OrderCommandControllerAuthorizationIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
-            .andExpect(status().is(not(401))).andExpect(status().is(not(403)))
+            .andExpect(status().`is`(not(401))).andExpect(status().`is`(not(403)))
     }
 }

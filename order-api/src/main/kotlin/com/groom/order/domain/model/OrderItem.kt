@@ -1,6 +1,6 @@
 package com.groom.order.domain.model
 
-import com.groom.ecommerce.configuration.jpa.CreatedAndUpdatedAtAuditEntity
+import com.groom.order.configuration.jpa.CreatedAndUpdatedAtAuditEntity
 import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

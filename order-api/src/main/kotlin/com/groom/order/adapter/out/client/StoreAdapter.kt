@@ -2,32 +2,45 @@ package com.groom.order.adapter.out.client
 
 import com.groom.order.domain.model.StoreInfo
 import com.groom.order.domain.port.StorePort
-import com.groom.store.domain.port.StoreReader
 import org.springframework.stereotype.Component
 import java.util.UUID
 
 /**
- * Store 도메인 연동 Adapter (모놀리식 구현)
+ * Store 도메인 연동 Adapter (MSA 구현)
  *
- * StoreReader를 통해 Store 도메인의 정보를 조회하고,
+ * StoreClient(Feign)를 통해 Store Service의 REST API를 호출하고,
  * Order 도메인의 StoreInfo로 변환합니다.
- *
- * MSA 전환 시: StoreReader → HTTP Client로 교체
  */
 @Component
 class StoreAdapter(
-    private val storeReader: StoreReader,
+    private val storeClient: StoreClient,
 ) : StorePort {
-    override fun loadById(storeId: UUID): StoreInfo? =
-        storeReader
-            .findById(storeId)
-            .map { store ->
-                StoreInfo(
-                    id = store.id,
-                    name = store.name,
-                    status = store.status.name,
-                )
-            }.orElse(null)
+    /**
+     * 스토어 단건 조회
+     *
+     * @param storeId 스토어 ID
+     * @return 스토어 정보 (없으면 null)
+     */
+    override fun loadById(storeId: UUID): StoreInfo? {
+        // TODO: Store Service API 호출 후 StoreInfo로 변환
+        // val response = storeClient.getStore(storeId) ?: return null
+        // return StoreInfo(
+        //     id = response.id,
+        //     name = response.name,
+        //     status = response.status,
+        // )
+        TODO("Store Service HTTP 호출 구현 필요")
+    }
 
-    override fun existsById(storeId: UUID): Boolean = storeReader.findById(storeId).isPresent
+    /**
+     * 스토어 존재 여부 확인
+     *
+     * @param storeId 스토어 ID
+     * @return 존재 여부
+     */
+    override fun existsById(storeId: UUID): Boolean {
+        // TODO: Store Service API 호출
+        // return storeClient.existsStore(storeId).exists
+        TODO("Store Service HTTP 호출 구현 필요")
+    }
 }

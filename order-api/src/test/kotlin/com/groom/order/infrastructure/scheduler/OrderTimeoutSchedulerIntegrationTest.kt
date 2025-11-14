@@ -54,7 +54,10 @@ class OrderTimeoutSchedulerIntegrationTest {
     private lateinit var orderTimeoutScheduler: OrderTimeoutScheduler
 
     @Autowired
-    private lateinit var orderRepository: OrderRepositoryImpl
+    private lateinit var loadOrderPort: LoadOrderPort
+
+    @Autowired
+    private lateinit var saveOrderPort: SaveOrderPort
 
     @Autowired
     private lateinit var redissonClient: RedissonClient
@@ -116,7 +119,7 @@ class OrderTimeoutSchedulerIntegrationTest {
     @DisplayName("만료된 주문을 PAYMENT_TIMEOUT으로 변경하고 재고 예약을 취소한다")
     fun `should timeout expired orders and cancel reservations`() {
         // given: SQL 스크립트로 만료된 주문 생성됨
-        val expiredOrder = orderRepository.findById(EXPIRED_ORDER_ID).orElseThrow()
+        val expiredOrder = loadOrderPort.loadById(EXPIRED_ORDER_ID)!!
         assertEquals(OrderStatus.PAYMENT_PENDING, expiredOrder.status, "초기 상태는 PAYMENT_PENDING")
         assertEquals(EXPIRED_RESERVATION_ID, expiredOrder.reservationId, "예약 ID가 설정되어 있어야 함")
 
@@ -132,8 +135,8 @@ class OrderTimeoutSchedulerIntegrationTest {
         val updatedOrder =
             transactionApplier
                 .applyPrimaryTransaction {
-                    orderRepository.findById(EXPIRED_ORDER_ID)
-                }.orElseThrow()
+                    loadOrderPort.loadById(EXPIRED_ORDER_ID)
+                }!!
 
         assertEquals(OrderStatus.PAYMENT_TIMEOUT, updatedOrder.status, "만료된 주문은 PAYMENT_TIMEOUT으로 변경")
 
@@ -150,8 +153,8 @@ class OrderTimeoutSchedulerIntegrationTest {
         val activeOrder =
             transactionApplier
                 .applyPrimaryTransaction {
-                    orderRepository.findById(ACTIVE_ORDER_ID)
-                }.orElseThrow()
+                    loadOrderPort.loadById(ACTIVE_ORDER_ID)
+                }!!
         assertEquals(OrderStatus.PAYMENT_PENDING, activeOrder.status, "초기 상태는 PAYMENT_PENDING")
 
         // when: 스케줄러 실행
@@ -161,8 +164,8 @@ class OrderTimeoutSchedulerIntegrationTest {
         val updatedOrder =
             transactionApplier
                 .applyPrimaryTransaction {
-                    orderRepository.findById(ACTIVE_ORDER_ID)
-                }.orElseThrow()
+                    loadOrderPort.loadById(ACTIVE_ORDER_ID)
+                }!!
         assertEquals(OrderStatus.PAYMENT_PENDING, updatedOrder.status, "유효한 주문은 상태 유지")
 
         // Redis 예약도 유지
@@ -175,7 +178,13 @@ class OrderTimeoutSchedulerIntegrationTest {
     @DisplayName("만료된 주문이 없는 경우 스케줄러가 정상 종료된다")
     fun `should complete successfully when no expired orders exist`() {
         // given: 모든 주문을 삭제하여 만료된 주문이 없도록 함
-        orderRepository.deleteAll()
+        // Note: deleteAll은 Port 인터페이스에 없으므로 스케줄러가 빈 리스트를 반환하도록 만료된 주문만 삭제
+        val expiredOrder = loadOrderPort.loadById(EXPIRED_ORDER_ID)
+        if (expiredOrder != null) {
+            // 만료된 주문을 타임아웃 처리하여 스케줄러가 조회하지 않도록 함
+            expiredOrder.timeout()
+            saveOrderPort.save(expiredOrder)
+        }
 
         // when & then: 스케줄러 실행 (예외 없이 정상 종료)
         orderTimeoutScheduler.processExpiredOrders()
@@ -185,9 +194,9 @@ class OrderTimeoutSchedulerIntegrationTest {
     @DisplayName("이미 타임아웃된 주문은 재처리하지 않는다")
     fun `should not reprocess already timed out orders`() {
         // given: 만료된 주문을 수동으로 타임아웃 처리
-        val expiredOrder = transactionApplier.applyPrimaryTransaction { orderRepository.findById(EXPIRED_ORDER_ID) }.orElseThrow()
+        val expiredOrder = transactionApplier.applyPrimaryTransaction { loadOrderPort.loadById(EXPIRED_ORDER_ID) }!!
         expiredOrder.timeout()
-        orderRepository.save(expiredOrder)
+        saveOrderPort.save(expiredOrder)
 
         assertEquals(OrderStatus.PAYMENT_TIMEOUT, expiredOrder.status, "이미 타임아웃 상태")
 
@@ -195,7 +204,7 @@ class OrderTimeoutSchedulerIntegrationTest {
         orderTimeoutScheduler.processExpiredOrders()
 
         // then: 상태 유지 (재처리되지 않음)
-        val unchangedOrder = transactionApplier.applyPrimaryTransaction { orderRepository.findById(EXPIRED_ORDER_ID) }.orElseThrow()
+        val unchangedOrder = transactionApplier.applyPrimaryTransaction { loadOrderPort.loadById(EXPIRED_ORDER_ID) }!!
         assertEquals(OrderStatus.PAYMENT_TIMEOUT, unchangedOrder.status, "타임아웃 상태 유지")
     }
 }

@@ -19,7 +19,6 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import java.math.BigDecimal
-import java.util.Optional
 import java.util.UUID
 
 @UnitTest
@@ -28,9 +27,11 @@ class GetOrderDetailServiceTest :
         isolationMode = IsolationMode.InstancePerLeaf
 
         Given("존재하는 주문을 조회하는 경우") {
-            val orderRepository = mockk<OrderRepositoryImpl>()
+            val loadOrderPort = mockk<LoadOrderPort>()
+            val saveOrderPort = mockk<SaveOrderPort>()
             val orderPolicy = mockk<OrderPolicy>()
-            val service = GetOrderDetailService(orderRepository, orderPolicy)
+            val service = GetOrderDetailService(loadOrderPort,
+                    saveOrderPort, orderPolicy)
 
             val orderId = UUID.randomUUID()
             val userId = UUID.randomUUID()
@@ -55,7 +56,7 @@ class GetOrderDetailServiceTest :
                     items = listOf(orderItem),
                 )
 
-            every { orderRepository.findById(orderId) } returns Optional.of(order)
+            every { loadOrderPort.loadById(orderId) } returns order
             every { orderPolicy.checkOrderOwnership(order, userId) } just runs
 
             When("본인이 자신의 주문을 조회하면") {
@@ -78,9 +79,11 @@ class GetOrderDetailServiceTest :
         }
 
         Given("다른 사용자의 주문을 조회하는 경우") {
-            val orderRepository = mockk<OrderRepositoryImpl>()
+            val loadOrderPort = mockk<LoadOrderPort>()
+            val saveOrderPort = mockk<SaveOrderPort>()
             val orderPolicy = mockk<OrderPolicy>()
-            val service = GetOrderDetailService(orderRepository, orderPolicy)
+            val service = GetOrderDetailService(loadOrderPort,
+                    saveOrderPort, orderPolicy)
 
             val orderId = UUID.randomUUID()
             val orderOwnerId = UUID.randomUUID()
@@ -96,7 +99,7 @@ class GetOrderDetailServiceTest :
                     status = OrderStatus.PENDING,
                 )
 
-            every { orderRepository.findById(orderId) } returns Optional.of(order)
+            every { loadOrderPort.loadById(orderId) } returns order
             every { orderPolicy.checkOrderOwnership(order, requestUserId) } throws
                 OrderException.OrderAccessDenied(orderId, requestUserId)
 
@@ -112,14 +115,16 @@ class GetOrderDetailServiceTest :
         }
 
         Given("존재하지 않는 주문을 조회하는 경우") {
-            val orderRepository = mockk<OrderRepositoryImpl>()
+            val loadOrderPort = mockk<LoadOrderPort>()
+            val saveOrderPort = mockk<SaveOrderPort>()
             val orderPolicy = mockk<OrderPolicy>()
-            val service = GetOrderDetailService(orderRepository, orderPolicy)
+            val service = GetOrderDetailService(loadOrderPort,
+                    saveOrderPort, orderPolicy)
 
             val orderId = UUID.randomUUID()
             val userId = UUID.randomUUID()
 
-            every { orderRepository.findById(orderId) } returns Optional.empty()
+            every { loadOrderPort.loadById(orderId) } returns null
 
             When("존재하지 않는 주문을 조회하려고 하면") {
                 val query = GetOrderDetailQuery(orderId, userId)

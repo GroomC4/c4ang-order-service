@@ -23,7 +23,6 @@ import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verify
 import java.time.LocalDateTime
-import java.util.Optional
 import java.util.UUID
 
 @UnitTest
@@ -32,14 +31,16 @@ class CancelOrderServiceTest :
         isolationMode = IsolationMode.InstancePerLeaf
 
         Given("취소 가능한 주문이 있는 경우") {
-            val orderRepository = mockk<OrderRepositoryImpl>()
+            val loadOrderPort = mockk<LoadOrderPort>()
+            val saveOrderPort = mockk<SaveOrderPort>()
             val stockReservationService = mockk<StockReservationService>()
             val orderManager = mockk<OrderManager>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
 
             val service =
                 CancelOrderService(
-                    orderRepository,
+                    loadOrderPort,
+                    saveOrderPort,
                     stockReservationService,
                     orderManager,
                     domainEventPublisher,
@@ -71,7 +72,7 @@ class CancelOrderServiceTest :
                     cancelledAt = LocalDateTime.now(),
                 )
 
-            every { orderRepository.findById(orderId) } returns Optional.of(order)
+            every { loadOrderPort.loadById(orderId) } returns order
             every { orderManager.cancelOrder(order, userId, "고객 변심", any()) } answers {
                 // 실제 동작처럼 Order의 상태를 변경
                 order.status = OrderStatus.ORDER_CANCELLED
@@ -80,8 +81,8 @@ class CancelOrderServiceTest :
                 cancelEvent
             }
             every { stockReservationService.cancelReservation(reservationId) } just runs
-            every { orderRepository.save(any()) } answers { firstArg() }
-            every { orderRepository.flush() } just runs
+            every { saveOrderPort.save(any()) } answers { firstArg() }
+            
             every { domainEventPublisher.publish(any()) } just runs
 
             When("주문을 취소하면") {
@@ -106,14 +107,16 @@ class CancelOrderServiceTest :
         }
 
         Given("배송 완료된 주문을 취소하려는 경우") {
-            val orderRepository = mockk<OrderRepositoryImpl>()
+            val loadOrderPort = mockk<LoadOrderPort>()
+            val saveOrderPort = mockk<SaveOrderPort>()
             val stockReservationService = mockk<StockReservationService>()
             val orderManager = mockk<OrderManager>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
 
             val service =
                 CancelOrderService(
-                    orderRepository,
+                    loadOrderPort,
+                    saveOrderPort,
                     stockReservationService,
                     orderManager,
                     domainEventPublisher,
@@ -132,7 +135,7 @@ class CancelOrderServiceTest :
                         OrderTestFixture.setField(this, "id", orderId)
                     }
 
-            every { orderRepository.findById(orderId) } returns Optional.of(order)
+            every { loadOrderPort.loadById(orderId) } returns order
             every { orderManager.cancelOrder(order, userId, "고객 변심", any()) } throws
                 OrderException.CannotCancelOrder(orderId, OrderStatus.DELIVERED.name)
 
@@ -150,14 +153,16 @@ class CancelOrderServiceTest :
         }
 
         Given("다른 사용자의 주문을 취소하려는 경우") {
-            val orderRepository = mockk<OrderRepositoryImpl>()
+            val loadOrderPort = mockk<LoadOrderPort>()
+            val saveOrderPort = mockk<SaveOrderPort>()
             val stockReservationService = mockk<StockReservationService>()
             val orderManager = mockk<OrderManager>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
 
             val service =
                 CancelOrderService(
-                    orderRepository,
+                    loadOrderPort,
+                    saveOrderPort,
                     stockReservationService,
                     orderManager,
                     domainEventPublisher,
@@ -176,7 +181,7 @@ class CancelOrderServiceTest :
                     status = OrderStatus.PENDING,
                 )
 
-            every { orderRepository.findById(orderId) } returns Optional.of(order)
+            every { loadOrderPort.loadById(orderId) } returns order
             every { orderManager.cancelOrder(order, requestUserId, "고객 변심", any()) } throws
                 OrderException.OrderAccessDenied(orderId, requestUserId)
 
@@ -194,14 +199,16 @@ class CancelOrderServiceTest :
         }
 
         Given("존재하지 않는 주문을 취소하려는 경우") {
-            val orderRepository = mockk<OrderRepositoryImpl>()
+            val loadOrderPort = mockk<LoadOrderPort>()
+            val saveOrderPort = mockk<SaveOrderPort>()
             val stockReservationService = mockk<StockReservationService>()
             val orderManager = mockk<OrderManager>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
 
             val service =
                 CancelOrderService(
-                    orderRepository,
+                    loadOrderPort,
+                    saveOrderPort,
                     stockReservationService,
                     orderManager,
                     domainEventPublisher,
@@ -210,7 +217,7 @@ class CancelOrderServiceTest :
             val orderId = UUID.randomUUID()
             val userId = UUID.randomUUID()
 
-            every { orderRepository.findById(orderId) } returns Optional.empty()
+            every { loadOrderPort.loadById(orderId) } returns null
 
             When("주문을 취소하려고 하면") {
                 val command = CancelOrderCommand(orderId, userId, "고객 변심")

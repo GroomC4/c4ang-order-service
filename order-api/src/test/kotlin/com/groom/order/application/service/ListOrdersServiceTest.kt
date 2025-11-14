@@ -20,8 +20,9 @@ class ListOrdersServiceTest :
         isolationMode = IsolationMode.InstancePerLeaf
 
         Given("사용자의 모든 주문을 조회하는 경우") {
-            val orderRepository = mockk<OrderRepositoryImpl>()
-            val service = ListOrdersService(orderRepository)
+            val loadOrderPort = mockk<LoadOrderPort>()
+            val saveOrderPort = mockk<SaveOrderPort>()
+            val service = ListOrdersService(loadOrderPort, saveOrderPort)
 
             val userId = UUID.randomUUID()
             val storeId = UUID.randomUUID()
@@ -60,7 +61,7 @@ class ListOrdersServiceTest :
                     items = listOf(item2),
                 )
 
-            every { orderRepository.findByUserExternalId(userId) } returns listOf(order1, order2)
+            every { loadOrderPort.loadByUserExternalId(userId) } returns listOf(order1, order2)
 
             When("상태 필터 없이 주문 목록을 조회하면") {
                 val query = ListOrdersQuery(requestUserId = userId, status = null)
@@ -84,8 +85,9 @@ class ListOrdersServiceTest :
         }
 
         Given("특정 상태의 주문만 조회하는 경우") {
-            val orderRepository = mockk<OrderRepositoryImpl>()
-            val service = ListOrdersService(orderRepository)
+            val loadOrderPort = mockk<LoadOrderPort>()
+            val saveOrderPort = mockk<SaveOrderPort>()
+            val service = ListOrdersService(loadOrderPort, saveOrderPort)
 
             val userId = UUID.randomUUID()
             val storeId = UUID.randomUUID()
@@ -108,7 +110,7 @@ class ListOrdersServiceTest :
                 )
 
             every {
-                orderRepository.findByUserExternalIdAndStatus(
+                loadOrderPort.loadByUserExternalIdAndStatus(
                     userId,
                     OrderStatus.PAYMENT_COMPLETED,
                 )
@@ -130,12 +132,13 @@ class ListOrdersServiceTest :
         }
 
         Given("주문이 없는 사용자가 조회하는 경우") {
-            val orderRepository = mockk<OrderRepositoryImpl>()
-            val service = ListOrdersService(orderRepository)
+            val loadOrderPort = mockk<LoadOrderPort>()
+            val saveOrderPort = mockk<SaveOrderPort>()
+            val service = ListOrdersService(loadOrderPort, saveOrderPort)
 
             val userId = UUID.randomUUID()
 
-            every { orderRepository.findByUserExternalId(userId) } returns emptyList()
+            every { loadOrderPort.loadByUserExternalId(userId) } returns emptyList()
 
             When("주문 목록을 조회하면") {
                 val query = ListOrdersQuery(requestUserId = userId)

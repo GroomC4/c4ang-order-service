@@ -21,7 +21,6 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import java.math.BigDecimal
-import java.util.Optional
 import java.util.UUID
 
 @UnitTest
@@ -30,13 +29,15 @@ class RefundOrderServiceTest :
         isolationMode = IsolationMode.InstancePerLeaf
 
         Given("배송 완료된 주문이 있는 경우") {
-            val orderRepository = mockk<OrderRepositoryImpl>()
+            val loadOrderPort = mockk<LoadOrderPort>()
+            val saveOrderPort = mockk<SaveOrderPort>()
             val orderManager = mockk<OrderManager>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
 
             val service =
                 RefundOrderService(
-                    orderRepository,
+                    loadOrderPort,
+                    saveOrderPort,
                     orderManager,
                     domainEventPublisher,
                 )
@@ -63,10 +64,10 @@ class RefundOrderServiceTest :
                         OrderTestFixture.setField(this, "id", orderId)
                     }
 
-            every { orderRepository.findById(orderId) } returns Optional.of(order)
+            every { loadOrderPort.loadById(orderId) } returns order
             every { orderManager.validateRefund(any<Order>(), any<UUID>()) } just runs
-            every { orderRepository.save(any<Order>()) } answers { firstArg() }
-            every { orderRepository.flush() } just runs
+            every { saveOrderPort.save(any<Order>()) } answers { firstArg() }
+            
             every { domainEventPublisher.publish(any()) } just runs
 
             When("환불을 요청하면") {
@@ -87,13 +88,15 @@ class RefundOrderServiceTest :
         }
 
         Given("배송 전 주문을 환불하려는 경우") {
-            val orderRepository = mockk<OrderRepositoryImpl>()
+            val loadOrderPort = mockk<LoadOrderPort>()
+            val saveOrderPort = mockk<SaveOrderPort>()
             val orderManager = mockk<OrderManager>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
 
             val service =
                 RefundOrderService(
-                    orderRepository,
+                    loadOrderPort,
+                    saveOrderPort,
                     orderManager,
                     domainEventPublisher,
                 )
@@ -111,7 +114,7 @@ class RefundOrderServiceTest :
                     status = OrderStatus.PREPARING,
                 )
 
-            every { orderRepository.findById(orderId) } returns Optional.of(order)
+            every { loadOrderPort.loadById(orderId) } returns order
             every { orderManager.validateRefund(any<Order>(), any<UUID>()) } throws
                 OrderException.CannotRefundOrder(orderId, OrderStatus.PREPARING.name)
 
@@ -129,13 +132,15 @@ class RefundOrderServiceTest :
         }
 
         Given("다른 사용자의 주문을 환불하려는 경우") {
-            val orderRepository = mockk<OrderRepositoryImpl>()
+            val loadOrderPort = mockk<LoadOrderPort>()
+            val saveOrderPort = mockk<SaveOrderPort>()
             val orderManager = mockk<OrderManager>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
 
             val service =
                 RefundOrderService(
-                    orderRepository,
+                    loadOrderPort,
+                    saveOrderPort,
                     orderManager,
                     domainEventPublisher,
                 )
@@ -154,7 +159,7 @@ class RefundOrderServiceTest :
                         OrderTestFixture.setField(this, "id", orderId)
                     }
 
-            every { orderRepository.findById(orderId) } returns Optional.of(order)
+            every { loadOrderPort.loadById(orderId) } returns order
             every { orderManager.validateRefund(any<Order>(), any<UUID>()) } throws
                 OrderException.OrderAccessDenied(orderId, requestUserId)
 
@@ -172,13 +177,15 @@ class RefundOrderServiceTest :
         }
 
         Given("존재하지 않는 주문을 환불하려는 경우") {
-            val orderRepository = mockk<OrderRepositoryImpl>()
+            val loadOrderPort = mockk<LoadOrderPort>()
+            val saveOrderPort = mockk<SaveOrderPort>()
             val orderManager = mockk<OrderManager>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
 
             val service =
                 RefundOrderService(
-                    orderRepository,
+                    loadOrderPort,
+                    saveOrderPort,
                     orderManager,
                     domainEventPublisher,
                 )
@@ -186,7 +193,7 @@ class RefundOrderServiceTest :
             val orderId = UUID.randomUUID()
             val userId = UUID.randomUUID()
 
-            every { orderRepository.findById(orderId) } returns Optional.empty()
+            every { loadOrderPort.loadById(orderId) } returns null
 
             When("환불을 요청하면") {
                 val command = RefundOrderCommand(orderId, userId, "상품 불량")

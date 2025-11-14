@@ -2,15 +2,11 @@ package com.groom.order.presentation.web
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.groom.order.common.TransactionApplier
-import com.groom.order.common.annotation.IntegrationTest
+import com.groom.order.common.util.IstioHeaderExtractor
 import com.groom.order.presentation.web.dto.CancelOrderRequest
 import com.groom.order.presentation.web.dto.CreateOrderRequest
 import com.groom.order.presentation.web.dto.RefundOrderRequest
-import com.groom.ecommerce.user.application.dto.RegisterCustomerCommand
-import com.groom.ecommerce.user.application.service.RegisterCustomerService
-import com.groom.ecommerce.user.infrastructure.repository.RefreshTokenRepositoryImpl
-import com.groom.ecommerce.user.infrastructure.repository.UserRepositoryImpl
-import com.groom.ecommerce.user.presentation.web.dto.LoginRequest
+import com.groom.platform.testSupport.IntegrationTest
 import jakarta.persistence.EntityManager
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -20,7 +16,6 @@ import org.redisson.api.RedissonClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.SqlGroup
@@ -46,15 +41,15 @@ import java.util.UUID
 @AutoConfigureMockMvc
 @SqlGroup(
     Sql(
-        scripts = ["/sql/order/cleanup-order-command-business-test.sql"],
+        scripts = ["/sql/cleanup-order-command-business-test.sql"],
         executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS,
     ),
     Sql(
-        scripts = ["/sql/order/init-order-command-business-test.sql"],
+        scripts = ["/sql/init-order-command-business-test.sql"],
         executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD,
     ),
     Sql(
-        scripts = ["/sql/order/cleanup-order-command-business-test.sql"],
+        scripts = ["/sql/cleanup-order-command-business-test.sql"],
         executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD,
     ),
 )
@@ -70,21 +65,16 @@ class OrderCommandControllerIntegrationTest {
     private lateinit var redissonClient: RedissonClient
 
     @Autowired
-    private lateinit var registerCustomerService: RegisterCustomerService
-
-    @Autowired
-    private lateinit var userRepository: UserRepositoryImpl
-
-    @Autowired
-    private lateinit var refreshTokenRepository: RefreshTokenRepositoryImpl
-
-    @Autowired
     private lateinit var transactionApplier: TransactionApplier
 
     @Autowired
     private lateinit var entityManager: EntityManager
 
     companion object {
+        // Test Users
+        private val CUSTOMER_USER_1 = UUID.fromString("33333333-3333-3333-3333-333333333333")
+        private val CUSTOMER_USER_2 = UUID.fromString("22222222-2222-2222-2222-222222222222")
+
         // Test Stores
         private val STORE_1 = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-000000000001")
         private val STORE_2 = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-000000000002")
@@ -102,48 +92,8 @@ class OrderCommandControllerIntegrationTest {
         private val ORDER_USER2 = UUID.randomUUID()
     }
 
-    private lateinit var customerToken: String
-    private lateinit var customer2Token: String
-    private lateinit var customer1Id: String
-    private lateinit var customer2Id: String
-    private val createdEmails = mutableListOf<String>()
-    private val createdOrderIds = mutableListOf<UUID>()
-
     @BeforeEach
     fun setUp() {
-        createdEmails.clear()
-        createdOrderIds.clear()
-
-        // CUSTOMER_USER_1 생성 및 로그인
-        val customer1 =
-            registerCustomerService.register(
-                RegisterCustomerCommand(
-                    username = "customer1",
-                    email = "customer1-order-test@example.com",
-                    rawPassword = "password123!",
-                    defaultAddress = "서울시 강남구",
-                    defaultPhoneNumber = "010-0000-3333",
-                ),
-            )
-        createdEmails.add("customer1-order-test@example.com")
-        customer1Id = customer1.userId
-        customerToken = loginAndGetToken("customer1-order-test@example.com", "password123!")
-
-        // CUSTOMER_USER_2 생성 및 로그인
-        val customer2 =
-            registerCustomerService.register(
-                RegisterCustomerCommand(
-                    username = "customer2",
-                    email = "customer2-order-test@example.com",
-                    rawPassword = "password123!",
-                    defaultAddress = "서울시 서초구",
-                    defaultPhoneNumber = "010-0000-4444",
-                ),
-            )
-        createdEmails.add("customer2-order-test@example.com")
-        customer2Id = customer2.userId
-        customer2Token = loginAndGetToken("customer2-order-test@example.com", "password123!")
-
         // Redis 재고 초기화 (테스트 데이터와 동기화)
         redissonClient.getAtomicLong("product:remaining-stock:$PRODUCT_MOUSE").set(100)
         redissonClient.getAtomicLong("product:remaining-stock:$PRODUCT_KEYBOARD").set(50)
@@ -151,31 +101,6 @@ class OrderCommandControllerIntegrationTest {
 
         // 테스트용 주문 생성 (각기 다른 상태로 설정)
         createTestOrders()
-    }
-
-    private fun loginAndGetToken(
-        email: String,
-        password: String,
-    ): String {
-        val loginRequest =
-            LoginRequest(
-                email = email,
-                password = password,
-            )
-
-        val loginResponse =
-            mockMvc
-                .perform(
-                    post("/api/v1/auth/customers/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)),
-                ).andExpect(status().isOk)
-                .andReturn()
-                .response
-                .contentAsString
-
-        val loginResponseBody = objectMapper.readTree(loginResponse)
-        return loginResponseBody.get("accessToken").asText()
     }
 
     /**
@@ -188,8 +113,6 @@ class OrderCommandControllerIntegrationTest {
      */
     private fun createTestOrders() {
         transactionApplier.applyPrimaryTransaction {
-            val customer1Uuid = UUID.fromString(customer1Id)
-            val customer2Uuid = UUID.fromString(customer2Id)
             val now = LocalDateTime.now()
 
             // 1. ORDER_STOCK_RESERVED (customer1, STOCK_RESERVED)
@@ -204,7 +127,7 @@ class OrderCommandControllerIntegrationTest {
                             '취소 테스트용', ?, NOW() + INTERVAL '10 minutes', NOW(), NOW())
                     """.trimIndent(),
                 ).setParameter(1, ORDER_STOCK_RESERVED)
-                .setParameter(2, customer1Uuid)
+                .setParameter(2, CUSTOMER_USER_1)
                 .setParameter(3, STORE_1)
                 .setParameter(4, UUID.randomUUID().toString())
                 .executeUpdate()
@@ -221,8 +144,6 @@ class OrderCommandControllerIntegrationTest {
                 .setParameter(3, PRODUCT_MOUSE)
                 .executeUpdate()
 
-            createdOrderIds.add(ORDER_STOCK_RESERVED)
-
             // 2. ORDER_PAYMENT_COMPLETED (customer1, PAYMENT_COMPLETED)
             entityManager
                 .createNativeQuery(
@@ -235,7 +156,7 @@ class OrderCommandControllerIntegrationTest {
                             '취소 테스트용', ?, NOW(), NOW())
                     """.trimIndent(),
                 ).setParameter(1, ORDER_PAYMENT_COMPLETED)
-                .setParameter(2, customer1Uuid)
+                .setParameter(2, CUSTOMER_USER_1)
                 .setParameter(3, STORE_1)
                 .setParameter(4, UUID.randomUUID())
                 .executeUpdate()
@@ -252,8 +173,6 @@ class OrderCommandControllerIntegrationTest {
                 .setParameter(3, PRODUCT_KEYBOARD)
                 .executeUpdate()
 
-            createdOrderIds.add(ORDER_PAYMENT_COMPLETED)
-
             // 3. ORDER_DELIVERED (customer1, DELIVERED)
             entityManager
                 .createNativeQuery(
@@ -266,7 +185,7 @@ class OrderCommandControllerIntegrationTest {
                             '환불 테스트용', ?, NOW() - INTERVAL '3 days', NOW(), NOW())
                     """.trimIndent(),
                 ).setParameter(1, ORDER_DELIVERED)
-                .setParameter(2, customer1Uuid)
+                .setParameter(2, CUSTOMER_USER_1)
                 .setParameter(3, STORE_1)
                 .setParameter(4, UUID.randomUUID())
                 .executeUpdate()
@@ -283,8 +202,6 @@ class OrderCommandControllerIntegrationTest {
                 .setParameter(3, PRODUCT_MOUSE)
                 .executeUpdate()
 
-            createdOrderIds.add(ORDER_DELIVERED)
-
             // 4. ORDER_SHIPPED (customer1, SHIPPED)
             entityManager
                 .createNativeQuery(
@@ -297,7 +214,7 @@ class OrderCommandControllerIntegrationTest {
                             '취소 실패 테스트용', ?, NOW() - INTERVAL '2 days', NOW(), NOW())
                     """.trimIndent(),
                 ).setParameter(1, ORDER_SHIPPED)
-                .setParameter(2, customer1Uuid)
+                .setParameter(2, CUSTOMER_USER_1)
                 .setParameter(3, STORE_1)
                 .setParameter(4, UUID.randomUUID())
                 .executeUpdate()
@@ -314,8 +231,6 @@ class OrderCommandControllerIntegrationTest {
                 .setParameter(3, PRODUCT_MOUSE)
                 .executeUpdate()
 
-            createdOrderIds.add(ORDER_SHIPPED)
-
             // 5. ORDER_USER2 (customer2, STOCK_RESERVED) - 권한 테스트용
             entityManager
                 .createNativeQuery(
@@ -328,7 +243,7 @@ class OrderCommandControllerIntegrationTest {
                             '권한 테스트용', ?, NOW() + INTERVAL '10 minutes', NOW(), NOW())
                     """.trimIndent(),
                 ).setParameter(1, ORDER_USER2)
-                .setParameter(2, customer2Uuid)
+                .setParameter(2, CUSTOMER_USER_2)
                 .setParameter(3, STORE_1)
                 .setParameter(4, UUID.randomUUID().toString())
                 .executeUpdate()
@@ -345,8 +260,6 @@ class OrderCommandControllerIntegrationTest {
                 .setParameter(3, PRODUCT_KEYBOARD)
                 .executeUpdate()
 
-            createdOrderIds.add(ORDER_USER2)
-
             entityManager.flush()
         }
     }
@@ -361,18 +274,6 @@ class OrderCommandControllerIntegrationTest {
         // 예약 관련 키 정리
         val expiryIndex = redissonClient.getScoredSortedSet<String>("product:reservation-expiry-index")
         expiryIndex.clear()
-
-        // 동적으로 생성한 사용자 및 관련 데이터 정리
-        transactionApplier.applyPrimaryTransaction {
-            createdEmails.forEach { email ->
-                userRepository.findByEmail(email).ifPresent { user ->
-                    refreshTokenRepository.findByUserId(user.id!!).ifPresent { token ->
-                        refreshTokenRepository.delete(token)
-                    }
-                    userRepository.delete(user)
-                }
-            }
-        }
     }
 
     // ========== POST /api/v1/orders (주문 생성) ==========
@@ -381,7 +282,6 @@ class OrderCommandControllerIntegrationTest {
     @DisplayName("POST /api/v1/orders - 단일 상품 주문 생성 성공")
     fun createOrder_withSingleProduct_shouldSucceed() {
         // given
-        val token = customerToken
         val request =
             CreateOrderRequest(
                 storeId = STORE_1,
@@ -400,7 +300,10 @@ class OrderCommandControllerIntegrationTest {
         mockMvc
             .perform(
                 post("/api/v1/orders")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
@@ -422,7 +325,6 @@ class OrderCommandControllerIntegrationTest {
     @DisplayName("POST /api/v1/orders - 여러 상품 주문 생성 성공")
     fun createOrder_withMultipleProducts_shouldSucceed() {
         // given
-        val token = customerToken
         val request =
             CreateOrderRequest(
                 storeId = STORE_1,
@@ -445,7 +347,10 @@ class OrderCommandControllerIntegrationTest {
         mockMvc
             .perform(
                 post("/api/v1/orders")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
@@ -459,7 +364,6 @@ class OrderCommandControllerIntegrationTest {
     @DisplayName("POST /api/v1/orders - 멱등성 키로 중복 주문 방지 확인")
     fun createOrder_withDuplicateIdempotencyKey_shouldReturnExistingOrder() {
         // given
-        val token = customerToken
         val idempotencyKey = "test-key-idempotent-${UUID.randomUUID()}"
         val request =
             CreateOrderRequest(
@@ -479,7 +383,10 @@ class OrderCommandControllerIntegrationTest {
             mockMvc
                 .perform(
                     post("/api/v1/orders")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                        .header(
+                            IstioHeaderExtractor.USER_ID_HEADER,
+                            CUSTOMER_USER_1.toString(),
+                        ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andExpect(status().isCreated)
@@ -491,7 +398,10 @@ class OrderCommandControllerIntegrationTest {
         mockMvc
             .perform(
                 post("/api/v1/orders")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
@@ -503,7 +413,6 @@ class OrderCommandControllerIntegrationTest {
     @DisplayName("POST /api/v1/orders - 존재하지 않는 상점으로 주문 시도 시 실패")
     fun createOrder_withNonExistentStore_shouldFail() {
         // given
-        val token = customerToken
         val nonExistentStoreId = UUID.randomUUID()
         val request =
             CreateOrderRequest(
@@ -522,7 +431,10 @@ class OrderCommandControllerIntegrationTest {
         mockMvc
             .perform(
                 post("/api/v1/orders")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
@@ -533,7 +445,6 @@ class OrderCommandControllerIntegrationTest {
     @DisplayName("POST /api/v1/orders - 존재하지 않는 상품으로 주문 시도 시 실패")
     fun createOrder_withNonExistentProduct_shouldFail() {
         // given
-        val token = customerToken
         val nonExistentProductId = UUID.randomUUID()
         val request =
             CreateOrderRequest(
@@ -552,7 +463,10 @@ class OrderCommandControllerIntegrationTest {
         mockMvc
             .perform(
                 post("/api/v1/orders")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
@@ -563,7 +477,6 @@ class OrderCommandControllerIntegrationTest {
     @DisplayName("POST /api/v1/orders - 재고 부족 상품 주문 시도 시 실패")
     fun createOrder_withInsufficientStock_shouldFail() {
         // given: 재고가 2개인 상품을 3개 주문 시도
-        val token = customerToken
         val request =
             CreateOrderRequest(
                 storeId = STORE_1,
@@ -581,7 +494,10 @@ class OrderCommandControllerIntegrationTest {
         mockMvc
             .perform(
                 post("/api/v1/orders")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
@@ -594,14 +510,16 @@ class OrderCommandControllerIntegrationTest {
     @DisplayName("PATCH /api/v1/orders/{orderId}/cancel - STOCK_RESERVED 상태 주문 취소 성공")
     fun cancelOrder_withStockReservedStatus_shouldSucceed() {
         // given
-        val token = customerToken
         val request = CancelOrderRequest(cancelReason = "상품이 마음에 들지 않아요")
 
         // when & then
         mockMvc
             .perform(
                 patch("/api/v1/orders/$ORDER_STOCK_RESERVED/cancel")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
@@ -617,14 +535,16 @@ class OrderCommandControllerIntegrationTest {
     @DisplayName("PATCH /api/v1/orders/{orderId}/cancel - PAYMENT_COMPLETED 상태 주문 취소 시도 시 실패")
     fun cancelOrder_withPaymentCompletedStatus_shouldFail() {
         // given: PAYMENT_COMPLETED 이후에는 취소 불가능 (반품/환불만 가능)
-        val token = customerToken
         val request = CancelOrderRequest(cancelReason = "단순 변심")
 
         // when & then
         mockMvc
             .perform(
                 patch("/api/v1/orders/$ORDER_PAYMENT_COMPLETED/cancel")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
@@ -635,14 +555,16 @@ class OrderCommandControllerIntegrationTest {
     @DisplayName("PATCH /api/v1/orders/{orderId}/cancel - 배송 중인 주문(SHIPPED) 취소 시도 시 실패")
     fun cancelOrder_withShippedStatus_shouldFail() {
         // given
-        val token = customerToken
         val request = CancelOrderRequest(cancelReason = "취소하고 싶어요")
 
         // when & then
         mockMvc
             .perform(
                 patch("/api/v1/orders/$ORDER_SHIPPED/cancel")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
@@ -653,7 +575,6 @@ class OrderCommandControllerIntegrationTest {
     @DisplayName("PATCH /api/v1/orders/{orderId}/cancel - 존재하지 않는 주문 취소 시도 시 실패")
     fun cancelOrder_withNonExistentOrder_shouldFail() {
         // given
-        val token = customerToken
         val nonExistentOrderId = UUID.randomUUID()
         val request = CancelOrderRequest(cancelReason = "취소 사유")
 
@@ -661,7 +582,10 @@ class OrderCommandControllerIntegrationTest {
         mockMvc
             .perform(
                 patch("/api/v1/orders/$nonExistentOrderId/cancel")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
@@ -672,14 +596,16 @@ class OrderCommandControllerIntegrationTest {
     @DisplayName("PATCH /api/v1/orders/{orderId}/cancel - 다른 사용자의 주문 취소 시도 시 실패")
     fun cancelOrder_withOtherUsersOrder_shouldFail() {
         // given: CUSTOMER_USER_1이 CUSTOMER_USER_2의 주문 취소 시도
-        val token = customerToken
         val request = CancelOrderRequest(cancelReason = "취소")
 
         // when & then
         mockMvc
             .perform(
                 patch("/api/v1/orders/$ORDER_USER2/cancel")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
@@ -692,14 +618,16 @@ class OrderCommandControllerIntegrationTest {
     @DisplayName("PATCH /api/v1/orders/{orderId}/refund - DELIVERED 상태 주문 환불 성공")
     fun refundOrder_withDeliveredStatus_shouldSucceed() {
         // given
-        val token = customerToken
         val request = RefundOrderRequest(refundReason = "상품이 설명과 달라요")
 
         // when & then
         mockMvc
             .perform(
                 patch("/api/v1/orders/$ORDER_DELIVERED/refund")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
@@ -716,14 +644,16 @@ class OrderCommandControllerIntegrationTest {
     @DisplayName("PATCH /api/v1/orders/{orderId}/refund - PAYMENT_COMPLETED 상태 주문 환불 시도 시 실패")
     fun refundOrder_withPaymentCompletedStatus_shouldFail() {
         // given
-        val token = customerToken
         val request = RefundOrderRequest(refundReason = "환불 요청")
 
         // when & then
         mockMvc
             .perform(
                 patch("/api/v1/orders/$ORDER_PAYMENT_COMPLETED/refund")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
@@ -734,7 +664,6 @@ class OrderCommandControllerIntegrationTest {
     @DisplayName("PATCH /api/v1/orders/{orderId}/refund - 존재하지 않는 주문 환불 시도 시 실패")
     fun refundOrder_withNonExistentOrder_shouldFail() {
         // given
-        val token = customerToken
         val nonExistentOrderId = UUID.randomUUID()
         val request = RefundOrderRequest(refundReason = "환불 사유")
 
@@ -742,7 +671,10 @@ class OrderCommandControllerIntegrationTest {
         mockMvc
             .perform(
                 patch("/api/v1/orders/$nonExistentOrderId/refund")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
@@ -753,14 +685,16 @@ class OrderCommandControllerIntegrationTest {
     @DisplayName("PATCH /api/v1/orders/{orderId}/refund - 다른 사용자의 주문 환불 시도 시 실패")
     fun refundOrder_withOtherUsersOrder_shouldFail() {
         // given: CUSTOMER_USER_1이 CUSTOMER_USER_2의 주문 환불 시도
-        val token = customerToken
         val request = RefundOrderRequest(refundReason = "환불")
 
         // when & then
         mockMvc
             .perform(
                 patch("/api/v1/orders/$ORDER_USER2/refund")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())

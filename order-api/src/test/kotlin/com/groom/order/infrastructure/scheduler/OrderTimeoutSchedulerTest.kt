@@ -26,13 +26,15 @@ class OrderTimeoutSchedulerTest :
         isolationMode = IsolationMode.InstancePerLeaf
 
         Given("만료된 주문이 있는 경우") {
-            val orderRepository = mockk<OrderRepositoryImpl>()
+            val loadOrderPort = mockk<LoadOrderPort>()
+            val saveOrderPort = mockk<SaveOrderPort>()
             val stockReservationService = mockk<StockReservationService>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
 
             val scheduler =
                 OrderTimeoutScheduler(
-                    orderRepository,
+                    loadOrderPort,
+                    saveOrderPort,
                     stockReservationService,
                     domainEventPublisher,
                 )
@@ -58,13 +60,13 @@ class OrderTimeoutSchedulerTest :
                 }
 
             every {
-                orderRepository.findExpiredOrders(
+                loadOrderPort.loadExpiredOrders(
                     statuses = listOf(OrderStatus.PAYMENT_PENDING, OrderStatus.PAYMENT_PROCESSING),
                     expiredAt = any(),
                 )
             } returns listOf(expiredOrder)
             every { stockReservationService.cancelReservation(reservationId) } just runs
-            every { orderRepository.save(any<Order>()) } answers { firstArg() }
+            every { saveOrderPort.save(any<Order>()) } answers { firstArg() }
             every { domainEventPublisher.publish(any()) } just runs
 
             When("스케줄러가 실행되면") {
@@ -76,32 +78,34 @@ class OrderTimeoutSchedulerTest :
                     expiredOrder.failureReason!! shouldStartWith "Payment timeout after"
 
                     verify(exactly = 1) {
-                        orderRepository.findExpiredOrders(
+                        loadOrderPort.loadExpiredOrders(
                             statuses = listOf(OrderStatus.PAYMENT_PENDING, OrderStatus.PAYMENT_PROCESSING),
                             expiredAt = any(),
                         )
                     }
                     verify(exactly = 1) { stockReservationService.cancelReservation(reservationId) }
-                    verify(exactly = 1) { orderRepository.save(expiredOrder) }
+                    verify(exactly = 1) { saveOrderPort.save(expiredOrder) }
                     verify(exactly = 1) { domainEventPublisher.publish(any()) }
                 }
             }
         }
 
         Given("만료된 주문이 없는 경우") {
-            val orderRepository = mockk<OrderRepositoryImpl>()
+            val loadOrderPort = mockk<LoadOrderPort>()
+            val saveOrderPort = mockk<SaveOrderPort>()
             val stockReservationService = mockk<StockReservationService>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
 
             val scheduler =
                 OrderTimeoutScheduler(
-                    orderRepository,
+                    loadOrderPort,
+                    saveOrderPort,
                     stockReservationService,
                     domainEventPublisher,
                 )
 
             every {
-                orderRepository.findExpiredOrders(
+                loadOrderPort.loadExpiredOrders(
                     statuses = listOf(OrderStatus.PAYMENT_PENDING, OrderStatus.PAYMENT_PROCESSING),
                     expiredAt = any(),
                 )
@@ -112,26 +116,28 @@ class OrderTimeoutSchedulerTest :
 
                 Then("아무 처리도 하지 않는다") {
                     verify(exactly = 1) {
-                        orderRepository.findExpiredOrders(
+                        loadOrderPort.loadExpiredOrders(
                             statuses = listOf(OrderStatus.PAYMENT_PENDING, OrderStatus.PAYMENT_PROCESSING),
                             expiredAt = any(),
                         )
                     }
                     verify(exactly = 0) { stockReservationService.cancelReservation(any()) }
-                    verify(exactly = 0) { orderRepository.save(any<Order>()) }
+                    verify(exactly = 0) { saveOrderPort.save(any<Order>()) }
                     verify(exactly = 0) { domainEventPublisher.publish(any()) }
                 }
             }
         }
 
         Given("재고 복구가 실패하는 경우") {
-            val orderRepository = mockk<OrderRepositoryImpl>()
+            val loadOrderPort = mockk<LoadOrderPort>()
+            val saveOrderPort = mockk<SaveOrderPort>()
             val stockReservationService = mockk<StockReservationService>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
 
             val scheduler =
                 OrderTimeoutScheduler(
-                    orderRepository,
+                    loadOrderPort,
+                    saveOrderPort,
                     stockReservationService,
                     domainEventPublisher,
                 )
@@ -157,13 +163,13 @@ class OrderTimeoutSchedulerTest :
                 }
 
             every {
-                orderRepository.findExpiredOrders(
+                loadOrderPort.loadExpiredOrders(
                     statuses = listOf(OrderStatus.PAYMENT_PENDING, OrderStatus.PAYMENT_PROCESSING),
                     expiredAt = any(),
                 )
             } returns listOf(expiredOrder)
             every { stockReservationService.cancelReservation(reservationId) } throws RuntimeException("Redis connection error")
-            every { orderRepository.save(any<Order>()) } answers { firstArg() }
+            every { saveOrderPort.save(any<Order>()) } answers { firstArg() }
             every { domainEventPublisher.publish(any()) } just runs
 
             When("스케줄러가 실행되면") {
@@ -173,20 +179,22 @@ class OrderTimeoutSchedulerTest :
                     expiredOrder.status shouldBe OrderStatus.PAYMENT_TIMEOUT
 
                     verify(exactly = 1) { stockReservationService.cancelReservation(reservationId) }
-                    verify(exactly = 1) { orderRepository.save(expiredOrder) }
+                    verify(exactly = 1) { saveOrderPort.save(expiredOrder) }
                     verify(exactly = 1) { domainEventPublisher.publish(any()) }
                 }
             }
         }
 
         Given("reservationId가 없는 만료된 주문이 있는 경우") {
-            val orderRepository = mockk<OrderRepositoryImpl>()
+            val loadOrderPort = mockk<LoadOrderPort>()
+            val saveOrderPort = mockk<SaveOrderPort>()
             val stockReservationService = mockk<StockReservationService>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
 
             val scheduler =
                 OrderTimeoutScheduler(
-                    orderRepository,
+                    loadOrderPort,
+                    saveOrderPort,
                     stockReservationService,
                     domainEventPublisher,
                 )
@@ -211,12 +219,12 @@ class OrderTimeoutSchedulerTest :
                 }
 
             every {
-                orderRepository.findExpiredOrders(
+                loadOrderPort.loadExpiredOrders(
                     statuses = listOf(OrderStatus.PAYMENT_PENDING, OrderStatus.PAYMENT_PROCESSING),
                     expiredAt = any(),
                 )
             } returns listOf(expiredOrder)
-            every { orderRepository.save(any<Order>()) } answers { firstArg() }
+            every { saveOrderPort.save(any<Order>()) } answers { firstArg() }
             every { domainEventPublisher.publish(any()) } just runs
 
             When("스케줄러가 실행되면") {
@@ -226,7 +234,7 @@ class OrderTimeoutSchedulerTest :
                     expiredOrder.status shouldBe OrderStatus.PAYMENT_TIMEOUT
 
                     verify(exactly = 0) { stockReservationService.cancelReservation(any()) }
-                    verify(exactly = 1) { orderRepository.save(expiredOrder) }
+                    verify(exactly = 1) { saveOrderPort.save(expiredOrder) }
                     verify(exactly = 1) { domainEventPublisher.publish(any()) }
                 }
             }

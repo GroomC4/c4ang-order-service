@@ -41,9 +41,8 @@ class CancelOrderService(
     ): CancelOrderResult {
         // 1. 주문 조회
         val order =
-            orderRepository
-                .findById(command.orderId)
-                .orElseThrow { OrderException.OrderNotFound(command.orderId) }
+            loadOrderPort.loadById(command.orderId)
+                ?: throw OrderException.OrderNotFound(command.orderId)
 
         logger.info { "Cancelling order: ${order.orderNumber}" }
 
@@ -63,7 +62,6 @@ class CancelOrderService(
 
         // 4. 주문 저장 (JPA dirty checking)
         saveOrderPort.save(order)
-        orderRepository.flush()
 
         logger.info { "Order cancelled successfully: ${order.orderNumber}" }
 

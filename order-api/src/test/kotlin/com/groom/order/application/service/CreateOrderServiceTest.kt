@@ -5,7 +5,6 @@ import com.groom.order.common.domain.DomainEventPublisher
 import com.groom.order.common.exception.OrderException
 import com.groom.order.common.exception.ProductException
 import com.groom.order.common.exception.StoreException
-import com.groom.order.common.idempotency.IdempotencyService
 import com.groom.order.application.dto.CreateOrderCommand
 import com.groom.order.domain.model.Order
 import com.groom.order.domain.model.OrderStatus
@@ -38,24 +37,24 @@ class CreateOrderServiceTest :
         isolationMode = IsolationMode.InstancePerLeaf
 
         Given("정상적인 주문 생성 요청") {
-            val orderRepository = mockk<OrderRepositoryImpl>()
+            val loadOrderPort = mockk<LoadOrderPort>()
+            val saveOrderPort = mockk<SaveOrderPort>()
             val productPort = mockk<ProductPort>()
             val storePort = mockk<StorePort>()
             val stockReservationManager = mockk<StockReservationManager>()
             val orderManager = mockk<OrderManager>()
             val orderPolicy = mockk<OrderPolicy>()
-            val idempotencyService = mockk<IdempotencyService>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
 
             val service =
                 CreateOrderService(
-                    orderRepository,
+                    loadOrderPort,
+                    saveOrderPort,
                     productPort,
                     storePort,
                     stockReservationManager,
                     orderManager,
                     orderPolicy,
-                    idempotencyService,
                     domainEventPublisher,
                 )
 
@@ -106,17 +105,14 @@ class CreateOrderServiceTest :
                     items = listOf(orderItem),
                 )
 
-            every { idempotencyService.getOrderId(any()) } returns null // Stripe 방식: 첫 요청이므로 기존 주문 없음
-            every { idempotencyService.ensureIdempotency(any()) } returns true
-            every { idempotencyService.storeOrderId(any(), any(), any()) } just runs // 주문 ID 저장
             every { storePort.existsById(storeId) } returns true
-            every { productPort.findById(productId) } returns mockProduct
+            every { productPort.loadById(productId) } returns mockProduct
             every { orderPolicy.validateProductsBelongToStore(any(), any()) } just runs
             every { stockReservationManager.generateStockReservation(any(), any(), any()) } returns mockStockReservation
             every { stockReservationManager.tryReserve(any()) } returns mockStockReservation
             every { orderManager.createOrder(any(), any(), any(), any(), any(), any(), any(), any()) } returns createdOrder
-            every { orderRepository.save(any<Order>()) } answers { firstArg() }
-            every { orderRepository.flush() } just runs
+            every { saveOrderPort.save(any<Order>()) } answers { firstArg() }
+            
             every { domainEventPublisher.publish(any()) } just runs
 
             val command =
@@ -146,30 +142,28 @@ class CreateOrderServiceTest :
         }
 
         Given("중복 요청인 경우") {
-            val orderRepository = mockk<OrderRepositoryImpl>()
+            val loadOrderPort = mockk<LoadOrderPort>()
+            val saveOrderPort = mockk<SaveOrderPort>()
             val productPort = mockk<ProductPort>()
             val storePort = mockk<StorePort>()
             val stockReservationManager = mockk<StockReservationManager>()
             val orderManager = mockk<OrderManager>()
             val orderPolicy = mockk<OrderPolicy>()
-            val idempotencyService = mockk<IdempotencyService>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
 
             val service =
                 CreateOrderService(
-                    orderRepository,
+                    loadOrderPort,
+                    saveOrderPort,
                     productPort,
                     storePort,
                     stockReservationManager,
                     orderManager,
                     orderPolicy,
-                    idempotencyService,
                     domainEventPublisher,
                 )
 
             // Stripe 방식: getOrderId()로 null 반환 후, ensureIdempotency()도 false, getOrderId()도 null이면 예외 발생
-            every { idempotencyService.getOrderId(any()) } returns null
-            every { idempotencyService.ensureIdempotency(any()) } returns false
 
             val command =
                 CreateOrderCommand(
@@ -197,31 +191,29 @@ class CreateOrderServiceTest :
         }
 
         Given("존재하지 않는 스토어로 주문하는 경우") {
-            val orderRepository = mockk<OrderRepositoryImpl>()
+            val loadOrderPort = mockk<LoadOrderPort>()
+            val saveOrderPort = mockk<SaveOrderPort>()
             val productPort = mockk<ProductPort>()
             val storePort = mockk<StorePort>()
             val stockReservationManager = mockk<StockReservationManager>()
             val orderManager = mockk<OrderManager>()
             val orderPolicy = mockk<OrderPolicy>()
-            val idempotencyService = mockk<IdempotencyService>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
 
             val service =
                 CreateOrderService(
-                    orderRepository,
+                    loadOrderPort,
+                    saveOrderPort,
                     productPort,
                     storePort,
                     stockReservationManager,
                     orderManager,
                     orderPolicy,
-                    idempotencyService,
                     domainEventPublisher,
                 )
 
             val storeId = UUID.randomUUID()
 
-            every { idempotencyService.getOrderId(any()) } returns null
-            every { idempotencyService.ensureIdempotency(any()) } returns true
             every { storePort.existsById(storeId) } returns false
 
             val command =
@@ -250,34 +242,32 @@ class CreateOrderServiceTest :
         }
 
         Given("존재하지 않는 상품으로 주문하는 경우") {
-            val orderRepository = mockk<OrderRepositoryImpl>()
+            val loadOrderPort = mockk<LoadOrderPort>()
+            val saveOrderPort = mockk<SaveOrderPort>()
             val productPort = mockk<ProductPort>()
             val storePort = mockk<StorePort>()
             val stockReservationManager = mockk<StockReservationManager>()
             val orderManager = mockk<OrderManager>()
             val orderPolicy = mockk<OrderPolicy>()
-            val idempotencyService = mockk<IdempotencyService>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
 
             val service =
                 CreateOrderService(
-                    orderRepository,
+                    loadOrderPort,
+                    saveOrderPort,
                     productPort,
                     storePort,
                     stockReservationManager,
                     orderManager,
                     orderPolicy,
-                    idempotencyService,
                     domainEventPublisher,
                 )
 
             val storeId = UUID.randomUUID()
             val productId = UUID.randomUUID()
 
-            every { idempotencyService.getOrderId(any()) } returns null
-            every { idempotencyService.ensureIdempotency(any()) } returns true
             every { storePort.existsById(storeId) } returns true
-            every { productPort.findById(productId) } returns null
+            every { productPort.loadById(productId) } returns null
 
             val command =
                 CreateOrderCommand(
@@ -305,24 +295,24 @@ class CreateOrderServiceTest :
         }
 
         Given("재고가 부족한 경우") {
-            val orderRepository = mockk<OrderRepositoryImpl>()
+            val loadOrderPort = mockk<LoadOrderPort>()
+            val saveOrderPort = mockk<SaveOrderPort>()
             val productPort = mockk<ProductPort>()
             val storePort = mockk<StorePort>()
             val stockReservationManager = mockk<StockReservationManager>()
             val orderManager = mockk<OrderManager>()
             val orderPolicy = mockk<OrderPolicy>()
-            val idempotencyService = mockk<IdempotencyService>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
 
             val service =
                 CreateOrderService(
-                    orderRepository,
+                    loadOrderPort,
+                    saveOrderPort,
                     productPort,
                     storePort,
                     stockReservationManager,
                     orderManager,
                     orderPolicy,
-                    idempotencyService,
                     domainEventPublisher,
                 )
 
@@ -352,10 +342,8 @@ class CreateOrderServiceTest :
                     expiresAt = LocalDateTime.now().plusMinutes(10),
                 )
 
-            every { idempotencyService.getOrderId(any()) } returns null
-            every { idempotencyService.ensureIdempotency(any()) } returns true
             every { storePort.existsById(storeId) } returns true
-            every { productPort.findById(productId) } returns mockProduct
+            every { productPort.loadById(productId) } returns mockProduct
             every { orderPolicy.validateProductsBelongToStore(any(), any()) } just runs
             every { stockReservationManager.generateStockReservation(any(), any(), any()) } returns mockStockReservation
             every { stockReservationManager.tryReserve(any()) } throws OrderException.InsufficientStock(storeId)

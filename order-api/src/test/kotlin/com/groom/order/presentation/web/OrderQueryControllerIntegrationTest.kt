@@ -1,14 +1,12 @@
 package com.groom.order.presentation.web
 
-import com.groom.order.common.util.jwt.AuthorizationData
-import com.groom.order.common.util.jwt.JwtTokenProvider
-import com.groom.order.common.annotation.IntegrationTest
+import com.groom.order.common.util.IstioHeaderExtractor
+import com.groom.platform.testSupport.IntegrationTest
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.http.HttpHeaders
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.SqlGroup
 import org.springframework.test.web.servlet.MockMvc
@@ -26,15 +24,15 @@ import java.util.UUID
  */
 @SqlGroup(
     Sql(
-        scripts = ["/sql/order/cleanup-order-query-controller.sql"],
+        scripts = ["/sql/cleanup-order-query-controller.sql"],
         executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS,
     ),
     Sql(
-        scripts = ["/sql/order/init-order-query-controller.sql"],
+        scripts = ["/sql/init-order-query-controller.sql"],
         executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS,
     ),
     Sql(
-        scripts = ["/sql/order/cleanup-order-query-controller.sql"],
+        scripts = ["/sql/cleanup-order-query-controller.sql"],
         executionPhase = Sql.ExecutionPhase.AFTER_TEST_CLASS,
     ),
 )
@@ -45,9 +43,6 @@ import java.util.UUID
 class OrderQueryControllerIntegrationTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
-
-    @Autowired
-    private lateinit var jwtTokenProvider: JwtTokenProvider
 
     companion object {
         // Test Users
@@ -64,28 +59,21 @@ class OrderQueryControllerIntegrationTest {
         private val ORDER_5_USER2 = UUID.fromString("22222222-2222-2222-2222-000000000001")
     }
 
-    private fun generateCustomerToken(userId: UUID): String {
-        val authData =
-            AuthorizationData(
-                id = userId.toString(),
-                roleName = "CUSTOMER",
-            )
-        return jwtTokenProvider.generateAccessToken(authData)
-    }
-
     // ========== GET /api/v1/orders - 주문 목록 조회 ==========
 
     @Test
     @DisplayName("GET /api/v1/orders - 전체 주문 목록 조회 성공")
     fun listOrders_shouldReturnAllOrders() {
         // given
-        val token = generateCustomerToken(CUSTOMER_USER_1)
 
         // when & then
         mockMvc
             .perform(
                 get("/api/v1/orders")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token"),
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orders").isArray)
@@ -96,13 +84,15 @@ class OrderQueryControllerIntegrationTest {
     @DisplayName("GET /api/v1/orders - 최신 주문이 먼저 표시되는지 확인 (정렬)")
     fun listOrders_shouldReturnOrdersSortedByCreatedAtDesc() {
         // given
-        val token = generateCustomerToken(CUSTOMER_USER_1)
 
         // when & then
         mockMvc
             .perform(
                 get("/api/v1/orders")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token"),
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orders[0].orderId").value(ORDER_1_STOCK_RESERVED.toString())) // 최신 (NOW())
@@ -117,14 +107,16 @@ class OrderQueryControllerIntegrationTest {
     @DisplayName("GET /api/v1/orders?status=PAYMENT_COMPLETED - 상태 필터링 조회 성공")
     fun listOrders_withStatusFilter_shouldReturnFilteredOrders() {
         // given
-        val token = generateCustomerToken(CUSTOMER_USER_1)
 
         // when & then
         mockMvc
             .perform(
                 get("/api/v1/orders")
                     .param("status", "PAYMENT_COMPLETED")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token"),
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orders").isArray)
@@ -137,14 +129,16 @@ class OrderQueryControllerIntegrationTest {
     @DisplayName("GET /api/v1/orders?status=DELIVERED - 배송 완료 주문 조회")
     fun listOrders_withDeliveredStatus_shouldReturnDeliveredOrders() {
         // given
-        val token = generateCustomerToken(CUSTOMER_USER_1)
 
         // when & then
         mockMvc
             .perform(
                 get("/api/v1/orders")
                     .param("status", "DELIVERED")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token"),
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orders.length()").value(1))
@@ -156,14 +150,16 @@ class OrderQueryControllerIntegrationTest {
     @DisplayName("GET /api/v1/orders?status=ORDER_CANCELLED - 취소된 주문 조회")
     fun listOrders_withCancelledStatus_shouldReturnCancelledOrders() {
         // given
-        val token = generateCustomerToken(CUSTOMER_USER_1)
 
         // when & then
         mockMvc
             .perform(
                 get("/api/v1/orders")
                     .param("status", "ORDER_CANCELLED")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token"),
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orders.length()").value(1))
@@ -176,13 +172,13 @@ class OrderQueryControllerIntegrationTest {
     fun listOrders_withNoOrders_shouldReturnEmptyList() {
         // given: 주문이 없는 사용자 (임의의 UUID)
         val userWithNoOrders = UUID.fromString("99999999-9999-9999-9999-999999999999")
-        val token = generateCustomerToken(userWithNoOrders)
 
         // when & then
         mockMvc
             .perform(
                 get("/api/v1/orders")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token"),
+                    .header(IstioHeaderExtractor.USER_ID_HEADER, userWithNoOrders.toString())
+                    .header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orders").isArray)
@@ -195,13 +191,15 @@ class OrderQueryControllerIntegrationTest {
     @DisplayName("GET /api/v1/orders/{orderId} - 주문 상세 조회 성공")
     fun getOrderDetail_shouldReturnOrderDetail() {
         // given
-        val token = generateCustomerToken(CUSTOMER_USER_1)
 
         // when & then
         mockMvc
             .perform(
                 get("/api/v1/orders/$ORDER_1_STOCK_RESERVED")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token"),
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orderId").value(ORDER_1_STOCK_RESERVED.toString()))
@@ -225,13 +223,15 @@ class OrderQueryControllerIntegrationTest {
     @DisplayName("GET /api/v1/orders/{orderId} - 결제 완료된 주문 상세 조회")
     fun getOrderDetail_withPaymentCompleted_shouldIncludePaymentId() {
         // given
-        val token = generateCustomerToken(CUSTOMER_USER_1)
 
         // when & then
         mockMvc
             .perform(
                 get("/api/v1/orders/$ORDER_2_PAYMENT_COMPLETED")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token"),
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orderId").value(ORDER_2_PAYMENT_COMPLETED.toString()))
@@ -247,13 +247,15 @@ class OrderQueryControllerIntegrationTest {
     @DisplayName("GET /api/v1/orders/{orderId} - 배송 완료된 주문 상세 조회")
     fun getOrderDetail_withDelivered_shouldShowDeliveredStatus() {
         // given
-        val token = generateCustomerToken(CUSTOMER_USER_1)
 
         // when & then
         mockMvc
             .perform(
                 get("/api/v1/orders/$ORDER_3_DELIVERED")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token"),
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orderId").value(ORDER_3_DELIVERED.toString()))
@@ -267,13 +269,15 @@ class OrderQueryControllerIntegrationTest {
     @DisplayName("GET /api/v1/orders/{orderId} - 취소된 주문 상세 조회")
     fun getOrderDetail_withCancelled_shouldIncludeCancelReason() {
         // given
-        val token = generateCustomerToken(CUSTOMER_USER_1)
 
         // when & then
         mockMvc
             .perform(
                 get("/api/v1/orders/$ORDER_4_CANCELLED")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token"),
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orderId").value(ORDER_4_CANCELLED.toString()))
@@ -286,13 +290,15 @@ class OrderQueryControllerIntegrationTest {
     fun getOrderDetail_withNonExistentOrder_shouldReturn404() {
         // given
         val nonExistentOrderId = UUID.fromString("99999999-9999-9999-9999-999999999999")
-        val token = generateCustomerToken(CUSTOMER_USER_1)
 
         // when & then
         mockMvc
             .perform(
                 get("/api/v1/orders/$nonExistentOrderId")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token"),
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isNotFound)
     }
@@ -301,13 +307,15 @@ class OrderQueryControllerIntegrationTest {
     @DisplayName("GET /api/v1/orders/{orderId} - 다른 사용자의 주문 조회 시도 시 접근 거부")
     fun getOrderDetail_withOtherUsersOrder_shouldBeForbidden() {
         // given: CUSTOMER_USER_1이 CUSTOMER_USER_2의 주문(ORDER_5)을 조회 시도
-        val token = generateCustomerToken(CUSTOMER_USER_1)
 
         // when & then
         mockMvc
             .perform(
                 get("/api/v1/orders/$ORDER_5_USER2")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token"),
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isForbidden) // 또는 404 (구현에 따라)
     }

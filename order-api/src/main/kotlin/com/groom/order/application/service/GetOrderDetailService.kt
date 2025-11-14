@@ -32,9 +32,8 @@ class GetOrderDetailService(
     fun getOrderDetail(query: GetOrderDetailQuery): GetOrderDetailResult {
         // 1. 주문 조회 (인프라 접근)
         val order =
-            orderRepository
-                .findById(query.orderId)
-                .orElseThrow { OrderException.OrderNotFound(query.orderId) }
+            loadOrderPort.loadById(query.orderId)
+                ?: throw OrderException.OrderNotFound(query.orderId)
 
         logger.info { "Retrieving order detail: ${order.orderNumber}" }
 

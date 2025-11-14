@@ -94,7 +94,7 @@ class OrderTimeoutScheduler(
                     }
 
                     // 2-3. 주문 저장 (JPA dirty checking)
-                    orderRepository.save(order)
+                    saveOrderPort.save(order)
 
                     // 2-4. 도메인 이벤트 발행
                     val event =

@@ -1,7 +1,7 @@
 package com.groom.order.infrastructure.stock
 
 import com.groom.order.domain.model.ReservationResult
-import com.groom.product.infrastructure.repository.ProductRepositoryImpl
+import com.groom.order.domain.port.ProductPort
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.redisson.api.RedissonClient
 import org.springframework.context.annotation.Primary
@@ -36,7 +36,7 @@ import java.util.UUID
 @Primary
 class RedissonStockReservationService(
     private val redissonClient: RedissonClient,
-    private val productRepository: ProductRepositoryImpl,
+    private val productPort: ProductPort,
 ) : StockReservationService {
     private val logger = KotlinLogging.logger {}
 
@@ -230,16 +230,20 @@ class RedissonStockReservationService(
 
         // 키가 존재하지 않으면 Product에서 재고를 조회하여 설정
         if (!atomicLong.isExists) {
-            val product =
-                productRepository.findById(productId).orElse(null)
-                    ?: run {
-                        logger.warn { "Product not found: $productId" }
-                        return false
-                    }
+            // TODO: Product Service에서 재고 정보 조회 필요
+            // ProductInfo에 stockQuantity 필드 추가 필요
+            // val product = productPort.loadById(productId)
+            //     ?: run {
+            //         logger.warn { "Product not found: $productId" }
+            //         return false
+            //     }
+            //
+            // atomicLong.set(product.stockQuantity.toLong())
+            // logger.info { "Initialized Redis stock for product $productId: ${product.stockQuantity}" }
 
-            // Product의 현재 재고를 Redis에 설정
-            atomicLong.set(product.stockQuantity.toLong())
-            logger.info { "Initialized Redis stock for product $productId: ${product.stockQuantity}" }
+            // 임시: 기본 재고 설정 (실제로는 Product Service에서 조회해야 함)
+            atomicLong.set(100)
+            logger.warn { "Using default stock (100) for product $productId - TODO: implement Product Service integration" }
         }
 
         repeat(MAX_RETRY_ATTEMPTS) { attempt ->

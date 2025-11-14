@@ -57,13 +57,20 @@ logging:
 
 feign:
   clients:
+    product-service:
+      url: http://localhost:8083
+      connect-timeout: 10000
+      read-timeout: 10000
+      logger-level: full
     store-service:
-      url: http://localhost:8082
+      url: http://localhost:8084
       connect-timeout: 10000
       read-timeout: 10000
       logger-level: full
   client:
     config:
+      product-service:
+        loggerLevel: full
       store-service:
         loggerLevel: full
 

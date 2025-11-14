@@ -50,7 +50,7 @@ class StockReservedEventHandler(
                 updatedAt = event.occurredAt,
             )
 
-        saveStockReservationLogPort.save(StockReservationLogJpaEntity.from(stockReservationLog))
+        saveStockReservationLogPort.save(stockReservationLog)
         logger.info { "Stock reservation log saved: reservationId=${event.reservationId}" }
 
         // 2. 주문 감사 로그 기록

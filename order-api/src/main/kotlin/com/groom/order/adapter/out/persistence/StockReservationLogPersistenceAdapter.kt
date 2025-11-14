@@ -15,31 +15,8 @@ class StockReservationLogPersistenceAdapter(
     private val stockReservationLogJpaRepository: StockReservationLogJpaRepository,
 ) : SaveStockReservationLogPort {
     override fun save(log: StockReservationLog): StockReservationLog {
-        val entity = log.toEntity()
+        val entity = StockReservationLogJpaEntity.from(log)
         val savedEntity = stockReservationLogJpaRepository.save(entity)
         return savedEntity.toDomain()
     }
 }
-
-// Extension functions for entity-domain conversion
-private fun StockReservationLog.toEntity(): StockReservationLogJpaEntity =
-    StockReservationLogJpaEntity(
-        id = this.id,
-        reservationId = this.reservationId,
-        orderId = this.orderId,
-        storeId = this.storeId,
-        products = this.products,
-        status = this.status,
-        expiresAt = this.expiresAt,
-    )
-
-private fun StockReservationLogJpaEntity.toDomain(): StockReservationLog =
-    StockReservationLog(
-        id = this.id,
-        reservationId = this.reservationId,
-        orderId = this.orderId,
-        storeId = this.storeId,
-        products = this.products,
-        status = this.status,
-        expiresAt = this.expiresAt,
-    )

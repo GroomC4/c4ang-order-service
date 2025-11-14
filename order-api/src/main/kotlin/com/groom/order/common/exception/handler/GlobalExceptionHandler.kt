@@ -9,7 +9,7 @@ import com.groom.order.common.exception.RefreshTokenException
 import com.groom.order.common.exception.ResourceException
 import com.groom.order.common.exception.StoreException
 import com.groom.order.common.exception.UserException
-import com.groom.product.domain.port.ProductDescriptionGenerationException
+// import com.groom.product.domain.port.ProductDescriptionGenerationException
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -357,36 +357,37 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         )
     }
 
-    /**
-     * AI 상품 설명 생성 관련 예외 처리
-     *
-     * 발생 위치:
-     * - GenerateProductDescriptionService.generate(): PromptTooLong, InvalidPrompt, ServiceUnavailable
-     */
-    @ExceptionHandler(ProductDescriptionGenerationException::class)
-    fun handleProductDescriptionGenerationException(e: ProductDescriptionGenerationException): ResponseEntity<ErrorResponse> {
-        val (errorCode, httpStatus) =
-            when (e) {
-                is ProductDescriptionGenerationException.PromptTooLong -> {
-                    logger.warn(e) { "Prompt too long: actualLength=${e.actualLength}, maxLength=${e.maxLength}" }
-                    ErrorCode.PROMPT_TOO_LONG to HttpStatus.BAD_REQUEST
-                }
-                is ProductDescriptionGenerationException.InvalidPrompt -> {
-                    logger.warn(e) { "Invalid product description prompt: ${e.prompt}" }
-                    ErrorCode.INVALID_PRODUCT_DESCRIPTION_PROMPT to HttpStatus.BAD_REQUEST
-                }
-                is ProductDescriptionGenerationException.ServiceUnavailable -> {
-                    logger.error(e) { "AI service unavailable" }
-                    ErrorCode.PRODUCT_DESCRIPTION_GENERATION_FAILED to HttpStatus.SERVICE_UNAVAILABLE
-                }
-            }
-
-        return ResponseEntity(
-            ErrorResponse(
-                code = errorCode,
-                message = e.message ?: "AI 상품 설명 생성에 실패하였습니다.",
-            ),
-            httpStatus,
-        )
-    }
+    // TODO: Product 도메인 의존성 제거 - MSA 환경에서는 필요 없음
+    // /**
+    //  * AI 상품 설명 생성 관련 예외 처리
+    //  *
+    //  * 발생 위치:
+    //  * - GenerateProductDescriptionService.generate(): PromptTooLong, InvalidPrompt, ServiceUnavailable
+    //  */
+    // @ExceptionHandler(ProductDescriptionGenerationException::class)
+    // fun handleProductDescriptionGenerationException(e: ProductDescriptionGenerationException): ResponseEntity<ErrorResponse> {
+    //     val (errorCode, httpStatus) =
+    //         when (e) {
+    //             is ProductDescriptionGenerationException.PromptTooLong -> {
+    //                 logger.warn(e) { "Prompt too long: actualLength=${e.actualLength}, maxLength=${e.maxLength}" }
+    //                 ErrorCode.PROMPT_TOO_LONG to HttpStatus.BAD_REQUEST
+    //             }
+    //             is ProductDescriptionGenerationException.InvalidPrompt -> {
+    //                 logger.warn(e) { "Invalid product description prompt: ${e.prompt}" }
+    //                 ErrorCode.INVALID_PRODUCT_DESCRIPTION_PROMPT to HttpStatus.BAD_REQUEST
+    //             }
+    //             is ProductDescriptionGenerationException.ServiceUnavailable -> {
+    //                 logger.error(e) { "AI service unavailable" }
+    //                 ErrorCode.PRODUCT_DESCRIPTION_GENERATION_FAILED to HttpStatus.SERVICE_UNAVAILABLE
+    //             }
+    //         }
+    //
+    //     return ResponseEntity(
+    //         ErrorResponse(
+    //             code = errorCode,
+    //             message = e.message ?: "AI 상품 설명 생성에 실패하였습니다.",
+    //         ),
+    //         httpStatus,
+    //     )
+    // }
 }

@@ -48,6 +48,10 @@ dependencies {
     // Redisson (Redis 클라이언트 with 원자적 연산 지원)
     implementation("org.redisson:redisson-spring-boot-starter:3.24.3")
 
+    // ShedLock (분산 스케줄러 락)
+    implementation("net.javacrumbs.shedlock:shedlock-spring:5.10.0")
+    implementation("net.javacrumbs.shedlock:shedlock-provider-redis-spring:5.10.0")
+
     // Database
     runtimeOnly("org.postgresql:postgresql")
     implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.7.3")

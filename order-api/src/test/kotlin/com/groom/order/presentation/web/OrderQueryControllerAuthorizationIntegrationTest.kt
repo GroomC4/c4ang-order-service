@@ -1,6 +1,6 @@
 package com.groom.order.presentation.web
 
-import com.groom.order.common.annotation.IntegrationTest
+import com.groom.platform.testSupport.IntegrationTest
 import org.hamcrest.CoreMatchers.not
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -77,7 +77,7 @@ class OrderQueryControllerAuthorizationIntegrationTest {
                     .header(ISTIO_USER_ID_HEADER, SELLER_USER_ID.toString())
                     .header(ISTIO_USER_ROLE_HEADER, "SELLER"),
             ).andDo(print())
-            .andExpect(status().is(not(401))).andExpect(status().is(not(403)))
+            .andExpect(status().`is`(not(401))).andExpect(status().`is`(not(403)))
     }
 
     @Test
@@ -136,6 +136,6 @@ class OrderQueryControllerAuthorizationIntegrationTest {
                     .header(ISTIO_USER_ID_HEADER, SELLER_USER_ID.toString())
                     .header(ISTIO_USER_ROLE_HEADER, "SELLER"),
             ).andDo(print())
-            .andExpect(status().is(not(401))).andExpect(status().is(not(403)))
+            .andExpect(status().`is`(not(401))).andExpect(status().`is`(not(403)))
     }
 }
