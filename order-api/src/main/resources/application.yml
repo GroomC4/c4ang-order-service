@@ -1,0 +1,91 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: order-api
+  jpa:
+    hibernate:
+      ddl-auto: none
+      naming:
+        implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+    properties:
+      hibernate:
+        format_sql: true  # SQL 포맷팅 (logback에서 레벨 제어)
+    show-sql: false  # Console SQL 출력 비활성화 (logback으로 제어)
+
+# ====================================
+# 기본 로그 레벨 (프로필 미지정 시)
+# ====================================
+logging:
+  level:
+    # ROOT 레벨 - INFO (기본값)
+    root: INFO
+
+    # 프로젝트 패키지 - INFO 레벨
+    com.groom.ecommerce: INFO
+
+    # Spring Framework - INFO
+    org.springframework: INFO
+    org.springframework.web: INFO
+    org.springframework.security: INFO
+
+    # Hibernate/JPA - WARN (기본값)
+    org.hibernate: WARN
+    org.hibernate.SQL: WARN
+
+  file:
+    path: ./logs  # 로그 파일 저장 경로
+
+encryption:
+  encoder:
+    bcrypt-strength: 10
+
+security:
+  jwt:
+    secret: local-development-secret-please-change
+    issuer: ecommerce-service-api
+    accessTokenExpirationMinutes: 5
+    refreshTokenExpirationDays: 3
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui
+
+# Feign Client 설정 (FeignClientProperties로 관리)
+feign:
+  clients:
+    store-service:
+      url: http://localhost:8082
+      connect-timeout: 5000
+      read-timeout: 5000
+      logger-level: basic
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 5000
+        loggerLevel: basic
+
+# Kafka Producer 설정
+kafka:
+  bootstrap-servers: localhost:9092
+  producer:
+    acks: all
+    retries: 3
+    batch-size: 16384
+    linger-ms: 10
+    buffer-memory: 33554432
+    max-in-flight-requests-per-connection: 5
+    enable-idempotence: true
+    compression-type: snappy
+    key-serializer: org.apache.kafka.common.serialization.StringSerializer
+    value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+  schema-registry:
+    url: http://localhost:8081
+  topics:
+    store-info-updated: store.info.updated
+    store-deleted: store.deleted
