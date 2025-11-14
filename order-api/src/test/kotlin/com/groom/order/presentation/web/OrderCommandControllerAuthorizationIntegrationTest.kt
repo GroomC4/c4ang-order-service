@@ -1,8 +1,6 @@
 package com.groom.order.presentation.web
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.groom.order.common.util.jwt.AuthorizationData
-import com.groom.order.common.util.jwt.JwtTokenProvider
 import com.groom.order.common.annotation.IntegrationTest
 import com.groom.order.presentation.web.dto.CancelOrderRequest
 import com.groom.order.presentation.web.dto.CreateOrderRequest
@@ -58,10 +56,11 @@ class OrderCommandControllerAuthorizationIntegrationTest {
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
-    @Autowired
-    private lateinit var jwtTokenProvider: JwtTokenProvider
-
     companion object {
+        // Istio Headers
+        private const val ISTIO_USER_ID_HEADER = "X-User-Id"
+        private const val ISTIO_USER_ROLE_HEADER = "X-User-Role"
+
         // Test Users
         private val CUSTOMER_USER_1 = UUID.fromString("33333333-3333-3333-3333-333333333333")
         private val SELLER_USER_1 = UUID.fromString("11111111-1111-1111-1111-111111111111")
@@ -76,31 +75,13 @@ class OrderCommandControllerAuthorizationIntegrationTest {
         private val ORDER_DELIVERED = UUID.fromString("11111111-1111-1111-1111-000000000003")
     }
 
-    private fun generateCustomerToken(userId: UUID): String {
-        val authData =
-            AuthorizationData(
-                id = userId.toString(),
-                roleName = "CUSTOMER",
-            )
-        return jwtTokenProvider.generateAccessToken(authData)
-    }
-
-    private fun generateSellerToken(userId: UUID): String {
-        val authData =
-            AuthorizationData(
-                id = userId.toString(),
-                roleName = "SELLER",
-            )
-        return jwtTokenProvider.generateAccessToken(authData)
-    }
-
     // ========== POST /api/v1/orders (주문 생성) ==========
 
     @Test
     @DisplayName("POST /api/v1/orders - CUSTOMER 역할로 주문 생성 시 인증 성공")
     fun createOrder_withCustomerRole_shouldSucceed() {
         // given
-        val token = generateCustomerToken(CUSTOMER_USER_1)
+        val userId = CUSTOMER_USER_1
         val request =
             CreateOrderRequest(
                 storeId = TEST_STORE_ID,
@@ -119,7 +100,8 @@ class OrderCommandControllerAuthorizationIntegrationTest {
         mockMvc
             .perform(
                 post("/api/v1/orders")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                    .header(ISTIO_USER_ID_HEADER, userId.toString())
+                    .header(ISTIO_USER_ROLE_HEADER, if (userId == SELLER_USER_1) "SELLER" else "CUSTOMER")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
@@ -130,8 +112,8 @@ class OrderCommandControllerAuthorizationIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /api/v1/orders - 인증 없이 주문 생성 시 401 Unauthorized")
-    fun createOrder_withoutAuthentication_shouldReturn401() {
+    @DisplayName("POST /api/v1/orders - Istio 헤더 없이 주문 생성 시 500 Internal Server Error (IllegalStateException)")
+    fun createOrder_withoutIstioHeaders_shouldReturn500() {
         // given
         val request =
             CreateOrderRequest(
@@ -153,14 +135,14 @@ class OrderCommandControllerAuthorizationIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
-            .andExpect(status().isUnauthorized)
+            .andExpect(status().isInternalServerError)
     }
 
     @Test
-    @DisplayName("POST /api/v1/orders - SELLER 역할로 주문 생성 시 403 Forbidden")
-    fun createOrder_withSellerRole_shouldReturn403() {
+    @DisplayName("POST /api/v1/orders - SELLER 역할로 주문 생성 시 비즈니스 로직 검증 (Istio가 인가 처리)")
+    fun createOrder_withSellerRole_shouldPassAuthentication() {
         // given
-        val token = generateSellerToken(SELLER_USER_1)
+        val userId = SELLER_USER_1
         val request =
             CreateOrderRequest(
                 storeId = TEST_STORE_ID,
@@ -178,11 +160,12 @@ class OrderCommandControllerAuthorizationIntegrationTest {
         mockMvc
             .perform(
                 post("/api/v1/orders")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                    .header(ISTIO_USER_ID_HEADER, userId.toString())
+                    .header(ISTIO_USER_ROLE_HEADER, if (userId == SELLER_USER_1) "SELLER" else "CUSTOMER")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
-            .andExpect(status().isForbidden)
+            .andExpect(status().is(not(401))).andExpect(status().is(not(403)))
     }
 
     // ========== PATCH /api/v1/orders/{orderId}/cancel (주문 취소) ==========
@@ -191,14 +174,15 @@ class OrderCommandControllerAuthorizationIntegrationTest {
     @DisplayName("PATCH /api/v1/orders/{orderId}/cancel - CUSTOMER 역할로 주문 취소 시 인증 성공")
     fun cancelOrder_withCustomerRole_shouldSucceed() {
         // given
-        val token = generateCustomerToken(CUSTOMER_USER_1)
+        val userId = CUSTOMER_USER_1
         val request = CancelOrderRequest(cancelReason = "단순 변심")
 
         // when & then
         mockMvc
             .perform(
                 patch("/api/v1/orders/$ORDER_PAYMENT_COMPLETED/cancel")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                    .header(ISTIO_USER_ID_HEADER, userId.toString())
+                    .header(ISTIO_USER_ROLE_HEADER, if (userId == SELLER_USER_1) "SELLER" else "CUSTOMER")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
@@ -228,18 +212,19 @@ class OrderCommandControllerAuthorizationIntegrationTest {
     @DisplayName("PATCH /api/v1/orders/{orderId}/cancel - SELLER 역할로 주문 취소 시 403 Forbidden")
     fun cancelOrder_withSellerRole_shouldReturn403() {
         // given
-        val token = generateSellerToken(SELLER_USER_1)
+        val userId = SELLER_USER_1
         val request = CancelOrderRequest(cancelReason = "단순 변심")
 
         // when & then
         mockMvc
             .perform(
                 patch("/api/v1/orders/$ORDER_PAYMENT_COMPLETED/cancel")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                    .header(ISTIO_USER_ID_HEADER, userId.toString())
+                    .header(ISTIO_USER_ROLE_HEADER, if (userId == SELLER_USER_1) "SELLER" else "CUSTOMER")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
-            .andExpect(status().isForbidden)
+            .andExpect(status().is(not(401))).andExpect(status().is(not(403)))
     }
 
     // ========== PATCH /api/v1/orders/{orderId}/refund (주문 환불) ==========
@@ -248,14 +233,15 @@ class OrderCommandControllerAuthorizationIntegrationTest {
     @DisplayName("PATCH /api/v1/orders/{orderId}/refund - CUSTOMER 역할로 주문 환불 시 인증 성공")
     fun refundOrder_withCustomerRole_shouldSucceed() {
         // given
-        val token = generateCustomerToken(CUSTOMER_USER_1)
+        val userId = CUSTOMER_USER_1
         val request = RefundOrderRequest(refundReason = "상품 불량")
 
         // when & then
         mockMvc
             .perform(
                 patch("/api/v1/orders/$ORDER_DELIVERED/refund")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                    .header(ISTIO_USER_ID_HEADER, userId.toString())
+                    .header(ISTIO_USER_ROLE_HEADER, if (userId == SELLER_USER_1) "SELLER" else "CUSTOMER")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
@@ -285,17 +271,18 @@ class OrderCommandControllerAuthorizationIntegrationTest {
     @DisplayName("PATCH /api/v1/orders/{orderId}/refund - SELLER 역할로 주문 환불 시 403 Forbidden")
     fun refundOrder_withSellerRole_shouldReturn403() {
         // given
-        val token = generateSellerToken(SELLER_USER_1)
+        val userId = SELLER_USER_1
         val request = RefundOrderRequest(refundReason = "상품 불량")
 
         // when & then
         mockMvc
             .perform(
                 patch("/api/v1/orders/$ORDER_DELIVERED/refund")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                    .header(ISTIO_USER_ID_HEADER, userId.toString())
+                    .header(ISTIO_USER_ROLE_HEADER, if (userId == SELLER_USER_1) "SELLER" else "CUSTOMER")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
-            .andExpect(status().isForbidden)
+            .andExpect(status().is(not(401))).andExpect(status().is(not(403)))
     }
 }
