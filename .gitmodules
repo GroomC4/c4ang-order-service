@@ -1,0 +1,6 @@
+[submodule "c4ang-platform-core"]
+	path = c4ang-platform-core
+	url = git@github.com:GroomC4/c4ang-platform-core.git
+[submodule "c4ang-contract-hub"]
+	path = c4ang-contract-hub
+	url = git@github.com:GroomC4/c4ang-contract-hub.git
