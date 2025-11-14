@@ -16,7 +16,8 @@ import java.util.UUID
 @Component
 class OrderPersistenceAdapter(
     private val orderJpaRepository: OrderJpaRepository,
-) : LoadOrderPort, SaveOrderPort {
+) : LoadOrderPort,
+    SaveOrderPort {
     override fun loadById(id: UUID): Order? = orderJpaRepository.findById(id).orElse(null)
 
     override fun loadByOrderNumber(orderNumber: String): Order? = orderJpaRepository.findByOrderNumber(orderNumber).orElse(null)

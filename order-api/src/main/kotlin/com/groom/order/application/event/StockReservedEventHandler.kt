@@ -5,9 +5,9 @@ import com.groom.order.domain.model.OrderAuditEventType
 import com.groom.order.domain.model.ProductReservation
 import com.groom.order.domain.model.StockReservationLog
 import com.groom.order.domain.model.StockReservationStatus
+import com.groom.order.domain.port.SaveStockReservationLogPort
 import com.groom.order.domain.service.OrderAuditRecorder
 import com.groom.order.infrastructure.persistence.StockReservationLogJpaEntity
-import com.groom.order.domain.port.SaveStockReservationLogPort
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Propagation

@@ -1,15 +1,15 @@
 package com.groom.order.application.service
 
+import com.groom.order.application.dto.RefundOrderCommand
 import com.groom.order.common.annotation.UnitTest
 import com.groom.order.common.domain.DomainEventPublisher
 import com.groom.order.common.exception.OrderException
-import com.groom.order.application.dto.RefundOrderCommand
 import com.groom.order.domain.model.Order
 import com.groom.order.domain.model.OrderStatus
-import com.groom.order.domain.service.OrderManager
-import com.groom.order.fixture.OrderTestFixture
 import com.groom.order.domain.port.LoadOrderPort
 import com.groom.order.domain.port.SaveOrderPort
+import com.groom.order.domain.service.OrderManager
+import com.groom.order.fixture.OrderTestFixture
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.BehaviorSpec
@@ -67,7 +67,7 @@ class RefundOrderServiceTest :
             every { loadOrderPort.loadById(orderId) } returns order
             every { orderManager.validateRefund(any<Order>(), any<UUID>()) } just runs
             every { saveOrderPort.save(any<Order>()) } answers { firstArg() }
-            
+
             every { domainEventPublisher.publish(any()) } just runs
 
             When("환불을 요청하면") {

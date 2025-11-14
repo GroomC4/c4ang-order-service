@@ -1,16 +1,16 @@
 package com.groom.order.application.service
 
+import com.groom.order.application.dto.CancelOrderCommand
 import com.groom.order.common.annotation.UnitTest
 import com.groom.order.common.domain.DomainEventPublisher
 import com.groom.order.common.exception.OrderException
-import com.groom.order.application.dto.CancelOrderCommand
 import com.groom.order.domain.event.OrderCancelledEvent
 import com.groom.order.domain.model.Order
 import com.groom.order.domain.model.OrderStatus
-import com.groom.order.domain.service.OrderManager
-import com.groom.order.fixture.OrderTestFixture
 import com.groom.order.domain.port.LoadOrderPort
 import com.groom.order.domain.port.SaveOrderPort
+import com.groom.order.domain.service.OrderManager
+import com.groom.order.fixture.OrderTestFixture
 import com.groom.order.infrastructure.stock.StockReservationService
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
@@ -82,7 +82,7 @@ class CancelOrderServiceTest :
             }
             every { stockReservationService.cancelReservation(reservationId) } just runs
             every { saveOrderPort.save(any()) } answers { firstArg() }
-            
+
             every { domainEventPublisher.publish(any()) } just runs
 
             When("주문을 취소하면") {

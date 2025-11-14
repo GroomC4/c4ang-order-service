@@ -1,13 +1,12 @@
 package com.groom.order.presentation.web
 
-import com.groom.order.common.util.IstioHeaderExtractor
 import com.groom.order.application.dto.CancelOrderCommand
-import jakarta.servlet.http.HttpServletRequest
 import com.groom.order.application.dto.CreateOrderCommand
 import com.groom.order.application.dto.RefundOrderCommand
 import com.groom.order.application.service.CancelOrderService
 import com.groom.order.application.service.CreateOrderService
 import com.groom.order.application.service.RefundOrderService
+import com.groom.order.common.util.IstioHeaderExtractor
 import com.groom.order.presentation.web.dto.CancelOrderRequest
 import com.groom.order.presentation.web.dto.CancelOrderResponse
 import com.groom.order.presentation.web.dto.CreateOrderRequest
@@ -19,6 +18,7 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.PatchMapping
@@ -62,6 +62,7 @@ class OrderCommandController(
      * @param request 주문 생성 요청
      * @return 생성된 주문 정보 (orderId, reservationId, expiresAt 포함)
      */
+    // Istio Gateway handles authorization
     @Operation(summary = "주문 생성", description = "새로운 주문을 생성하고 재고를 예약합니다.")
     @ApiResponses(
         value = [
@@ -75,7 +76,6 @@ class OrderCommandController(
     )
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    // Istio Gateway handles authorization
     fun createOrder(
         @Valid @RequestBody request: CreateOrderRequest,
         httpRequest: HttpServletRequest,
@@ -124,6 +124,7 @@ class OrderCommandController(
      * @param request 취소 사유
      * @return 취소된 주문 정보
      */
+    // Istio Gateway handles authorization
     @Operation(summary = "주문 취소", description = "주문을 취소하고 재고 예약을 복구합니다.")
     @ApiResponses(
         value = [
@@ -135,7 +136,6 @@ class OrderCommandController(
         ],
     )
     @PatchMapping("/{orderId}/cancel")
-    // Istio Gateway handles authorization
     fun cancelOrder(
         @PathVariable orderId: UUID,
         @Valid @RequestBody request: CancelOrderRequest,
@@ -178,6 +178,7 @@ class OrderCommandController(
      * @param request 환불 사유
      * @return 환불된 주문 정보 (refundId, refundAmount 포함)
      */
+    // Istio Gateway handles authorization
     @Operation(summary = "주문 환불", description = "배송 완료된 주문을 환불 처리합니다.")
     @ApiResponses(
         value = [
@@ -189,7 +190,6 @@ class OrderCommandController(
         ],
     )
     @PatchMapping("/{orderId}/refund")
-    // Istio Gateway handles authorization
     fun refundOrder(
         @PathVariable orderId: UUID,
         @Valid @RequestBody request: RefundOrderRequest,

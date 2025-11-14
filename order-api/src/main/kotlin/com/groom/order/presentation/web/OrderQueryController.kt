@@ -1,11 +1,10 @@
 package com.groom.order.presentation.web
 
-import com.groom.order.common.util.IstioHeaderExtractor
 import com.groom.order.application.dto.GetOrderDetailQuery
-import jakarta.servlet.http.HttpServletRequest
 import com.groom.order.application.dto.ListOrdersQuery
 import com.groom.order.application.service.GetOrderDetailService
 import com.groom.order.application.service.ListOrdersService
+import com.groom.order.common.util.IstioHeaderExtractor
 import com.groom.order.domain.model.OrderStatus
 import com.groom.order.presentation.web.dto.GetOrderDetailResponse
 import com.groom.order.presentation.web.dto.ListOrdersResponse
@@ -14,6 +13,7 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -49,6 +49,7 @@ class OrderQueryController(
      * @param status 주문 상태 필터 (선택 사항)
      * @return 주문 목록 (주문번호, 상태, 총액, 상품 개수, 생성일시 포함)
      */
+    // Istio Gateway handles authorization
     @Operation(summary = "주문 목록 조회", description = "현재 사용자의 주문 목록을 조회합니다. 상태별 필터링이 가능합니다.")
     @ApiResponses(
         value = [
@@ -58,7 +59,6 @@ class OrderQueryController(
         ],
     )
     @GetMapping
-    // Istio Gateway handles authorization
     fun listOrders(
         @RequestParam(required = false) status: OrderStatus?,
         httpRequest: HttpServletRequest,
@@ -92,6 +92,7 @@ class OrderQueryController(
      * @param orderId 주문 ID
      * @return 주문 상세 정보 (주문 항목, 재고 예약 ID, 결제 ID, 환불 ID, 만료 시각 등 포함)
      */
+    // Istio Gateway handles authorization
     @Operation(summary = "주문 상세 조회", description = "주문의 상세 정보를 조회합니다. 주문 항목, 결제, 환불 정보가 포함됩니다.")
     @ApiResponses(
         value = [
@@ -102,7 +103,6 @@ class OrderQueryController(
         ],
     )
     @GetMapping("/{orderId}")
-    // Istio Gateway handles authorization
     fun getOrderDetail(
         @PathVariable orderId: UUID,
         httpRequest: HttpServletRequest,

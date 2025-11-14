@@ -1,14 +1,14 @@
 package com.groom.order.application.service
 
+import com.groom.order.application.dto.GetOrderDetailQuery
 import com.groom.order.common.annotation.UnitTest
 import com.groom.order.common.exception.OrderException
-import com.groom.order.application.dto.GetOrderDetailQuery
 import com.groom.order.domain.model.Order
 import com.groom.order.domain.model.OrderStatus
-import com.groom.order.domain.service.OrderPolicy
-import com.groom.order.fixture.OrderTestFixture
 import com.groom.order.domain.port.LoadOrderPort
 import com.groom.order.domain.port.SaveOrderPort
+import com.groom.order.domain.service.OrderPolicy
+import com.groom.order.fixture.OrderTestFixture
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.BehaviorSpec
@@ -30,8 +30,12 @@ class GetOrderDetailServiceTest :
             val loadOrderPort = mockk<LoadOrderPort>()
             val saveOrderPort = mockk<SaveOrderPort>()
             val orderPolicy = mockk<OrderPolicy>()
-            val service = GetOrderDetailService(loadOrderPort,
-                    saveOrderPort, orderPolicy)
+            val service =
+                GetOrderDetailService(
+                    loadOrderPort,
+                    saveOrderPort,
+                    orderPolicy,
+                )
 
             val orderId = UUID.randomUUID()
             val userId = UUID.randomUUID()
@@ -82,8 +86,12 @@ class GetOrderDetailServiceTest :
             val loadOrderPort = mockk<LoadOrderPort>()
             val saveOrderPort = mockk<SaveOrderPort>()
             val orderPolicy = mockk<OrderPolicy>()
-            val service = GetOrderDetailService(loadOrderPort,
-                    saveOrderPort, orderPolicy)
+            val service =
+                GetOrderDetailService(
+                    loadOrderPort,
+                    saveOrderPort,
+                    orderPolicy,
+                )
 
             val orderId = UUID.randomUUID()
             val orderOwnerId = UUID.randomUUID()
@@ -118,8 +126,12 @@ class GetOrderDetailServiceTest :
             val loadOrderPort = mockk<LoadOrderPort>()
             val saveOrderPort = mockk<SaveOrderPort>()
             val orderPolicy = mockk<OrderPolicy>()
-            val service = GetOrderDetailService(loadOrderPort,
-                    saveOrderPort, orderPolicy)
+            val service =
+                GetOrderDetailService(
+                    loadOrderPort,
+                    saveOrderPort,
+                    orderPolicy,
+                )
 
             val orderId = UUID.randomUUID()
             val userId = UUID.randomUUID()

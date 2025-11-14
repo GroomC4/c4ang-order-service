@@ -1,23 +1,23 @@
 package com.groom.order.application.service
 
+import com.groom.order.application.dto.CreateOrderCommand
 import com.groom.order.common.annotation.UnitTest
 import com.groom.order.common.domain.DomainEventPublisher
 import com.groom.order.common.exception.OrderException
 import com.groom.order.common.exception.ProductException
 import com.groom.order.common.exception.StoreException
-import com.groom.order.application.dto.CreateOrderCommand
 import com.groom.order.domain.model.Order
 import com.groom.order.domain.model.OrderStatus
 import com.groom.order.domain.model.ProductInfo
 import com.groom.order.domain.model.StockReservation
+import com.groom.order.domain.port.LoadOrderPort
 import com.groom.order.domain.port.ProductPort
+import com.groom.order.domain.port.SaveOrderPort
 import com.groom.order.domain.port.StorePort
 import com.groom.order.domain.service.OrderManager
 import com.groom.order.domain.service.OrderPolicy
 import com.groom.order.domain.service.StockReservationManager
 import com.groom.order.fixture.OrderTestFixture
-import com.groom.order.domain.port.LoadOrderPort
-import com.groom.order.domain.port.SaveOrderPort
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.BehaviorSpec
@@ -112,7 +112,7 @@ class CreateOrderServiceTest :
             every { stockReservationManager.tryReserve(any()) } returns mockStockReservation
             every { orderManager.createOrder(any(), any(), any(), any(), any(), any(), any(), any()) } returns createdOrder
             every { saveOrderPort.save(any<Order>()) } answers { firstArg() }
-            
+
             every { domainEventPublisher.publish(any()) } just runs
 
             val command =
