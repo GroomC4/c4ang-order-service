@@ -36,7 +36,7 @@ class JpaConfig {
     ): LocalContainerEntityManagerFactoryBean =
         LocalContainerEntityManagerFactoryBean().apply {
             this.dataSource = dataSource
-            this.setPackagesToScan("com.groom.customer")
+            this.setPackagesToScan("com.groom.order")
             this.jpaVendorAdapter =
                 HibernateJpaVendorAdapter().apply {
                     setDatabase(Database.POSTGRESQL)

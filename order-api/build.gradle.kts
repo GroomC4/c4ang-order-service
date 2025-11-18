@@ -14,8 +14,7 @@ val platformCoreVersion = "1.2.3"
 val springCloudContractVersion = "4.1.4"
 
 dependencies {
-    // C4ang Platform Core - DataSource & Testcontainers
-    implementation("com.groom.platform:datasource-starter:$platformCoreVersion")
+    // C4ang Platform Core - Testcontainers
     testImplementation("com.groom.platform:testcontainers-starter:$platformCoreVersion")
 
     // Kotlin

@@ -1,7 +1,9 @@
 package com.groom.order.common
 
+import com.groom.order.common.config.TestRedissonConfig
 import com.groom.platform.testcontainers.annotation.IntegrationTest
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.annotation.Import
 
 /**
  * 통합 테스트 기본 클래스
@@ -28,4 +30,5 @@ import org.springframework.boot.test.context.SpringBootTest
         "testcontainers.kafka.enabled=true",
     ]
 )
+@Import(TestRedissonConfig::class)
 abstract class IntegrationTestBase
