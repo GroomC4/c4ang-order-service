@@ -1,17 +1,24 @@
 spring:
   datasource:
     master:
-      url: jdbc:postgresql://localhost:15432/groom
+      jdbc-url: jdbc:postgresql://localhost:15432/groom
       username: application
       password: application
-      driver-class-name: org.postgresql.Driver
-    replica:
-      url: jdbc:postgresql://localhost:15433/groom
-      username: application
-      password: application
-      driver-class-name: org.postgresql.Driver
       hikari:
-        maximum-pool-size: 5
+        maximum-pool-size: 10
+        minimum-idle: 5
+    replica:
+      jdbc-url: jdbc:postgresql://localhost:15433/groom
+      username: application
+      password: application
+      hikari:
+        maximum-pool-size: 10
+        minimum-idle: 5
+
+# Platform Core DataSource 라우팅 설정
+platform:
+  datasource:
+    replica-enabled: true
   jpa:
     hibernate:
       ddl-auto: none

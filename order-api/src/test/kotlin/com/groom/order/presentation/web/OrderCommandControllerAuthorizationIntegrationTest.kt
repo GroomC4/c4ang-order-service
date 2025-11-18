@@ -1,7 +1,8 @@
 package com.groom.order.presentation.web
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.groom.platform.testSupport.IntegrationTest
+import com.groom.order.common.IntegrationTestBase
+import com.groom.order.common.util.IstioHeaderExtractor
 import com.groom.order.presentation.web.dto.CancelOrderRequest
 import com.groom.order.presentation.web.dto.CreateOrderRequest
 import com.groom.order.presentation.web.dto.RefundOrderRequest
@@ -10,9 +11,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpHeaders
-import com.groom.order.common.util.IstioHeaderExtractor
 import org.springframework.http.MediaType
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.SqlGroup
@@ -47,10 +46,8 @@ import java.util.UUID
     ),
 )
 @DisplayName("주문 명령(Command) 컨트롤러 인가 통합 테스트")
-@IntegrationTest
-@SpringBootTest
 @AutoConfigureMockMvc
-class OrderCommandControllerAuthorizationIntegrationTest {
+class OrderCommandControllerAuthorizationIntegrationTest : IntegrationTestBase() {
     @Autowired
     private lateinit var mockMvc: MockMvc
 

@@ -84,5 +84,10 @@ kafka:
   schema-registry:
     url: http://localhost:8081
   topics:
+    # Order 이벤트 (Producer)
+    order-created: order.created
+    order-confirmed: order.confirmed
+    order-cancelled: order.cancelled
+    # Store 이벤트 (Consumer)
     store-info-updated: store.info.updated
     store-deleted: store.deleted

@@ -6,15 +6,14 @@ plugins {
     kotlin("plugin.jpa")
 }
 
-sourceSets {
-    test {
-        kotlin {
-            srcDir("../c4ang-platform-core/testcontainers/kotlin")
-        }
-    }
-}
+// Platform Core 버전 관리
+val platformCoreVersion = "1.2.3"
 
 dependencies {
+    // C4ang Platform Core - DataSource & Testcontainers
+    implementation("com.groom.platform:datasource-starter:$platformCoreVersion")
+    testImplementation("com.groom.platform:testcontainers-starter:$platformCoreVersion")
+
     // Kotlin
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
@@ -42,7 +41,7 @@ dependencies {
     // Spring Cloud OpenFeign (버전은 BOM에서 관리)
     implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
 
-    // Logging방ㅇ
+    // Logging
     implementation("io.github.oshai:kotlin-logging-jvm:7.0.13")
 
     // Redisson (Redis 클라이언트 with 원자적 연산 지원)
@@ -58,18 +57,9 @@ dependencies {
 
     // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.testcontainers:junit-jupiter")
-    testImplementation("org.testcontainers:postgresql")
-    testImplementation("org.testcontainers:testcontainers")
     testImplementation("io.kotest:kotest-runner-junit5:5.9.1")
     testImplementation("io.kotest:kotest-assertions-core:5.9.1")
     testImplementation("io.mockk:mockk:1.14.5")
-
-    // K3s Module 추가
-    testImplementation("org.testcontainers:k3s:1.19.7")
-    testImplementation("io.fabric8:kubernetes-client:6.10.0")
-    testImplementation("org.bouncycastle:bcpkix-jdk18on:1.78")
 }
 
 // 모든 Test 태스크에 공통 설정 적용
@@ -92,8 +82,7 @@ tasks.withType<Test> {
 }
 
 tasks.test {
-    useJUnitPlatform {
-    }
+    useJUnitPlatform()
 }
 
 // 통합 테스트 전용 태스크 (Docker Compose 기반)

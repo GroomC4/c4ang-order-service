@@ -1,12 +1,12 @@
 package com.groom.order.presentation.web
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.groom.order.common.IntegrationTestBase
 import com.groom.order.common.TransactionApplier
 import com.groom.order.common.util.IstioHeaderExtractor
 import com.groom.order.presentation.web.dto.CancelOrderRequest
 import com.groom.order.presentation.web.dto.CreateOrderRequest
 import com.groom.order.presentation.web.dto.RefundOrderRequest
-import com.groom.platform.testSupport.IntegrationTest
 import jakarta.persistence.EntityManager
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test
 import org.redisson.api.RedissonClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.SqlGroup
@@ -36,8 +35,6 @@ import java.util.UUID
  * - Redis 재고 예약 로직 포함
  * - 실제 데이터베이스와 통합 테스트
  */
-@IntegrationTest
-@SpringBootTest
 @AutoConfigureMockMvc
 @SqlGroup(
     Sql(
@@ -54,7 +51,7 @@ import java.util.UUID
     ),
 )
 @DisplayName("주문 명령(Command) 컨트롤러 비즈니스 로직 통합 테스트")
-class OrderCommandControllerIntegrationTest {
+class OrderCommandControllerIntegrationTest : IntegrationTestBase() {
     @Autowired
     private lateinit var mockMvc: MockMvc
 

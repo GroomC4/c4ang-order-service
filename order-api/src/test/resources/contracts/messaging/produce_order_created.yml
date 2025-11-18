@@ -1,0 +1,34 @@
+description: 주문 생성 시 OrderCreated 이벤트 발행
+label: order_created
+input:
+  triggeredBy: triggerOrderCreatedEvent()
+outputMessage:
+  sentTo: order.created
+  headers:
+    kafka_messageKey: $(consumer(regex('[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')), producer('550e8400-e29b-41d4-a716-446655440000'))
+  body:
+    eventId: $(consumer(regex('[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')), producer('123e4567-e89b-12d3-a456-426614174000'))
+    eventTimestamp: $(consumer(regex('[0-9]{13}')), producer(1700000000000))
+    orderId: $(consumer(regex('[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')), producer('550e8400-e29b-41d4-a716-446655440000'))
+    userId: $(consumer(regex('[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')), producer('660e8400-e29b-41d4-a716-446655440001'))
+    storeId: $(consumer(regex('[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')), producer('770e8400-e29b-41d4-a716-446655440002'))
+    items:
+      - productId: $(consumer(regex('[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')), producer('880e8400-e29b-41d4-a716-446655440003'))
+        quantity: $(consumer(anyPositiveInt()), producer(2))
+        unitPrice: $(consumer(regex('[0-9]{1,10}')), producer(1000))
+    totalAmount: $(consumer(regex('[0-9]{1,10}')), producer(2000))
+    createdAt: $(consumer(regex('[0-9]{13}')), producer(1700000000000))
+  matchers:
+    headers:
+      - key: kafka_messageKey
+        regex: '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+    body:
+      - path: $.eventId
+        type: by_regex
+        value: '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+      - path: $.eventTimestamp
+        type: by_regex
+        value: '[0-9]{13}'
+      - path: $.orderId
+        type: by_regex
+        value: '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'

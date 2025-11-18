@@ -20,6 +20,13 @@ allprojects {
         maven {
             url = uri("https://packages.confluent.io/maven/")
         }
+        maven {
+            url = uri("https://maven.pkg.github.com/GroomC4/c4ang-platform-core")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
     }
 
     extensions.findByType<KotlinJvmProjectExtension>()?.apply {
