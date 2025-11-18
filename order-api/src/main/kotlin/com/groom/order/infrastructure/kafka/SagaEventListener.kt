@@ -63,13 +63,13 @@ class SagaEventListener(
             }
 
             // 주문 조회
-            val order = loadOrderPort.findById(orderId)
+            val order = loadOrderPort.loadById(orderId)
                 ?: throw IllegalStateException("Order not found: orderId=$orderId")
 
-            // 주문 상태가 ORDER_CREATED인지 확인 (멱등성)
-            if (order.status != OrderStatus.ORDER_CREATED) {
+            // 주문 상태가 PENDING인지 확인 (멱등성)
+            if (order.status != OrderStatus.PENDING) {
                 logger.warn {
-                    "Order status is not ORDER_CREATED: orderId=$orderId, " +
+                    "Order status is not PENDING: orderId=$orderId, " +
                         "status=${order.status}. Skipping."
                 }
                 acknowledgment.acknowledge()
@@ -77,15 +77,15 @@ class SagaEventListener(
             }
 
             // 주문 상태를 STOCK_RESERVED로 업데이트
-            val updatedOrder = order.copy(status = OrderStatus.STOCK_RESERVED)
-            saveOrderPort.save(updatedOrder)
+            order.status = OrderStatus.STOCK_RESERVED
+            saveOrderPort.save(order)
 
             logger.info {
                 "Order status updated to STOCK_RESERVED: orderId=$orderId"
             }
 
             // OrderConfirmed 이벤트 발행 (다음 SAGA 단계)
-            orderEventPublisher.publishOrderConfirmed(updatedOrder)
+            orderEventPublisher.publishOrderConfirmed(order)
 
             acknowledgment.acknowledge()
 
@@ -133,13 +133,13 @@ class SagaEventListener(
             }
 
             // 주문 조회
-            val order = loadOrderPort.findById(orderId)
+            val order = loadOrderPort.loadById(orderId)
                 ?: throw IllegalStateException("Order not found: orderId=$orderId")
 
-            // 주문 상태가 ORDER_CREATED인지 확인 (멱등성)
-            if (order.status != OrderStatus.ORDER_CREATED) {
+            // 주문 상태가 PENDING인지 확인 (멱등성)
+            if (order.status != OrderStatus.PENDING) {
                 logger.warn {
-                    "Order status is not ORDER_CREATED: orderId=$orderId, " +
+                    "Order status is not PENDING: orderId=$orderId, " +
                         "status=${order.status}. Skipping."
                 }
                 acknowledgment.acknowledge()
@@ -147,11 +147,9 @@ class SagaEventListener(
             }
 
             // 주문 상태를 ORDER_CANCELLED로 업데이트 (보상 트랜잭션)
-            val updatedOrder = order.copy(
-                status = OrderStatus.ORDER_CANCELLED,
-                failureReason = event.failureReason,
-            )
-            saveOrderPort.save(updatedOrder)
+            order.status = OrderStatus.ORDER_CANCELLED
+            order.failureReason = event.failureReason
+            saveOrderPort.save(order)
 
             logger.info {
                 "Order cancelled due to stock reservation failure: orderId=$orderId, " +
@@ -159,7 +157,7 @@ class SagaEventListener(
             }
 
             // OrderCancelled 이벤트 발행
-            orderEventPublisher.publishOrderCancelled(updatedOrder)
+            orderEventPublisher.publishOrderCancelled(order)
 
             acknowledgment.acknowledge()
 
@@ -209,7 +207,7 @@ class SagaEventListener(
             }
 
             // 주문 조회
-            val order = loadOrderPort.findById(orderId)
+            val order = loadOrderPort.loadById(orderId)
                 ?: throw IllegalStateException("Order not found: orderId=$orderId")
 
             // 주문 상태가 STOCK_RESERVED인지 확인 (멱등성)
@@ -223,11 +221,9 @@ class SagaEventListener(
             }
 
             // 주문 상태를 PAYMENT_COMPLETED로 업데이트
-            val updatedOrder = order.copy(
-                status = OrderStatus.PAYMENT_COMPLETED,
-                paymentId = paymentId,
-            )
-            saveOrderPort.save(updatedOrder)
+            order.status = OrderStatus.PAYMENT_COMPLETED
+            order.paymentId = paymentId
+            saveOrderPort.save(order)
 
             logger.info {
                 "Order status updated to PAYMENT_COMPLETED: orderId=$orderId, paymentId=$paymentId"
@@ -282,7 +278,7 @@ class SagaEventListener(
             }
 
             // 주문 조회
-            val order = loadOrderPort.findById(orderId)
+            val order = loadOrderPort.loadById(orderId)
                 ?: throw IllegalStateException("Order not found: orderId=$orderId")
 
             // 주문 상태가 STOCK_RESERVED인지 확인 (멱등성)
@@ -296,11 +292,9 @@ class SagaEventListener(
             }
 
             // 주문 상태를 ORDER_CANCELLED로 업데이트 (보상 트랜잭션)
-            val updatedOrder = order.copy(
-                status = OrderStatus.ORDER_CANCELLED,
-                failureReason = event.failureReason,
-            )
-            saveOrderPort.save(updatedOrder)
+            order.status = OrderStatus.ORDER_CANCELLED
+            order.failureReason = event.failureReason
+            saveOrderPort.save(order)
 
             logger.info {
                 "Order cancelled due to payment failure: orderId=$orderId, " +
@@ -308,7 +302,7 @@ class SagaEventListener(
             }
 
             // OrderCancelled 이벤트 발행 (Product Service가 재고 복원)
-            orderEventPublisher.publishOrderCancelled(updatedOrder)
+            orderEventPublisher.publishOrderCancelled(order)
 
             acknowledgment.acknowledge()
 

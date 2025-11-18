@@ -15,6 +15,8 @@ import org.springframework.kafka.support.SendResult
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.nio.ByteBuffer
+import java.time.Instant
+import java.time.ZoneOffset
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
@@ -42,7 +44,7 @@ class OrderEventPublisher(
                 .setEventId(UUID.randomUUID().toString())
                 .setEventTimestamp(System.currentTimeMillis())
                 .setOrderId(order.id.toString())
-                .setUserId(order.userId.toString())
+                .setUserId(order.userExternalId.toString())
                 .setStoreId(order.storeId.toString())
                 .setItems(
                     order.items.map { item ->
@@ -50,11 +52,11 @@ class OrderEventPublisher(
                             .newBuilder()
                             .setProductId(item.productId.toString())
                             .setQuantity(item.quantity)
-                            .setUnitPrice(item.unitPrice.toBigDecimalBytes())
+                            .setUnitPrice(item.unitPrice)
                             .build()
                     },
-                ).setTotalAmount(order.totalAmount.toBigDecimalBytes())
-                .setCreatedAt(order.createdAt.toEpochMilli())
+                ).setTotalAmount(order.calculateTotalAmount())
+                .setCreatedAt(order.createdAt?.toInstant(ZoneOffset.UTC)?.toEpochMilli() ?: System.currentTimeMillis())
                 .build()
 
         logger.info { "Publishing OrderCreated event: orderId=${order.id}" }
@@ -89,9 +91,9 @@ class OrderEventPublisher(
                 .setEventId(UUID.randomUUID().toString())
                 .setEventTimestamp(System.currentTimeMillis())
                 .setOrderId(order.id.toString())
-                .setUserId(order.userId.toString())
-                .setTotalAmount(order.totalAmount.toBigDecimalBytes())
-                .setConfirmedAt(order.updatedAt.toEpochMilli())
+                .setUserId(order.userExternalId.toString())
+                .setTotalAmount(order.calculateTotalAmount())
+                .setConfirmedAt(order.updatedAt?.toInstant(ZoneOffset.UTC)?.toEpochMilli() ?: System.currentTimeMillis())
                 .build()
 
         logger.info { "Publishing OrderConfirmed event: orderId=${order.id}" }
@@ -114,8 +116,8 @@ class OrderEventPublisher(
      * @param order 취소된 주문
      */
     fun publishOrderCancelled(order: Order): CompletableFuture<SendResult<String, Any>> {
-        require(order.status.isCancelled()) {
-            "Order must be in cancelled status"
+        require(order.status == OrderStatus.ORDER_CANCELLED) {
+            "Order must be in ORDER_CANCELLED status"
         }
 
         val cancellationReason =
@@ -131,7 +133,7 @@ class OrderEventPublisher(
                 .setEventId(UUID.randomUUID().toString())
                 .setEventTimestamp(System.currentTimeMillis())
                 .setOrderId(order.id.toString())
-                .setUserId(order.userId.toString())
+                .setUserId(order.userExternalId.toString())
                 .setItems(
                     order.items.map { item ->
                         CancelledOrderItem
@@ -141,7 +143,7 @@ class OrderEventPublisher(
                             .build()
                     },
                 ).setCancellationReason(cancellationReason)
-                .setCancelledAt(order.updatedAt.toEpochMilli())
+                .setCancelledAt(order.updatedAt?.toInstant(ZoneOffset.UTC)?.toEpochMilli() ?: System.currentTimeMillis())
                 .build()
 
         logger.info { "Publishing OrderCancelled event: orderId=${order.id}, reason=$cancellationReason" }
@@ -156,13 +158,5 @@ class OrderEventPublisher(
                     }
                 }
             }
-    }
-
-    /**
-     * BigDecimal을 Avro의 decimal(10, 2) ByteBuffer로 변환
-     */
-    private fun BigDecimal.toBigDecimalBytes(): ByteBuffer {
-        val unscaledValue = this.setScale(2, BigDecimal.ROUND_HALF_UP).unscaledValue()
-        return ByteBuffer.wrap(unscaledValue.toByteArray())
     }
 }

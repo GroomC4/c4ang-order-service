@@ -12,7 +12,7 @@ import org.springframework.kafka.test.context.EmbeddedKafka
 import org.springframework.test.context.TestPropertySource
 import org.springframework.web.context.WebApplicationContext
 import java.math.BigDecimal
-import java.time.Instant
+import java.time.LocalDateTime
 import java.util.UUID
 
 /**
@@ -55,25 +55,23 @@ abstract class ContractTestBase : IntegrationTestBase() {
     fun triggerOrderCreatedEvent() {
         val testOrder =
             Order(
-                id = UUID.fromString("550e8400-e29b-41d4-a716-446655440000"),
-                userId = UUID.fromString("660e8400-e29b-41d4-a716-446655440001"),
+                userExternalId = UUID.fromString("660e8400-e29b-41d4-a716-446655440001"),
                 storeId = UUID.fromString("770e8400-e29b-41d4-a716-446655440002"),
-                status = OrderStatus.ORDER_CREATED,
-                totalAmount = BigDecimal("20.00"),
-                items =
-                    listOf(
-                        OrderItem(
-                            id = UUID.randomUUID(),
-                            orderId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000"),
-                            productId = UUID.fromString("880e8400-e29b-41d4-a716-446655440003"),
-                            productName = "Test Product",
-                            quantity = 2,
-                            unitPrice = BigDecimal("10.00"),
-                        ),
-                    ),
-                createdAt = Instant.ofEpochMilli(1700000000000),
-                updatedAt = Instant.now(),
-            )
+                orderNumber = "ORD-20231115-001",
+                status = OrderStatus.PENDING,
+                paymentSummary = mapOf("method" to "CREDIT_CARD", "provider" to "STRIPE"),
+                timeline = listOf(mapOf("status" to "PENDING", "timestamp" to System.currentTimeMillis())),
+            ).apply {
+                id = UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
+                val item =
+                    OrderItem(
+                        productId = UUID.fromString("880e8400-e29b-41d4-a716-446655440003"),
+                        productName = "Test Product",
+                        quantity = 2,
+                        unitPrice = BigDecimal("10.00"),
+                    )
+                addItem(item)
+            }
 
         orderEventPublisher.publishOrderCreated(testOrder)
     }
@@ -84,25 +82,23 @@ abstract class ContractTestBase : IntegrationTestBase() {
     fun triggerOrderConfirmedEvent() {
         val testOrder =
             Order(
-                id = UUID.fromString("550e8400-e29b-41d4-a716-446655440000"),
-                userId = UUID.fromString("660e8400-e29b-41d4-a716-446655440001"),
+                userExternalId = UUID.fromString("660e8400-e29b-41d4-a716-446655440001"),
                 storeId = UUID.fromString("770e8400-e29b-41d4-a716-446655440002"),
+                orderNumber = "ORD-20231115-001",
                 status = OrderStatus.STOCK_RESERVED,
-                totalAmount = BigDecimal("20.00"),
-                items =
-                    listOf(
-                        OrderItem(
-                            id = UUID.randomUUID(),
-                            orderId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000"),
-                            productId = UUID.fromString("880e8400-e29b-41d4-a716-446655440003"),
-                            productName = "Test Product",
-                            quantity = 2,
-                            unitPrice = BigDecimal("10.00"),
-                        ),
-                    ),
-                createdAt = Instant.ofEpochMilli(1700000000000),
-                updatedAt = Instant.now(),
-            )
+                paymentSummary = mapOf("method" to "CREDIT_CARD", "provider" to "STRIPE"),
+                timeline = listOf(mapOf("status" to "STOCK_RESERVED", "timestamp" to System.currentTimeMillis())),
+            ).apply {
+                id = UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
+                val item =
+                    OrderItem(
+                        productId = UUID.fromString("880e8400-e29b-41d4-a716-446655440003"),
+                        productName = "Test Product",
+                        quantity = 2,
+                        unitPrice = BigDecimal("10.00"),
+                    )
+                addItem(item)
+            }
 
         orderEventPublisher.publishOrderConfirmed(testOrder)
     }
@@ -113,26 +109,24 @@ abstract class ContractTestBase : IntegrationTestBase() {
     fun triggerOrderCancelledEvent() {
         val testOrder =
             Order(
-                id = UUID.fromString("550e8400-e29b-41d4-a716-446655440000"),
-                userId = UUID.fromString("660e8400-e29b-41d4-a716-446655440001"),
+                userExternalId = UUID.fromString("660e8400-e29b-41d4-a716-446655440001"),
                 storeId = UUID.fromString("770e8400-e29b-41d4-a716-446655440002"),
+                orderNumber = "ORD-20231115-001",
                 status = OrderStatus.ORDER_CANCELLED,
-                totalAmount = BigDecimal("20.00"),
-                items =
-                    listOf(
-                        OrderItem(
-                            id = UUID.randomUUID(),
-                            orderId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000"),
-                            productId = UUID.fromString("880e8400-e29b-41d4-a716-446655440003"),
-                            productName = "Test Product",
-                            quantity = 2,
-                            unitPrice = BigDecimal("10.00"),
-                        ),
-                    ),
+                paymentSummary = mapOf("method" to "CREDIT_CARD", "provider" to "STRIPE"),
+                timeline = listOf(mapOf("status" to "ORDER_CANCELLED", "timestamp" to System.currentTimeMillis())),
                 failureReason = "Stock reservation failed",
-                createdAt = Instant.ofEpochMilli(1700000000000),
-                updatedAt = Instant.now(),
-            )
+            ).apply {
+                id = UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
+                val item =
+                    OrderItem(
+                        productId = UUID.fromString("880e8400-e29b-41d4-a716-446655440003"),
+                        productName = "Test Product",
+                        quantity = 2,
+                        unitPrice = BigDecimal("10.00"),
+                    )
+                addItem(item)
+            }
 
         orderEventPublisher.publishOrderCancelled(testOrder)
     }
