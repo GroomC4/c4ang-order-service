@@ -182,3 +182,46 @@ COMMENT ON COLUMN p_order_audit.change_summary IS '변경 사항 요약 설명.'
 COMMENT ON COLUMN p_order_audit.actor_user_id IS '변경을 수행한 사용자 UUID.';
 COMMENT ON COLUMN p_order_audit.recorded_at IS '감사 이벤트가 기록된 시각.';
 COMMENT ON COLUMN p_order_audit.metadata IS '추가 정보를 담은 JSON 메타데이터.';
+-- =====================================================
+-- 테스트용 다른 서비스 테이블 (Product Service, Store Service)
+-- MSA 구조에서 실제 운영 환경에서는 사용하지 않음
+-- 통합 테스트 시 SQL init 스크립트를 위해 추가
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS p_product_category (
+    id                  UUID PRIMARY KEY,
+    name                TEXT NOT NULL,
+    parent_category_id  UUID,
+    depth               INT NOT NULL DEFAULT 0,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS p_store (
+    id                 UUID PRIMARY KEY,
+    owner_user_id      UUID NOT NULL,
+    name               TEXT NOT NULL,
+    description        TEXT,
+    status             TEXT NOT NULL,
+    created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS p_product (
+    id                 UUID PRIMARY KEY,
+    store_id           UUID NOT NULL,
+    store_name         TEXT NOT NULL,
+    category_id        UUID,
+    product_name       TEXT NOT NULL,
+    status             TEXT NOT NULL,
+    price              DECIMAL(12, 2) NOT NULL,
+    stock_quantity     INT NOT NULL DEFAULT 0,
+    thumbnail_url      TEXT,
+    description        TEXT,
+    created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+COMMENT ON TABLE p_product_category IS '테스트용: Product Service의 카테고리 테이블';
+COMMENT ON TABLE p_store IS '테스트용: Store Service의 상점 테이블';
+COMMENT ON TABLE p_product IS '테스트용: Product Service의 상품 테이블';
