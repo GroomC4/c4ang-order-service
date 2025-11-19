@@ -16,14 +16,5 @@ DELETE FROM p_order WHERE id IN (
     '11111111-1111-1111-1111-000000000003'
 );
 
--- 상품 정리
-DELETE FROM p_product WHERE id IN (
-    'aaaaaaaa-aaaa-aaaa-aaaa-000000000001',
-    'aaaaaaaa-aaaa-aaaa-aaaa-000000000002'
-);
 
--- 상점 정리
-DELETE FROM p_store WHERE id = 'bbbbbbbb-bbbb-bbbb-bbbb-000000000001';
-
--- 카테고리 정리
-DELETE FROM p_product_category WHERE id = 'cccccccc-cccc-cccc-cccc-000000000001';
+-- NOTE: order-service는 자체 DB를 사용하므로 다른 서비스의 테이블(p_product, p_store, p_user 등)은 정리하지 않음

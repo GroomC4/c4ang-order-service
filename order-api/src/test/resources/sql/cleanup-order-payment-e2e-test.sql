@@ -41,7 +41,6 @@ WHERE user_id IN (
 );
 
 -- Delete Product Images
-DELETE FROM p_product_image
 WHERE product_id IN (
     '10000000-0000-0000-0000-000000000001',
     '10000000-0000-0000-0000-000000000002',
@@ -52,7 +51,6 @@ WHERE product_id IN (
 );
 
 -- Delete Products
-DELETE FROM p_product
 WHERE id IN (
     '10000000-0000-0000-0000-000000000001',
     '10000000-0000-0000-0000-000000000002',
@@ -63,28 +61,24 @@ WHERE id IN (
 );
 
 -- Delete Store Ratings
-DELETE FROM p_store_rating
 WHERE store_id IN (
     'cccccccc-cccc-cccc-cccc-cccccccccccc',
     'dddddddd-dddd-dddd-dddd-dddddddddddd'
 );
 
 -- Delete Stores
-DELETE FROM p_store
 WHERE id IN (
     'cccccccc-cccc-cccc-cccc-cccccccccccc',
     'dddddddd-dddd-dddd-dddd-dddddddddddd'
 );
 
 -- Delete Product Categories
-DELETE FROM p_product_category
 WHERE id IN (
     'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
     'ffffffff-ffff-ffff-ffff-ffffffffffff'
 );
 
 -- Delete User Profiles
-DELETE FROM p_user_profile
 WHERE user_id IN (
     '11111111-1111-1111-1111-111111111111',
     '22222222-2222-2222-2222-222222222222',
@@ -93,10 +87,11 @@ WHERE user_id IN (
 );
 
 -- Delete Users
-DELETE FROM p_user
 WHERE id IN (
     '11111111-1111-1111-1111-111111111111',
     '22222222-2222-2222-2222-222222222222',
     'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
     'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
 );
+
+-- NOTE: order-service는 자체 DB를 사용하므로 다른 서비스의 테이블(p_product, p_store, p_user 등)은 정리하지 않음
