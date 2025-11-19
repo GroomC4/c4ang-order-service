@@ -9,11 +9,14 @@ plugins {
 }
 
 // Platform Core 버전 관리
-val platformCoreVersion = "1.2.3"
+val platformCoreVersion = "1.2.5"
 // Spring Cloud Contract 버전
 val springCloudContractVersion = "4.1.4"
 
 dependencies {
+    // C4ang Platform Core - DataSource (Production)
+    implementation("com.groom.platform:datasource-starter:$platformCoreVersion")
+
     // C4ang Platform Core - Testcontainers
     testImplementation("com.groom.platform:testcontainers-starter:$platformCoreVersion")
 

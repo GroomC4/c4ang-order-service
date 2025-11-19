@@ -1,0 +1,39 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+# TestContainers 설정 (자동으로 Docker 컨테이너 시작)
+testcontainers:
+  postgres:
+    enabled: true
+    image: postgres:15-alpine
+    database-name: testdb
+
+  redis:
+    enabled: true
+    image: redis:7-alpine
+
+logging:
+  level:
+    com.groom: DEBUG
+    org.testcontainers: INFO
+    org.springframework.test: DEBUG
+
+# Kafka 테스트 설정 (Embedded Kafka)
+kafka:
+  bootstrap-servers: ${spring.embedded.kafka.brokers}
+  producer:
+    acks: all
+  schema-registry:
+    url: mock://test-registry
+  topics:
+    order-created: order.created
+    order-confirmed: order.confirmed
+    order-cancelled: order.cancelled
+    store-info-updated: store.info.updated
+    store-deleted: store.deleted

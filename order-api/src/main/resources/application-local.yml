@@ -1,19 +1,21 @@
 spring:
   datasource:
     master:
-      jdbc-url: jdbc:postgresql://localhost:15432/groom
+      url: jdbc:postgresql://localhost:15432/groom
       username: application
       password: application
       hikari:
         maximum-pool-size: 10
         minimum-idle: 5
+        connection-timeout: 30000
     replica:
-      jdbc-url: jdbc:postgresql://localhost:15433/groom
+      url: jdbc:postgresql://localhost:15433/groom
       username: application
       password: application
       hikari:
-        maximum-pool-size: 10
+        maximum-pool-size: 20
         minimum-idle: 5
+        connection-timeout: 30000
 
 # Platform Core DataSource 라우팅 설정
 platform:

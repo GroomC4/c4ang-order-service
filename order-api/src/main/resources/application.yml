@@ -4,6 +4,28 @@ server:
 spring:
   application:
     name: order-api
+
+  # DataSource 설정 (Platform Core가 자동 구성)
+  datasource:
+    master:
+      url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:groom}
+      username: ${DB_USERNAME:application}
+      password: ${DB_PASSWORD:application}
+      hikari:
+        maximum-pool-size: ${DB_POOL_SIZE:10}
+        connection-timeout: 30000
+        idle-timeout: 600000
+        max-lifetime: 1800000
+
+    # Replica 설정 (선택사항 - 없으면 master 사용)
+    replica:
+      url: jdbc:postgresql://${DB_REPLICA_HOST:localhost}:${DB_REPLICA_PORT:5433}/${DB_NAME:groom}
+      username: ${DB_USERNAME:application}
+      password: ${DB_PASSWORD:application}
+      hikari:
+        maximum-pool-size: ${DB_REPLICA_POOL_SIZE:20}
+        connection-timeout: 30000
+
   jpa:
     hibernate:
       ddl-auto: none
