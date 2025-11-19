@@ -16,6 +16,9 @@ import org.springframework.context.annotation.Import
 @IntegrationTest
 @SpringBootTest(
     properties = [
+        // Test Profile 활성화 (TransactionApplier 등록)
+        "spring.profiles.active=test",
+
         // PostgreSQL Primary/Replica 활성화
         "testcontainers.postgres.enabled=true",
         "testcontainers.postgres.replica-enabled=true",
@@ -30,5 +33,5 @@ import org.springframework.context.annotation.Import
         "testcontainers.kafka.enabled=true",
     ]
 )
-@Import(TestRedissonConfig::class)
+@Import(TestRedissonConfig::class, TransactionApplier::class)
 abstract class IntegrationTestBase
