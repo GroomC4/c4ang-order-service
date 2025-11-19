@@ -69,4 +69,4 @@ jobs:
 
     secrets: inherit # AWS_ROLE_TO_ASSUME, GROOM_GITHUB_ACTION_TOKEN 등 전달
 
-    uses: GroomC4/c4ang-platform-core/.github/workflows/reusable-ecr-push.yml@v1.2.2-RC6
+    uses: GroomC4/c4ang-platform-core/.github/workflows/reusable-ecr-push.yml@v1.2.7
