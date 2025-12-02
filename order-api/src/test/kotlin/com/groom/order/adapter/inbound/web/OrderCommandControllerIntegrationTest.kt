@@ -700,4 +700,308 @@ class OrderCommandControllerIntegrationTest {
             ).andDo(print())
             .andExpect(status().isForbidden) // 403 Forbidden
     }
+
+    // ========== 추가 분기 테스트 ==========
+
+    @Test
+    @DisplayName("POST /api/v1/orders - 다른 스토어의 상품 주문 시도 시 실패")
+    fun createOrder_withProductFromDifferentStore_shouldFail() {
+        // given: STORE_2의 상품을 STORE_1에서 주문 시도
+        // 이 테스트는 PRODUCT_MOUSE가 STORE_1에 속해있는 경우,
+        // STORE_2에서 해당 상품을 주문하려고 할 때 실패해야 함
+        val request =
+            CreateOrderRequest(
+                storeId = STORE_2,
+                items =
+                    listOf(
+                        CreateOrderRequest.OrderItemRequest(
+                            productId = PRODUCT_MOUSE, // STORE_1의 상품
+                            quantity = 1,
+                        ),
+                    ),
+                idempotencyKey = "test-key-different-store-${UUID.randomUUID()}",
+            )
+
+        // when & then
+        mockMvc
+            .perform(
+                post("/api/v1/orders")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andDo(print())
+            .andExpect(status().isBadRequest) // 400 Bad Request - 상품이 해당 스토어에 속하지 않음
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/orders - 빈 상품 목록으로 주문 시도 시 실패")
+    fun createOrder_withEmptyItems_shouldFail() {
+        // given
+        val request =
+            CreateOrderRequest(
+                storeId = STORE_1,
+                items = emptyList(),
+                idempotencyKey = "test-key-empty-items-${UUID.randomUUID()}",
+            )
+
+        // when & then
+        mockMvc
+            .perform(
+                post("/api/v1/orders")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andDo(print())
+            .andExpect(status().isBadRequest) // 400 Bad Request
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/orders - 수량이 0인 상품 주문 시도 시 실패")
+    fun createOrder_withZeroQuantity_shouldFail() {
+        // given
+        val request =
+            CreateOrderRequest(
+                storeId = STORE_1,
+                items =
+                    listOf(
+                        CreateOrderRequest.OrderItemRequest(
+                            productId = PRODUCT_MOUSE,
+                            quantity = 0,
+                        ),
+                    ),
+                idempotencyKey = "test-key-zero-quantity-${UUID.randomUUID()}",
+            )
+
+        // when & then
+        mockMvc
+            .perform(
+                post("/api/v1/orders")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andDo(print())
+            .andExpect(status().isBadRequest) // 400 Bad Request
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/orders - 음수 수량 주문 시도 시 실패")
+    fun createOrder_withNegativeQuantity_shouldFail() {
+        // given
+        val request =
+            CreateOrderRequest(
+                storeId = STORE_1,
+                items =
+                    listOf(
+                        CreateOrderRequest.OrderItemRequest(
+                            productId = PRODUCT_MOUSE,
+                            quantity = -1,
+                        ),
+                    ),
+                idempotencyKey = "test-key-negative-quantity-${UUID.randomUUID()}",
+            )
+
+        // when & then
+        mockMvc
+            .perform(
+                post("/api/v1/orders")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andDo(print())
+            .andExpect(status().isBadRequest) // 400 Bad Request
+    }
+
+    @Test
+    @DisplayName("PATCH /api/v1/orders/{orderId}/cancel - 취소 사유 없이 주문 취소 성공")
+    fun cancelOrder_withoutCancelReason_shouldSucceed() {
+        // given
+        val request = CancelOrderRequest(cancelReason = null)
+
+        // when & then
+        mockMvc
+            .perform(
+                patch("/api/v1/orders/$ORDER_STOCK_RESERVED/cancel")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andDo(print())
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.status").value("ORDER_CANCELLED"))
+    }
+
+    @Test
+    @DisplayName("PATCH /api/v1/orders/{orderId}/refund - 환불 사유 없이 환불 성공")
+    fun refundOrder_withoutRefundReason_shouldSucceed() {
+        // given
+        val request = RefundOrderRequest(refundReason = null)
+
+        // when & then
+        mockMvc
+            .perform(
+                patch("/api/v1/orders/$ORDER_DELIVERED/refund")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andDo(print())
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.status").value("REFUND_COMPLETED"))
+    }
+
+    @Test
+    @DisplayName("PATCH /api/v1/orders/{orderId}/refund - 배송 중(SHIPPED) 주문 환불 시도 시 실패")
+    fun refundOrder_withShippedStatus_shouldFail() {
+        // given: 배송 중인 주문은 환불 불가 (배송 완료만 가능)
+        val request = RefundOrderRequest(refundReason = "환불 요청")
+
+        // when & then
+        mockMvc
+            .perform(
+                patch("/api/v1/orders/$ORDER_SHIPPED/refund")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andDo(print())
+            .andExpect(status().isBadRequest) // 400 Bad Request - 환불 불가능한 상태
+    }
+
+    @Test
+    @DisplayName("PATCH /api/v1/orders/{orderId}/cancel - PREPARING 상태 주문 취소 성공")
+    fun cancelOrder_withPreparingStatus_shouldSucceed() {
+        // given: PREPARING 상태의 주문 생성
+        val orderPreparing = UUID.randomUUID()
+        transactionApplier.applyPrimaryTransaction {
+            entityManager
+                .createNativeQuery(
+                    """
+                    INSERT INTO p_order (id, user_id, store_id, order_number, status, payment_summary, timeline, note,
+                                         payment_id, confirmed_at, created_at, updated_at)
+                    VALUES (?, ?, ?, 'ORD-TEST-PREP', 'PREPARING',
+                            '{}',
+                            '[{"status":"PREPARING","timestamp":"${LocalDateTime.now()}","description":"준비 중"}]',
+                            '준비 중 취소 테스트', ?, NOW(), NOW(), NOW())
+                    """.trimIndent(),
+                ).setParameter(1, orderPreparing)
+                .setParameter(2, CUSTOMER_USER_1)
+                .setParameter(3, STORE_1)
+                .setParameter(4, UUID.randomUUID())
+                .executeUpdate()
+
+            entityManager
+                .createNativeQuery(
+                    """
+                    INSERT INTO p_order_item (id, order_id, product_id, product_name, unit_price, quantity,
+                                              created_at, updated_at)
+                    VALUES (?, ?, ?, '무선 마우스', 50000, 1, NOW(), NOW())
+                    """.trimIndent(),
+                ).setParameter(1, UUID.randomUUID())
+                .setParameter(2, orderPreparing)
+                .setParameter(3, PRODUCT_MOUSE)
+                .executeUpdate()
+
+            entityManager.flush()
+        }
+
+        val request = CancelOrderRequest(cancelReason = "준비 중 취소")
+
+        // when & then
+        mockMvc
+            .perform(
+                patch("/api/v1/orders/$orderPreparing/cancel")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andDo(print())
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.status").value("ORDER_CANCELLED"))
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/orders - 메모가 있는 주문 생성 성공")
+    fun createOrder_withNote_shouldSucceed() {
+        // given
+        val noteText = "경비실에 맡겨주세요. 부재 시 문 앞에 놔주세요."
+        val request =
+            CreateOrderRequest(
+                storeId = STORE_1,
+                items =
+                    listOf(
+                        CreateOrderRequest.OrderItemRequest(
+                            productId = PRODUCT_MOUSE,
+                            quantity = 1,
+                        ),
+                    ),
+                idempotencyKey = "test-key-with-note-${UUID.randomUUID()}",
+                note = noteText,
+            )
+
+        // when & then
+        mockMvc
+            .perform(
+                post("/api/v1/orders")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andDo(print())
+            .andExpect(status().isCreated)
+            .andExpect(jsonPath("$.note").value(noteText))
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/orders - 메모 없이 주문 생성 성공")
+    fun createOrder_withoutNote_shouldSucceed() {
+        // given
+        val request =
+            CreateOrderRequest(
+                storeId = STORE_1,
+                items =
+                    listOf(
+                        CreateOrderRequest.OrderItemRequest(
+                            productId = PRODUCT_MOUSE,
+                            quantity = 1,
+                        ),
+                    ),
+                idempotencyKey = "test-key-without-note-${UUID.randomUUID()}",
+                note = null,
+            )
+
+        // when & then
+        mockMvc
+            .perform(
+                post("/api/v1/orders")
+                    .header(
+                        IstioHeaderExtractor.USER_ID_HEADER,
+                        CUSTOMER_USER_1.toString(),
+                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andDo(print())
+            .andExpect(status().isCreated)
+    }
 }

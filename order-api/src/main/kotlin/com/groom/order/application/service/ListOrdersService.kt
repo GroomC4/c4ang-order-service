@@ -3,7 +3,6 @@ package com.groom.order.application.service
 import com.groom.order.application.dto.ListOrdersQuery
 import com.groom.order.application.dto.ListOrdersResult
 import com.groom.order.domain.port.LoadOrderPort
-import com.groom.order.domain.port.SaveOrderPort
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -19,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class ListOrdersService(
     private val loadOrderPort: LoadOrderPort,
-    private val saveOrderPort: SaveOrderPort,
 ) {
     private val logger = KotlinLogging.logger {}
 

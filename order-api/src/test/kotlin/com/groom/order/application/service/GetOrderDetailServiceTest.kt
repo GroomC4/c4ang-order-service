@@ -3,10 +3,8 @@ package com.groom.order.application.service
 import com.groom.order.application.dto.GetOrderDetailQuery
 import com.groom.order.common.annotation.UnitTest
 import com.groom.order.common.exception.OrderException
-import com.groom.order.domain.model.Order
 import com.groom.order.domain.model.OrderStatus
 import com.groom.order.domain.port.LoadOrderPort
-import com.groom.order.domain.port.SaveOrderPort
 import com.groom.order.domain.service.OrderPolicy
 import com.groom.order.fixture.OrderTestFixture
 import io.kotest.assertions.throwables.shouldThrow
@@ -28,12 +26,10 @@ class GetOrderDetailServiceTest :
 
         Given("존재하는 주문을 조회하는 경우") {
             val loadOrderPort = mockk<LoadOrderPort>()
-            val saveOrderPort = mockk<SaveOrderPort>()
             val orderPolicy = mockk<OrderPolicy>()
             val service =
                 GetOrderDetailService(
                     loadOrderPort,
-                    saveOrderPort,
                     orderPolicy,
                 )
 
@@ -84,12 +80,10 @@ class GetOrderDetailServiceTest :
 
         Given("다른 사용자의 주문을 조회하는 경우") {
             val loadOrderPort = mockk<LoadOrderPort>()
-            val saveOrderPort = mockk<SaveOrderPort>()
             val orderPolicy = mockk<OrderPolicy>()
             val service =
                 GetOrderDetailService(
                     loadOrderPort,
-                    saveOrderPort,
                     orderPolicy,
                 )
 
@@ -124,12 +118,10 @@ class GetOrderDetailServiceTest :
 
         Given("존재하지 않는 주문을 조회하는 경우") {
             val loadOrderPort = mockk<LoadOrderPort>()
-            val saveOrderPort = mockk<SaveOrderPort>()
             val orderPolicy = mockk<OrderPolicy>()
             val service =
                 GetOrderDetailService(
                     loadOrderPort,
-                    saveOrderPort,
                     orderPolicy,
                 )
 

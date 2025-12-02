@@ -4,7 +4,6 @@ import com.groom.order.application.dto.ListOrdersQuery
 import com.groom.order.common.annotation.UnitTest
 import com.groom.order.domain.model.OrderStatus
 import com.groom.order.domain.port.LoadOrderPort
-import com.groom.order.domain.port.SaveOrderPort
 import com.groom.order.fixture.OrderTestFixture
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.BehaviorSpec
@@ -21,8 +20,7 @@ class ListOrdersServiceTest :
 
         Given("사용자의 모든 주문을 조회하는 경우") {
             val loadOrderPort = mockk<LoadOrderPort>()
-            val saveOrderPort = mockk<SaveOrderPort>()
-            val service = ListOrdersService(loadOrderPort, saveOrderPort)
+            val service = ListOrdersService(loadOrderPort)
 
             val userId = UUID.randomUUID()
             val storeId = UUID.randomUUID()
@@ -86,8 +84,7 @@ class ListOrdersServiceTest :
 
         Given("특정 상태의 주문만 조회하는 경우") {
             val loadOrderPort = mockk<LoadOrderPort>()
-            val saveOrderPort = mockk<SaveOrderPort>()
-            val service = ListOrdersService(loadOrderPort, saveOrderPort)
+            val service = ListOrdersService(loadOrderPort)
 
             val userId = UUID.randomUUID()
             val storeId = UUID.randomUUID()
@@ -133,8 +130,7 @@ class ListOrdersServiceTest :
 
         Given("주문이 없는 사용자가 조회하는 경우") {
             val loadOrderPort = mockk<LoadOrderPort>()
-            val saveOrderPort = mockk<SaveOrderPort>()
-            val service = ListOrdersService(loadOrderPort, saveOrderPort)
+            val service = ListOrdersService(loadOrderPort)
 
             val userId = UUID.randomUUID()
 
