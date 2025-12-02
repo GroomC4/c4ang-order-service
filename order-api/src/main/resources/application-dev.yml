@@ -1,0 +1,93 @@
+# ====================================
+# dev 프로필 - k3d 개발환경 (Kubernetes)
+# ====================================
+
+spring:
+  datasource:
+    master:
+      url: ${DB_MASTER_URL:jdbc:postgresql://order-db:5432/order_db}
+      username: ${DB_USERNAME:application}
+      password: ${DB_PASSWORD:application}
+      driver-class-name: org.postgresql.Driver
+    replica:
+      url: ${DB_REPLICA_URL:jdbc:postgresql://order-db:5432/order_db}
+      username: ${DB_USERNAME:application}
+      password: ${DB_PASSWORD:application}
+      driver-class-name: org.postgresql.Driver
+      hikari:
+        maximum-pool-size: 5
+  data:
+    redis:
+      host: ${REDIS_HOST:cache-redis}
+      port: ${REDIS_PORT:6379}
+  jpa:
+    hibernate:
+      ddl-auto: none
+      naming:
+        implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+    properties:
+      hibernate:
+        format_sql: true  # SQL 포맷팅 활성화 (개발 환경)
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+
+# ====================================
+# dev 환경 로그 레벨 (k3d 개발 환경)
+# ====================================
+logging:
+  level:
+    root: INFO
+
+    # 프로젝트 패키지 - DEBUG 레벨 (상세 개발 로그)
+    com.groom.order: DEBUG
+
+    # Spring Framework
+    org.springframework: INFO
+    org.springframework.web: DEBUG
+
+    # Hibernate/JPA - SQL 쿼리 디버깅
+    org.hibernate: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+
+  file:
+    path: ./logs
+
+# Redis 설정 (ExternalName 서비스 사용)
+spring.data.redis:
+  host: ${REDIS_HOST:cache-redis}
+  port: ${REDIS_PORT:6379}
+
+# Feign Client 설정 (k3d 서비스 이름 사용)
+feign:
+  clients:
+    product-service:
+      url: ${PRODUCT_SERVICE_URL:http://product-api:8083}
+      connect-timeout: 5000
+      read-timeout: 5000
+      logger-level: full
+    store-service:
+      url: ${STORE_SERVICE_URL:http://store-api:8084}
+      connect-timeout: 5000
+      read-timeout: 5000
+      logger-level: full
+  client:
+    config:
+      product-service:
+        connectTimeout: 5000
+        readTimeout: 5000
+        loggerLevel: full
+      store-service:
+        connectTimeout: 5000
+        readTimeout: 5000
+        loggerLevel: full
+
+# Kafka Topic 설정
+kafka:
+  bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+  topics:
+    store-info-updated: store.info.updated
+    store-deleted: store.deleted

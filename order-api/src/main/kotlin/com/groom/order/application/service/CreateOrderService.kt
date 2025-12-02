@@ -4,7 +4,7 @@ import com.groom.order.common.domain.DomainEventPublisher
 import com.groom.order.common.exception.OrderException
 import com.groom.order.common.exception.ProductException
 import com.groom.order.common.exception.StoreException
-// import com.groom.order.common.idempotency.IdempotencyService
+import com.groom.order.common.idempotency.IdempotencyService
 import com.groom.order.application.dto.CreateOrderCommand
 import com.groom.order.application.dto.CreateOrderResult
 import com.groom.order.domain.event.OrderCreatedEvent
@@ -42,8 +42,7 @@ class CreateOrderService(
     private val stockReservationManager: StockReservationManager,
     private val orderManager: OrderManager,
     private val orderPolicy: OrderPolicy,
-    // TODO: IdempotencyService 구현 필요
-    // private val idempotencyService: IdempotencyService,
+    private val idempotencyService: IdempotencyService,
     private val domainEventPublisher: DomainEventPublisher,
 ) {
     private val logger = KotlinLogging.logger {}
@@ -54,29 +53,28 @@ class CreateOrderService(
         now: LocalDateTime = LocalDateTime.now(),
     ): CreateOrderResult {
         // 1. 멱등성 확인 (Stripe 방식 - 중복 요청 시 기존 주문 반환)
-        // TODO: IdempotencyService 구현 필요
-        // val existingOrderId = idempotencyService.getOrderId(command.idempotencyKey)
-        // if (existingOrderId != null) {
-        //     logger.info { "Duplicate request detected, returning existing order: $existingOrderId" }
-        //     val existingOrder =
-        //         loadOrderPort.loadById(java.util.UUID.fromString(existingOrderId))
-        //             ?: throw OrderException.OrderNotFound(java.util.UUID.fromString(existingOrderId))
-        //     return CreateOrderResult.from(existingOrder, now)
-        // }
-        //
-        // // 멱등성 키 등록 (첫 요청)
-        // if (!idempotencyService.ensureIdempotency(command.idempotencyKey)) {
-        //     // 동시 요청 경합 발생 - 다시 시도
-        //     val concurrentOrderId = idempotencyService.getOrderId(command.idempotencyKey)
-        //     if (concurrentOrderId != null) {
-        //         logger.info { "Concurrent request detected, returning existing order: $concurrentOrderId" }
-        //         val concurrentOrder =
-        //             loadOrderPort.loadById(java.util.UUID.fromString(concurrentOrderId))
-        //                 ?: throw OrderException.OrderNotFound(java.util.UUID.fromString(concurrentOrderId))
-        //         return CreateOrderResult.from(concurrentOrder, now)
-        //     }
-        //     throw OrderException.DuplicateOrderRequest(command.idempotencyKey)
-        // }
+        val existingOrderId = idempotencyService.getOrderId(command.idempotencyKey)
+        if (existingOrderId != null) {
+            logger.info { "Duplicate request detected, returning existing order: $existingOrderId" }
+            val existingOrder =
+                loadOrderPort.loadById(java.util.UUID.fromString(existingOrderId))
+                    ?: throw OrderException.OrderNotFound(java.util.UUID.fromString(existingOrderId))
+            return CreateOrderResult.from(existingOrder, now)
+        }
+
+        // 멱등성 키 등록 (첫 요청)
+        if (!idempotencyService.ensureIdempotency(command.idempotencyKey)) {
+            // 동시 요청 경합 발생 - 다시 시도
+            val concurrentOrderId = idempotencyService.getOrderId(command.idempotencyKey)
+            if (concurrentOrderId != null) {
+                logger.info { "Concurrent request detected, returning existing order: $concurrentOrderId" }
+                val concurrentOrder =
+                    loadOrderPort.loadById(java.util.UUID.fromString(concurrentOrderId))
+                        ?: throw OrderException.OrderNotFound(java.util.UUID.fromString(concurrentOrderId))
+                return CreateOrderResult.from(concurrentOrder, now)
+            }
+            throw OrderException.DuplicateOrderRequest(command.idempotencyKey)
+        }
 
         // 2. 스토어 존재 확인 (Port를 통한 접근)
         if (!storePort.existsById(command.storeId)) {
@@ -141,8 +139,7 @@ class CreateOrderService(
         logger.info { "Order created successfully: ${savedOrder.orderNumber}" }
 
         // 6-1. 멱등성 키에 주문 ID 저장 (Stripe 방식)
-        // TODO: IdempotencyService 구현 필요
-        // idempotencyService.storeOrderId(command.idempotencyKey, savedOrder.id.toString())
+        idempotencyService.storeOrderId(command.idempotencyKey, savedOrder.id.toString())
 
         // 7. 도메인 이벤트 발행
         val orderCreatedEvent =

@@ -4,8 +4,8 @@ import com.groom.order.common.exception.OrderException
 import com.groom.order.domain.model.ReservationResult
 import com.groom.order.domain.model.StockReservation
 import com.groom.order.domain.model.StockReservation.ReservationItem
-import com.groom.order.infrastructure.stock.OrderItemRequest
-import com.groom.order.infrastructure.stock.StockReservationService
+import com.groom.order.adapter.outbound.stock.OrderItemRequest
+import com.groom.order.adapter.outbound.stock.StockReservationService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Component
 import java.time.Duration

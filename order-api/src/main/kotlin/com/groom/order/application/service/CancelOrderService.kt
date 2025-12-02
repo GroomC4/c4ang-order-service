@@ -7,7 +7,7 @@ import com.groom.order.common.exception.OrderException
 import com.groom.order.domain.port.LoadOrderPort
 import com.groom.order.domain.port.SaveOrderPort
 import com.groom.order.domain.service.OrderManager
-import com.groom.order.infrastructure.stock.StockReservationService
+import com.groom.order.adapter.outbound.stock.StockReservationService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

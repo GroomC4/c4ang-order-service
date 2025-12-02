@@ -4,6 +4,7 @@ import com.groom.order.configuration.jpa.DataSourceType
 import com.groom.order.configuration.jpa.DynamicRoutingDataSource
 import com.zaxxer.hikari.HikariDataSource
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.jdbc.DataSourceBuilder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -14,18 +15,35 @@ import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactor
 import org.springframework.jdbc.datasource.LazyConnectionDataSourceProxy
 import javax.sql.DataSource
 
+/**
+ * 통합 테스트를 위한 데이터 소스 설정.
+ *
+ * testcontainers-starter에서 주입된 PostgreSQL Primary/Replica와 Redis에 동적으로 연결합니다.
+ */
 @Profile("test")
 @Configuration
 class TestDataSourceConfig {
+    @Value("\${spring.datasource.master.url}")
+    private lateinit var masterUrl: String
+
+    @Value("\${spring.datasource.replica.url}")
+    private lateinit var replicaUrl: String
+
+    @Value("\${spring.data.redis.host:localhost}")
+    private lateinit var redisHost: String
+
+    @Value("\${spring.data.redis.port:6379}")
+    private var redisPort: Int = 6379
+
     @Bean
     fun masterDataSource(): HikariDataSource =
         DataSourceBuilder
             .create()
             .type(HikariDataSource::class.java)
-            .url(TestDockerComposeContainer.getMasterJdbcUrl())
+            .url(masterUrl)
             .driverClassName("org.postgresql.Driver")
-            .username(TestDockerComposeContainer.POSTGRESQL_USERNAME)
-            .password(TestDockerComposeContainer.POSTGRESQL_PASSWORD)
+            .username("test")
+            .password("test")
             .build()
 
     @Bean
@@ -33,10 +51,10 @@ class TestDataSourceConfig {
         DataSourceBuilder
             .create()
             .type(HikariDataSource::class.java)
-            .url(TestDockerComposeContainer.getReplicaJdbcUrl())
+            .url(replicaUrl)
             .driverClassName("org.postgresql.Driver")
-            .username(TestDockerComposeContainer.POSTGRESQL_USERNAME)
-            .password(TestDockerComposeContainer.POSTGRESQL_PASSWORD)
+            .username("test")
+            .password("test")
             .build()
 
     @Bean
@@ -64,8 +82,5 @@ class TestDataSourceConfig {
 
     @Bean
     fun redisConnectionFactory(): RedisConnectionFactory =
-        LettuceConnectionFactory(
-            TestDockerComposeContainer.getRedisHost(),
-            TestDockerComposeContainer.getRedisMappedPort(),
-        )
+        LettuceConnectionFactory(redisHost, redisPort)
 }

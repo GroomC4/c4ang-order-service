@@ -11,7 +11,7 @@ import com.groom.order.domain.port.LoadOrderPort
 import com.groom.order.domain.port.SaveOrderPort
 import com.groom.order.domain.service.OrderManager
 import com.groom.order.fixture.OrderTestFixture
-import com.groom.order.infrastructure.stock.StockReservationService
+import com.groom.order.adapter.outbound.stock.StockReservationService
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.BehaviorSpec

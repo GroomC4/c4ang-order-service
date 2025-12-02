@@ -1,18 +1,7 @@
 -- OrderCommandController 통합 테스트 데이터 초기화
 
--- 테스트용 카테고리 데이터
-INSERT INTO p_product_category (id, name, parent_category_id, depth, created_at, updated_at)
-VALUES ('cccccccc-cccc-cccc-cccc-000000000001', '테스트 카테고리', NULL, 0, NOW(), NOW());
-
--- 테스트용 상점 데이터
-INSERT INTO p_store (id, owner_user_id, name, description, status, created_at, updated_at)
-VALUES ('bbbbbbbb-bbbb-bbbb-bbbb-000000000001', '11111111-1111-1111-1111-111111111111', '테스트 상점', '통합 테스트용 상점입니다', 'REGISTERED', NOW(), NOW());
-
--- 테스트용 상품 데이터
-INSERT INTO p_product (id, store_id, store_name, category_id, product_name, status, price, stock_quantity, thumbnail_url, description, created_at, updated_at)
-VALUES
-    ('aaaaaaaa-aaaa-aaaa-aaaa-000000000001', 'bbbbbbbb-bbbb-bbbb-bbbb-000000000001', '테스트 상점', 'cccccccc-cccc-cccc-cccc-000000000001', '테스트 상품 1', 'ON_SALE', 10000, 100, 'https://example.com/test1.jpg', '통합 테스트용 상품 1', NOW(), NOW()),
-    ('aaaaaaaa-aaaa-aaaa-aaaa-000000000002', 'bbbbbbbb-bbbb-bbbb-bbbb-000000000001', '테스트 상점', 'cccccccc-cccc-cccc-cccc-000000000001', '테스트 상품 2', 'ON_SALE', 20000, 50, 'https://example.com/test2.jpg', '통합 테스트용 상품 2', NOW(), NOW());
+-- 마이크로서비스 분리 후: Product, Store, User는 TestProductAdapter, TestStoreAdapter stub 사용
+-- Order Service는 p_order, p_order_item, p_order_audit만 관리
 
 -- 테스트용 주문 데이터 (CUSTOMER_USER_1 소유: 33333333-3333-3333-3333-333333333333)
 -- ORDER_2: PAYMENT_COMPLETED (취소 가능)

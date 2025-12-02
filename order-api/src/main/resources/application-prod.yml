@@ -1,17 +1,40 @@
+# ====================================
+# prod 프로필 - 실제 운영환경 (Production)
+# ====================================
+
 spring:
   datasource:
     master:
-      url: jdbc:postgresql://localhost:15432/groom
-      username: application
-      password: application
-      driver-class-name: org.postgresql.Driver
-    replica:
-      url: jdbc:postgresql://localhost:15433/groom
-      username: application
-      password: application
+      url: ${DB_MASTER_URL:jdbc:postgresql://order-db:5432/order_db}
+      username: ${DB_USERNAME}
+      password: ${DB_PASSWORD}
       driver-class-name: org.postgresql.Driver
       hikari:
-        maximum-pool-size: 5
+        maximum-pool-size: ${DB_MASTER_POOL_SIZE:10}
+        minimum-idle: ${DB_MASTER_MIN_IDLE:5}
+        connection-timeout: 30000
+        idle-timeout: 600000
+        max-lifetime: 1800000
+    replica:
+      url: ${DB_REPLICA_URL:jdbc:postgresql://order-db:5432/order_db}
+      username: ${DB_USERNAME}
+      password: ${DB_PASSWORD}
+      driver-class-name: org.postgresql.Driver
+      hikari:
+        maximum-pool-size: ${DB_REPLICA_POOL_SIZE:10}
+        minimum-idle: ${DB_REPLICA_MIN_IDLE:5}
+        connection-timeout: 30000
+        idle-timeout: 600000
+        max-lifetime: 1800000
+  data:
+    redis:
+      host: ${REDIS_HOST:cache-redis}
+      port: ${REDIS_PORT:6379}
+
+# Platform Core DataSource 라우팅 설정
+platform:
+  datasource:
+    replica-enabled: true
   jpa:
     hibernate:
       ddl-auto: none
@@ -20,52 +43,62 @@ spring:
         physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
     properties:
       hibernate:
-        format_sql: false  # SQL 포맷팅 비활성화 (성능 최적화)
+        format_sql: false
         dialect: org.hibernate.dialect.PostgreSQLDialect
-    show-sql: false  # SQL 출력 비활성화 (성능 최적화)
+    show-sql: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
 
 # ====================================
-# prod 환경 로그 레벨 (프로덕션 환경)
+# prod 환경 로그 레벨 (최소한의 로그)
 # ====================================
 logging:
   level:
-    # ROOT 레벨 - WARN (최소한의 로그)
     root: WARN
-
-    # 프로젝트 패키지 - INFO 레벨 (비즈니스 로직 추적)
-    com.groom.ecommerce: INFO
-
-    # Spring Framework - WARN (필수 로그만)
+    com.groom.order: INFO
     org.springframework: WARN
     org.springframework.web: WARN
-    org.springframework.security: WARN
-
-    # Hibernate/JPA - SQL 로그 완전 비활성화 (성능 최적화)
     org.hibernate: WARN
     org.hibernate.SQL: OFF
     org.hibernate.orm.jdbc.bind: OFF
     org.hibernate.type.descriptor.sql: OFF
 
   file:
-    path: ./logs
+    path: ${LOG_PATH:/var/log/order-service}
 
-security:
-  jwt:
-    secret: local-development-secret-please-change
-    issuer: ecommerce-service-api
-    accessTokenExpirationMinutes: 5
-    refreshTokenExpirationDays: 3
+# Redis 설정 (ExternalName 서비스 사용)
+spring.data.redis:
+  host: ${REDIS_HOST:cache-redis}
+  port: ${REDIS_PORT:6379}
+  password: ${REDIS_PASSWORD:}
 
+# Feign Client 설정
 feign:
   clients:
+    product-service:
+      url: ${PRODUCT_SERVICE_URL}
+      connect-timeout: 3000
+      read-timeout: 3000
+      logger-level: basic
     store-service:
-      url: ${STORE_SERVICE_URL:http://store-service:8081}
+      url: ${STORE_SERVICE_URL}
       connect-timeout: 3000
       read-timeout: 3000
       logger-level: basic
   client:
     config:
+      product-service:
+        connectTimeout: 3000
+        readTimeout: 3000
+        loggerLevel: basic
       store-service:
         connectTimeout: 3000
         readTimeout: 3000
         loggerLevel: basic
+
+# Kafka Topic 설정
+kafka:
+  bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+  topics:
+    store-info-updated: ${KAFKA_TOPIC_STORE_INFO_UPDATED:store.info.updated}
+    store-deleted: ${KAFKA_TOPIC_STORE_DELETED:store.deleted}

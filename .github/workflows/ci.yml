@@ -14,17 +14,13 @@ jobs:
   continuous-integration:
     name: Run Tests
     runs-on: ubuntu-latest
-
     permissions:
       contents: read
       checks: write
-
+      packages: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          submodules: 'recursive'
-          token: ${{ secrets.GROOM_GITHUB_ACTION_TOKEN }}
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -33,11 +29,28 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
+      - name: Create gradle.properties for GitHub Packages
+        run: |
+          mkdir -p ~/.gradle
+          echo "gpr.user=${{ github.actor }}" >> ~/.gradle/gradle.properties
+          echo "gpr.key=${{ secrets.GITHUB_TOKEN }}" >> ~/.gradle/gradle.properties
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
       - name: Run tests
-        run: ./gradlew test --no-daemon
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew test contractTest --no-daemon
+
+      - name: Publish Contract Stubs to GitHub Packages
+        if: success() && startsWith(github.ref, 'refs/tags/v')
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GROOM_GITHUB_ACTION_TOKEN }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        run: ./gradlew :order-api:publish --no-daemon
 
       - name: Upload test results
         if: always()
@@ -45,7 +58,7 @@ jobs:
         with:
           name: test-results
           path: |
-            **/build/test-results/test/*.xml
+            **/build-results/test/*.xml
             **/build/reports/tests/test/
 
       - name: Publish test report
@@ -56,12 +69,16 @@ jobs:
           path: '**/build/test-results/test/*.xml'
           reporter: java-junit
 
-  call-ecr-push:
-    name: Push Docker Image to ECR
+  tracking-cd-workflow: # Job (ECR 푸시 + Config 업데이트 모두 수행)
+    name: Build, Push and Trigger CD
     needs: continuous-integration
     if: success() && startsWith(github.ref, 'refs/tags/v')
+
+    # 요구하는 모든 권한(두 Job의 권한 포함) 부여
     permissions:
-      id-token: write
-      contents: read
-    secrets: inherit
-    uses: GroomC4/c4ang-platform-core/.github/workflows/reusable-ecr-push.yml@v1.0.0
+      id-token: write # AWS OIDC 인증용
+      contents: write
+
+    secrets: inherit # AWS_ROLE_TO_ASSUME, GROOM_GITHUB_ACTION_TOKEN 등 전달
+
+    uses: GroomC4/c4ang-platform-core/.github/workflows/reusable-ecr-push.yml@main
