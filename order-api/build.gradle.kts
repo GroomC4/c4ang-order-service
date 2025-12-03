@@ -61,6 +61,9 @@ dependencies {
     testImplementation("io.mockk:mockk:1.14.5")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
 
+    // Spring Cloud Contract Stub Runner (Consumer Contract Test)
+    testImplementation("org.springframework.cloud:spring-cloud-starter-contract-stub-runner")
+
     // Platform Core - Testcontainers (테스트 전용)
     testImplementation("io.github.groomc4:testcontainers-starter:$platformCoreVersion")
 }
@@ -98,6 +101,26 @@ val integrationTest by tasks.registering(Test::class) {
 
     useJUnitPlatform {
         includeTags("integration-test")
+    }
+
+    testLogging {
+        events("passed", "skipped", "failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+
+    shouldRunAfter(tasks.test)
+}
+
+// Contract Test 전용 태스크 (Stub Runner 기반)
+val contractTest by tasks.registering(Test::class) {
+    description = "Runs contract tests with Stub Runner"
+    group = "verification"
+
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+
+    useJUnitPlatform {
+        includeTags("contract-test")
     }
 
     testLogging {
