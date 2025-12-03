@@ -12,39 +12,32 @@ import java.util.UUID
  *
  * 통합 테스트에서 실제 Store Service 호출 대신 stub 데이터를 반환합니다.
  * @Profile("test")로 테스트 환경에서만 활성화되며, @Primary로 production StoreAdapter를 대체합니다.
+ *
+ * 내부적으로 TestStoreClient의 stub 데이터를 사용하여 일관된 테스트 데이터를 제공합니다.
+ *
+ * @see TestStoreClient 테스트 데이터 정의
+ * @see docs/test/TEST_FIXTURES.md 전체 테스트 데이터 문서
  */
 @Component
 @Profile("test")
 @Primary
-class TestStoreAdapter : StorePort {
-    companion object {
-        // Test Store IDs
-        private val STORE_1 = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-000000000001")
-        private val STORE_2 = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-000000000002")
-
-        // Stub Store Data
-        private val STUB_STORES =
-            mapOf(
-                STORE_1 to
-                    StoreInfo(
-                        id = STORE_1,
-                        name = "Test Store 1",
-                        status = "ACTIVE",
-                    ),
-                STORE_2 to
-                    StoreInfo(
-                        id = STORE_2,
-                        name = "Test Store 2",
-                        status = "ACTIVE",
-                    ),
-            )
-    }
+class TestStoreAdapter(
+    private val testStoreClient: TestStoreClient,
+) : StorePort {
 
     override fun loadById(storeId: UUID): StoreInfo? {
-        return STUB_STORES[storeId]
+        return testStoreClient.getStore(storeId)?.toStoreInfo()
     }
 
     override fun existsById(storeId: UUID): Boolean {
-        return STUB_STORES.containsKey(storeId)
+        return testStoreClient.existsStore(storeId).exists
+    }
+
+    private fun StoreClient.StoreResponse.toStoreInfo(): StoreInfo {
+        return StoreInfo(
+            id = id,
+            name = name,
+            status = status,
+        )
     }
 }
