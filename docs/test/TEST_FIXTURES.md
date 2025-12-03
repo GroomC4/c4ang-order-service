@@ -18,8 +18,13 @@ ProductClient (interface)                ProductClient (interface)
 ProductFeignClient                       TestProductClient (@Primary)
 (실제 HTTP 호출)                          (stub 데이터 반환)
        ↓                                        ↓
-Product Service                          (외부 호출 없음)
+ProductAdapter ─────────────────────── ProductAdapter (동일)
+       ↓                                        ↓
+ProductPort                              ProductPort
 ```
+
+> **핵심**: Adapter는 프로덕션/테스트 동일하게 사용되며, Client만 교체됩니다.
+> TestClient가 `@Primary`로 주입되어 자동으로 stub 데이터를 반환합니다.
 
 ---
 
@@ -159,10 +164,14 @@ val storeId = TestStoreClient.STORE_INACTIVE
 
 | 파일 | 설명 |
 |------|------|
-| `src/test/.../client/TestProductClient.kt` | Product stub 데이터 |
-| `src/test/.../client/TestStoreClient.kt` | Store stub 데이터 |
-| `src/test/.../client/TestProductAdapter.kt` | ProductPort 테스트 구현체 |
-| `src/test/.../client/TestStoreAdapter.kt` | StorePort 테스트 구현체 |
+| `src/main/.../client/ProductClient.kt` | Product Client 인터페이스 |
+| `src/main/.../client/ProductFeignClient.kt` | Product Feign 구현체 (HTTP) |
+| `src/main/.../client/ProductAdapter.kt` | ProductPort 구현체 |
+| `src/test/.../client/TestProductClient.kt` | Product stub 구현체 |
+| `src/main/.../client/StoreClient.kt` | Store Client 인터페이스 |
+| `src/main/.../client/StoreFeignClient.kt` | Store Feign 구현체 (HTTP) |
+| `src/main/.../client/StoreAdapter.kt` | StorePort 구현체 |
+| `src/test/.../client/TestStoreClient.kt` | Store stub 구현체 |
 
 ---
 

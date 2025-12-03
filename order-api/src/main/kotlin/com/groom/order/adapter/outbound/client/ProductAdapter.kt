@@ -8,8 +8,11 @@ import java.util.UUID
 /**
  * Product 도메인 연동 Adapter (MSA 구현)
  *
- * ProductClient(Feign)를 통해 Product Service의 REST API를 호출하고,
+ * ProductClient를 통해 Product Service와 통신하고,
  * Order 도메인의 ProductInfo로 변환합니다.
+ *
+ * ProductClient는 인터페이스로 추상화되어 있어,
+ * 프로덕션에서는 ProductFeignClient(HTTP), 테스트에서는 TestProductClient(stub)가 주입됩니다.
  */
 @Component
 class ProductAdapter(
@@ -22,16 +25,7 @@ class ProductAdapter(
      * @return 상품 정보 (없으면 null)
      */
     override fun loadById(productId: UUID): ProductInfo? {
-        // TODO: Product Service API 호출 후 ProductInfo로 변환
-        // val response = productClient.getProduct(productId) ?: return null
-        // return ProductInfo(
-        //     id = response.id,
-        //     storeId = response.storeId,
-        //     name = response.name,
-        //     storeName = response.storeName,
-        //     price = response.price,
-        // )
-        TODO("Product Service HTTP 호출 구현 필요")
+        return productClient.getProduct(productId)?.toProductInfo()
     }
 
     /**
@@ -41,16 +35,16 @@ class ProductAdapter(
      * @return 상품 정보 목록
      */
     override fun loadAllById(productIds: List<UUID>): List<ProductInfo> {
-        // TODO: Product Service API 호출 후 ProductInfo 리스트로 변환
-        // return productClient.getProducts(productIds).map { response ->
-        //     ProductInfo(
-        //         id = response.id,
-        //         storeId = response.storeId,
-        //         name = response.name,
-        //         storeName = response.storeName,
-        //         price = response.price,
-        //     )
-        // }
-        TODO("Product Service HTTP 호출 구현 필요")
+        return productClient.getProducts(productIds).map { it.toProductInfo() }
+    }
+
+    private fun ProductClient.ProductResponse.toProductInfo(): ProductInfo {
+        return ProductInfo(
+            id = id,
+            storeId = storeId,
+            storeName = storeName,
+            name = name,
+            price = price,
+        )
     }
 }
