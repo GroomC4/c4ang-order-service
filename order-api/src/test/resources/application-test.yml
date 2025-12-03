@@ -21,14 +21,24 @@ aws:
     access-key: test-access-key
     secret-key: test-secret-key
 
+# Feign Client 설정 (테스트 환경)
+# 실제로는 TestProductClient, TestStoreClient가 @Primary로 주입되어
+# FeignClient 대신 stub 데이터를 반환합니다.
 feign:
   clients:
+    product-service:
+      url: http://localhost:8083
+      connect-timeout: 5000
+      read-timeout: 5000
+      logger-level: full
     store-service:
-      url: http://localhost:8081
+      url: http://localhost:8084
       connect-timeout: 5000
       read-timeout: 5000
       logger-level: full
   client:
     config:
-      store-service:
+      default:
+        connectTimeout: 5000
+        readTimeout: 5000
         loggerLevel: full
