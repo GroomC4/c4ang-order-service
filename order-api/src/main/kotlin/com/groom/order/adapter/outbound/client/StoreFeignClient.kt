@@ -24,7 +24,7 @@ interface StoreFeignClient : StoreClient {
      * @param storeId 스토어 ID
      * @return 스토어 정보 DTO (미존재 시 FeignException 404 발생)
      */
-    @GetMapping("/internal/api/v1/stores/{storeId}")
+    @GetMapping("/internal/v1/stores/{storeId}")
     override fun getStore(
         @PathVariable storeId: UUID,
     ): StoreClient.StoreResponse?
@@ -35,7 +35,7 @@ interface StoreFeignClient : StoreClient {
      * @param storeId 스토어 ID
      * @return 존재 여부 응답
      */
-    @GetMapping("/internal/api/v1/stores/{storeId}/exists")
+    @GetMapping("/internal/v1/stores/{storeId}/exists")
     override fun existsStore(
         @PathVariable storeId: UUID,
     ): StoreClient.ExistsResponse

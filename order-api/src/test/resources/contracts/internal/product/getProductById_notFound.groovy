@@ -8,7 +8,7 @@ Contract.make {
 
     request {
         method GET()
-        urlPath("/internal/api/v1/products/99999999-9999-9999-9999-999999999999")
+        urlPath("/internal/v1/products/99999999-9999-9999-9999-999999999999")
         headers {
             contentType(applicationJson())
         }

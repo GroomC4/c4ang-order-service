@@ -25,7 +25,7 @@ interface ProductFeignClient : ProductClient {
      * @param productId 상품 ID
      * @return 상품 정보 DTO (미존재 시 FeignException 404 발생)
      */
-    @GetMapping("/internal/api/v1/products/{productId}")
+    @GetMapping("/internal/v1/products/{productId}")
     override fun getProduct(
         @PathVariable productId: UUID,
     ): ProductClient.ProductResponse?
@@ -36,7 +36,7 @@ interface ProductFeignClient : ProductClient {
      * @param productIds 상품 ID 목록 (쿼리 파라미터)
      * @return 상품 정보 DTO 목록 (존재하는 상품만 반환)
      */
-    @GetMapping("/internal/api/v1/products")
+    @GetMapping("/internal/v1/products")
     override fun getProducts(
         @RequestParam("ids") productIds: List<UUID>,
     ): List<ProductClient.ProductResponse>

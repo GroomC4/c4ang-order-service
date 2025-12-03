@@ -12,8 +12,8 @@ Order Service가 Product Service를 호출하기 위한 Internal API 스펙입�
 
 | Method | Endpoint | 설명 |
 |--------|----------|------|
-| GET | `/internal/api/v1/products/{productId}` | 상품 단건 조회 |
-| GET | `/internal/api/v1/products?ids={id1},{id2},...` | 상품 다건 조회 |
+| GET | `/internal/v1/products/{productId}` | 상품 단건 조회 |
+| GET | `/internal/v1/products?ids={id1},{id2},...` | 상품 다건 조회 |
 
 ---
 
@@ -22,7 +22,7 @@ Order Service가 Product Service를 호출하기 위한 Internal API 스펙입�
 ### Request
 
 ```
-GET /internal/api/v1/products/{productId}
+GET /internal/v1/products/{productId}
 ```
 
 | Parameter | Type | Required | Description |
@@ -76,7 +76,7 @@ GET /internal/api/v1/products/{productId}
 ### Request
 
 ```
-GET /internal/api/v1/products?ids={id1},{id2},...
+GET /internal/v1/products?ids={id1},{id2},...
 ```
 
 | Parameter | Type | Required | Description |
@@ -136,7 +136,7 @@ GET /internal/api/v1/products?ids={id1},{id2},...
 
 ## 응답 케이스 정리
 
-### 상품 단건 조회 (GET /internal/api/v1/products/{productId})
+### 상품 단건 조회 (GET /internal/v1/products/{productId})
 
 | 케이스 | HTTP Status | Error Code | 설명 |
 |--------|-------------|------------|------|
@@ -145,7 +145,7 @@ GET /internal/api/v1/products?ids={id1},{id2},...
 | 잘못된 UUID 형식 | 400 | BAD_REQUEST | productId 형식 오류 |
 | 서버 오류 | 500 | INTERNAL_SERVER_ERROR | 예상치 못한 오류 |
 
-### 상품 다건 조회 (GET /internal/api/v1/products?ids=...)
+### 상품 다건 조회 (GET /internal/v1/products?ids=...)
 
 | 케이스 | HTTP Status | Error Code | 설명 |
 |--------|-------------|------------|------|

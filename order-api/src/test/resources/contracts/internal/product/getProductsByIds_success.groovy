@@ -8,7 +8,7 @@ Contract.make {
 
     request {
         method GET()
-        urlPath("/internal/api/v1/products") {
+        urlPath("/internal/v1/products") {
             queryParameters {
                 parameter 'ids': "550e8400-e29b-41d4-a716-446655440000,550e8400-e29b-41d4-a716-446655440002"
             }

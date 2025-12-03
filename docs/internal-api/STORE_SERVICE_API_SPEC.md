@@ -12,8 +12,8 @@ Order Service가 Store Service를 호출하기 위한 Internal API 스펙입니�
 
 | Method | Endpoint | 설명 |
 |--------|----------|------|
-| GET | `/internal/api/v1/stores/{storeId}` | 스토어 조회 |
-| GET | `/internal/api/v1/stores/{storeId}/exists` | 스토어 존재 여부 확인 |
+| GET | `/internal/v1/stores/{storeId}` | 스토어 조회 |
+| GET | `/internal/v1/stores/{storeId}/exists` | 스토어 존재 여부 확인 |
 
 ---
 
@@ -22,7 +22,7 @@ Order Service가 Store Service를 호출하기 위한 Internal API 스펙입니�
 ### Request
 
 ```
-GET /internal/api/v1/stores/{storeId}
+GET /internal/v1/stores/{storeId}
 ```
 
 | Parameter | Type | Required | Description |
@@ -72,7 +72,7 @@ GET /internal/api/v1/stores/{storeId}
 ### Request
 
 ```
-GET /internal/api/v1/stores/{storeId}/exists
+GET /internal/v1/stores/{storeId}/exists
 ```
 
 | Parameter | Type | Required | Description |
@@ -114,7 +114,7 @@ GET /internal/api/v1/stores/{storeId}/exists
 
 ## 응답 케이스 정리
 
-### 스토어 조회 (GET /internal/api/v1/stores/{storeId})
+### 스토어 조회 (GET /internal/v1/stores/{storeId})
 
 | 케이스 | HTTP Status | Error Code | 설명 |
 |--------|-------------|------------|------|
@@ -123,7 +123,7 @@ GET /internal/api/v1/stores/{storeId}/exists
 | 잘못된 UUID 형식 | 400 | BAD_REQUEST | storeId 형식 오류 |
 | 서버 오류 | 500 | INTERNAL_SERVER_ERROR | 예상치 못한 오류 |
 
-### 스토어 존재 여부 확인 (GET /internal/api/v1/stores/{storeId}/exists)
+### 스토어 존재 여부 확인 (GET /internal/v1/stores/{storeId}/exists)
 
 | 케이스 | HTTP Status | Error Code | 설명 |
 |--------|-------------|------------|------|
