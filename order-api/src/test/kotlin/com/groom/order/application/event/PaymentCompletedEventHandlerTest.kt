@@ -31,6 +31,7 @@ class PaymentCompletedEventHandlerTest :
                 orderNumber = "ORD-20251202-ABC123",
                 paymentId = paymentId,
                 paymentAmount = paymentAmount,
+                pgTransactionId = "PG-TXN-123456",
             )
 
             every {
@@ -80,6 +81,7 @@ class PaymentCompletedEventHandlerTest :
                     orderNumber = "ORD-20251202-SMALL",
                     paymentId = UUID.randomUUID(),
                     paymentAmount = 1000L,
+                    pgTransactionId = "PG-TXN-SMALL",
                 )
                 handler.handlePaymentCompleted(event)
 
@@ -102,6 +104,7 @@ class PaymentCompletedEventHandlerTest :
                     orderNumber = "ORD-20251202-LARGE",
                     paymentId = UUID.randomUUID(),
                     paymentAmount = 10000000L,
+                    pgTransactionId = "PG-TXN-LARGE",
                 )
                 handler.handlePaymentCompleted(event)
 

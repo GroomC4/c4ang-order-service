@@ -29,7 +29,7 @@ interface StoreClient {
      * Store Service 응답 DTO
      */
     data class StoreResponse(
-        val id: UUID,
+        val storeId: UUID,
         val name: String,
         val status: String,
     )

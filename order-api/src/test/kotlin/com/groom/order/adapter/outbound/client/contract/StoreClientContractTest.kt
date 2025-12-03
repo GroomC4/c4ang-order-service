@@ -32,7 +32,7 @@ import java.util.UUID
  */
 @Tag("contract-test")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
-@ActiveProfiles("contract-test")
+@ActiveProfiles("consumer-contract-test")
 @AutoConfigureStubRunner(
     ids = ["io.github.groomc4:store-api:+:stubs:8084"],
     stubsMode = StubRunnerProperties.StubsMode.LOCAL,
@@ -56,9 +56,9 @@ class StoreClientContractTest {
 
         // then
         response.shouldNotBeNull()
-        response.id shouldBe EXISTING_STORE_ID
+        response.storeId shouldBe EXISTING_STORE_ID
         response.name.shouldNotBeNull()
-        response.status shouldBe "ACTIVE"
+        response.status shouldBe "REGISTERED"
     }
 
     @Test

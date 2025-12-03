@@ -1,6 +1,6 @@
 package com.groom.order.adapter.outbound.scheduler
 
-import com.groom.order.common.annotation.IntegrationTest
+import com.groom.order.common.IntegrationTestBase
 import com.groom.order.adapter.outbound.stock.StockReservationService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -9,7 +9,6 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.redisson.api.RedissonClient
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import java.time.Duration
 import java.util.UUID
 
@@ -23,10 +22,8 @@ import java.util.UUID
  * 2. 스케줄러 수동 실행
  * 3. 만료된 예약이 정리되었는지 검증
  */
-@IntegrationTest
-@SpringBootTest
 @DisplayName("재고 예약 스케줄러 통합 테스트")
-class StockReservationSchedulerIntegrationTest {
+class StockReservationSchedulerIntegrationTest : IntegrationTestBase() {
     @Autowired
     private lateinit var stockReservationScheduler: StockReservationScheduler
 

@@ -1,12 +1,11 @@
 package com.groom.order.adapter.inbound.web
 
-import com.groom.order.common.annotation.IntegrationTest
+import com.groom.order.common.IntegrationTestBase
 import org.hamcrest.CoreMatchers.not
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers.print
@@ -22,10 +21,8 @@ import java.util.UUID
  * - 인증 없음: 접근 불가 (500 Internal Server Error)
  */
 @DisplayName("주문 조회(Query) 컨트롤러 통합 테스트 - 인증/인가")
-@IntegrationTest
-@SpringBootTest
 @AutoConfigureMockMvc
-class OrderQueryControllerAuthorizationIntegrationTest {
+class OrderQueryControllerAuthorizationIntegrationTest : IntegrationTestBase() {
     @Autowired
     private lateinit var mockMvc: MockMvc
 

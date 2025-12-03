@@ -33,7 +33,7 @@ import java.util.UUID
  */
 @Tag("contract-test")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
-@ActiveProfiles("contract-test")
+@ActiveProfiles("consumer-contract-test")
 @AutoConfigureStubRunner(
     ids = ["io.github.groomc4:product-api:+:stubs:8083"],
     stubsMode = StubRunnerProperties.StubsMode.LOCAL,

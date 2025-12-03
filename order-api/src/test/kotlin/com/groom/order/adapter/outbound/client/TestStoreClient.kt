@@ -49,17 +49,17 @@ class TestStoreClient : StoreClient {
         // ========================================
         private val STUB_STORES = mapOf(
             STORE_1 to StoreClient.StoreResponse(
-                id = STORE_1,
+                storeId = STORE_1,
                 name = "Test Store 1",
                 status = "ACTIVE",
             ),
             STORE_2 to StoreClient.StoreResponse(
-                id = STORE_2,
+                storeId = STORE_2,
                 name = "Test Store 2",
                 status = "ACTIVE",
             ),
             STORE_INACTIVE to StoreClient.StoreResponse(
-                id = STORE_INACTIVE,
+                storeId = STORE_INACTIVE,
                 name = "Inactive Store",
                 status = "INACTIVE",
             ),

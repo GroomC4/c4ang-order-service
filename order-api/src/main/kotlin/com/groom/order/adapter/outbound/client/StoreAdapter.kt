@@ -40,7 +40,7 @@ class StoreAdapter(
 
     private fun StoreClient.StoreResponse.toStoreInfo(): StoreInfo {
         return StoreInfo(
-            id = id,
+            id = storeId,
             name = name,
             status = status,
         )

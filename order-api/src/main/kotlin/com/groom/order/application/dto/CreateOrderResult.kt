@@ -23,6 +23,7 @@ data class CreateOrderResult(
     val expiresAt: LocalDateTime?,
     val createdAt: LocalDateTime,
     val items: List<OrderItemInfo>,
+    val note: String?,
 ) {
     data class OrderItemInfo(
         val productId: UUID,
@@ -61,6 +62,7 @@ data class CreateOrderResult(
                 expiresAt = order.expiresAt,
                 createdAt = order.createdAt ?: now,
                 items = order.items.map(::OrderItemInfo),
+                note = order.note,
             )
         }
     }

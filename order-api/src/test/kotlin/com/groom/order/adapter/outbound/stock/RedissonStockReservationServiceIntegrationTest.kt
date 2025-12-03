@@ -1,6 +1,6 @@
 package com.groom.order.adapter.outbound.stock
 
-import com.groom.order.common.annotation.IntegrationTest
+import com.groom.order.common.IntegrationTestBase
 import com.groom.order.domain.model.ReservationResult
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -8,7 +8,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.redisson.api.RedissonClient
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
@@ -21,9 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger
  *
  * compareAndSet 기반 동시성 제어를 실제 Redis와 함께 검증합니다.
  */
-@IntegrationTest
-@SpringBootTest
-class RedissonStockReservationServiceIntegrationTest {
+class RedissonStockReservationServiceIntegrationTest : IntegrationTestBase() {
     @Autowired
     private lateinit var stockReservationService: StockReservationService
 

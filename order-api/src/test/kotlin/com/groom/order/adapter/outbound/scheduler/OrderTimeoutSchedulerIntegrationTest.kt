@@ -1,7 +1,7 @@
 package com.groom.order.adapter.outbound.scheduler
 
+import com.groom.order.common.IntegrationTestBase
 import com.groom.order.common.TransactionApplier
-import com.groom.order.common.annotation.IntegrationTest
 import com.groom.order.domain.model.OrderStatus
 import com.groom.order.domain.port.LoadOrderPort
 import com.groom.order.domain.port.SaveOrderPort
@@ -13,7 +13,6 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.redisson.api.RedissonClient
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.SqlGroup
 import java.time.Duration
@@ -32,8 +31,6 @@ import java.util.UUID
  * 4. 만료된 주문이 PAYMENT_TIMEOUT으로 변경되었는지 검증
  * 5. 재고 예약이 취소되었는지 검증
  */
-@IntegrationTest
-@SpringBootTest
 @SqlGroup(
     Sql(
         scripts = ["/sql/scheduler/cleanup-order-timeout-scheduler-test.sql"],
@@ -49,7 +46,7 @@ import java.util.UUID
     ),
 )
 @DisplayName("주문 타임아웃 스케줄러 통합 테스트")
-class OrderTimeoutSchedulerIntegrationTest {
+class OrderTimeoutSchedulerIntegrationTest : IntegrationTestBase() {
     @Autowired
     private lateinit var orderTimeoutScheduler: OrderTimeoutScheduler
 

@@ -9,9 +9,7 @@ import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
-import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
 import java.util.UUID
@@ -31,7 +29,7 @@ class OrderAuditRecorderTest :
             val changeSummary = "주문이 생성되었습니다."
 
             val auditSlot = slot<OrderAudit>()
-            every { saveOrderAuditPort.save(capture(auditSlot)) } just runs
+            every { saveOrderAuditPort.save(capture(auditSlot)) } answers { auditSlot.captured }
 
             When("기본 정보로 기록하면") {
                 recorder.record(
@@ -93,7 +91,7 @@ class OrderAuditRecorderTest :
 
             val orderId = UUID.randomUUID()
             val auditSlot = slot<OrderAudit>()
-            every { saveOrderAuditPort.save(capture(auditSlot)) } just runs
+            every { saveOrderAuditPort.save(capture(auditSlot)) } answers { auditSlot.captured }
 
             When("ORDER_CANCELLED 이벤트를 기록하면") {
                 recorder.record(
@@ -138,11 +136,11 @@ class OrderAuditRecorderTest :
 
             val orderId = UUID.randomUUID()
             val orderItemId = UUID.randomUUID()
-            val eventType = OrderAuditEventType.ITEM_SHIPPED
+            val eventType = OrderAuditEventType.ORDER_CONFIRMED
             val changeSummary = "아이템이 배송되었습니다."
 
             val auditSlot = slot<OrderAudit>()
-            every { saveOrderAuditPort.save(capture(auditSlot)) } just runs
+            every { saveOrderAuditPort.save(capture(auditSlot)) } answers { auditSlot.captured }
 
             When("아이템 ID와 함께 기록하면") {
                 recorder.recordItem(
@@ -189,7 +187,7 @@ class OrderAuditRecorderTest :
                     recorder.recordItem(
                         orderId = orderId,
                         orderItemId = UUID.randomUUID(),
-                        eventType = OrderAuditEventType.ITEM_SHIPPED,
+                        eventType = OrderAuditEventType.ORDER_CONFIRMED,
                         changeSummary = "아이템 배송",
                     )
                 }

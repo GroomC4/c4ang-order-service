@@ -1,8 +1,8 @@
 package com.groom.order.adapter.inbound.web
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.groom.order.common.IntegrationTestBase
 import com.groom.order.common.TransactionApplier
-import com.groom.order.common.annotation.IntegrationTest
 import com.groom.order.common.util.IstioHeaderExtractor
 import com.groom.order.adapter.inbound.web.dto.CancelOrderRequest
 import com.groom.order.adapter.inbound.web.dto.CreateOrderRequest
@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test
 import org.redisson.api.RedissonClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.SqlGroup
@@ -36,8 +35,6 @@ import java.util.UUID
  * - Redis 재고 예약 로직 포함
  * - 실제 데이터베이스와 통합 테스트
  */
-@IntegrationTest
-@SpringBootTest
 @AutoConfigureMockMvc
 @SqlGroup(
     Sql(
@@ -54,7 +51,7 @@ import java.util.UUID
     ),
 )
 @DisplayName("주문 명령(Command) 컨트롤러 비즈니스 로직 통합 테스트")
-class OrderCommandControllerIntegrationTest {
+class OrderCommandControllerIntegrationTest : IntegrationTestBase() {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
@@ -311,13 +308,13 @@ class OrderCommandControllerIntegrationTest {
             .andExpect(jsonPath("$.orderId").exists())
             .andExpect(jsonPath("$.orderNumber").exists())
             .andExpect(jsonPath("$.status").value("STOCK_RESERVED"))
-            .andExpect(jsonPath("$.totalAmount").value(100000.00)) // 50000 * 2
+            .andExpect(jsonPath("$.totalAmount").value(58000.00)) // 29000 * 2
             .andExpect(jsonPath("$.reservationId").exists())
             .andExpect(jsonPath("$.expiresAt").exists())
             .andExpect(jsonPath("$.items.length()").value(1))
             .andExpect(jsonPath("$.items[0].productId").value(PRODUCT_MOUSE.toString()))
-            .andExpect(jsonPath("$.items[0].productName").value("무선 마우스"))
-            .andExpect(jsonPath("$.items[0].unitPrice").value(50000.00))
+            .andExpect(jsonPath("$.items[0].productName").value("Gaming Mouse"))
+            .andExpect(jsonPath("$.items[0].unitPrice").value(29000.00))
             .andExpect(jsonPath("$.items[0].quantity").value(2))
     }
 
@@ -356,7 +353,7 @@ class OrderCommandControllerIntegrationTest {
             ).andDo(print())
             .andExpect(status().isCreated)
             .andExpect(jsonPath("$.status").value("STOCK_RESERVED"))
-            .andExpect(jsonPath("$.totalAmount").value(170000.00)) // 50000 + 120000
+            .andExpect(jsonPath("$.totalAmount").value(118000.00)) // 29000 + 89000
             .andExpect(jsonPath("$.items.length()").value(2))
     }
 
@@ -477,9 +474,10 @@ class OrderCommandControllerIntegrationTest {
     @DisplayName("POST /api/v1/orders - 재고 부족 상품 주문 시도 시 실패")
     fun createOrder_withInsufficientStock_shouldFail() {
         // given: 재고가 2개인 상품을 3개 주문 시도
+        // PRODUCT_LOW_STOCK은 STORE_2에 속해 있음 (TestProductClient 참조)
         val request =
             CreateOrderRequest(
-                storeId = STORE_1,
+                storeId = STORE_2,
                 items =
                     listOf(
                         CreateOrderRequest.OrderItemRequest(

@@ -1,12 +1,11 @@
 package com.groom.order.adapter.inbound.web
 
+import com.groom.order.common.IntegrationTestBase
 import com.groom.order.common.util.IstioHeaderExtractor
-import com.groom.order.common.annotation.IntegrationTest
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.SqlGroup
 import org.springframework.test.web.servlet.MockMvc
@@ -37,10 +36,8 @@ import java.util.UUID
     ),
 )
 @DisplayName("주문 조회(Query) 컨트롤러 비즈니스로직 통합 테스트")
-@IntegrationTest
-@SpringBootTest
 @AutoConfigureMockMvc
-class OrderQueryControllerIntegrationTest {
+class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
     @Autowired
     private lateinit var mockMvc: MockMvc
 

@@ -28,6 +28,8 @@ data class CreateOrderResponse(
     val createdAt: LocalDateTime,
     @Schema(description = "주문 항목 목록")
     val items: List<OrderItemResponse>,
+    @Schema(description = "주문 메모", example = "빨리 배달해주세요", nullable = true)
+    val note: String?,
 ) {
     @Schema(description = "주문 항목 정보")
     data class OrderItemResponse(
@@ -63,6 +65,7 @@ data class CreateOrderResponse(
                             subtotal = item.subtotal,
                         )
                     },
+                note = result.note,
             )
     }
 }

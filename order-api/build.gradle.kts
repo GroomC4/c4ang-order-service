@@ -88,7 +88,10 @@ tasks.withType<Test> {
 }
 
 tasks.test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        // Contract 테스트는 별도 task(contractTest)로 실행
+        excludeTags("contract-test")
+    }
 }
 
 // 통합 테스트 전용 태스크 (Docker Compose 기반)
