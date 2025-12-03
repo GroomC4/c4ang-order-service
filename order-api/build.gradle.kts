@@ -64,6 +64,9 @@ dependencies {
     // Spring Cloud Contract Stub Runner (Consumer Contract Test)
     testImplementation("org.springframework.cloud:spring-cloud-starter-contract-stub-runner")
 
+    // Feign Jackson (Consumer Contract Test에서 수동 Feign Client 구성에 필요)
+    testImplementation("io.github.openfeign:feign-jackson:13.3")
+
     // Platform Core - Testcontainers (테스트 전용)
     testImplementation("io.github.groomc4:testcontainers-starter:$platformCoreVersion")
 }
@@ -76,6 +79,10 @@ tasks.withType<Test> {
 
     systemProperty("user.timezone", "KST")
     jvmArgs("--add-opens", "java.base/java.time=ALL-UNNAMED")
+
+    // Stub Runner가 GitHub Packages에서 Stub을 다운로드하기 위한 인증 설정
+    systemProperty("stubrunner.username", System.getenv("GITHUB_ACTOR") ?: project.findProperty("gpr.user") ?: "")
+    systemProperty("stubrunner.password", System.getenv("GITHUB_TOKEN") ?: project.findProperty("gpr.key") ?: "")
 
     // 테스트 실행 로깅
     testLogging {

@@ -1,28 +1,27 @@
-# ====================================
-# Consumer Contract Test 프로필
-# ====================================
-# Consumer Contract Test는 Producer가 배포한 Stub을 사용하여
-# FeignClient가 Contract를 준수하는지 검증합니다.
-#
-# - 인프라(DB, Redis, Kafka) 불필요
-# - Stub Runner가 WireMock 서버를 띄우고, FeignClient가 해당 서버로 요청
-#
-# Producer Contract Test(Stub 발행)는 인프라가 필요하므로 test 프로필 사용
+# Consumer Contract Test 전용 프로필
+# 다른 서비스의 Contract Stub을 검증하는 Consumer 측 테스트용
+# 인프라(DB, Redis, Kafka) 없이 Stub Runner만으로 검증
+# Testcontainers를 사용하지 않아 테스트 실행 속도가 빠름
+
+logging:
+  level:
+    root: WARN
+    com.groom.order: INFO
+    org.springframework.cloud.contract: DEBUG
 
 spring:
-  cloud:
-    openfeign:
-      client:
-        config:
-          default:
-            connect-timeout: 5000
-            read-timeout: 5000
-  # JPA/DataSource 비활성화 (Contract Test는 DB 불필요)
+  main:
+    # Consumer Contract Test는 전체 애플리케이션 컨텍스트가 필요 없음
+    lazy-initialization: true
   autoconfigure:
     exclude:
+      # 인프라 관련 자동 설정 비활성화
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
       - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
       - org.redisson.spring.starter.RedissonAutoConfigurationV2
 
 # Feign Client 설정 (Stub Runner가 제공하는 WireMock 서버 포트 사용)
@@ -36,10 +35,5 @@ feign:
 # Stub Runner 설정
 stubrunner:
   ids-to-service-ids:
-    product-api: product-service
-    store-api: store-service
-
-logging:
-  level:
-    org.springframework.cloud.contract: DEBUG
-    com.groom.order.adapter.outbound.client: DEBUG
+    product-service-contract-stubs: product-service
+    store-service-contract-stubs: store-service
