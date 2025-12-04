@@ -63,4 +63,22 @@ interface OrderJpaRepository : JpaRepository<Order, UUID> {
         @Param("statuses") statuses: List<OrderStatus>,
         @Param("expiredAt") expiredAt: LocalDateTime,
     ): List<Order>
+
+    /**
+     * 기간 내 확정된 주문 조회 (일일 통계용)
+     * confirmedAt이 해당 기간 내인 주문들을 조회
+     */
+    @Query(
+        """
+        SELECT o FROM Order o
+        LEFT JOIN FETCH o.items
+        WHERE o.confirmedAt >= :startDateTime
+        AND o.confirmedAt < :endDateTime
+        ORDER BY o.confirmedAt ASC
+        """,
+    )
+    fun findConfirmedOrdersBetween(
+        @Param("startDateTime") startDateTime: LocalDateTime,
+        @Param("endDateTime") endDateTime: LocalDateTime,
+    ): List<Order>
 }
