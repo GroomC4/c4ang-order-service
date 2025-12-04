@@ -21,10 +21,17 @@ interface ProductClient {
     /**
      * 상품 다건 조회
      *
-     * @param productIds 상품 ID 목록
+     * @param request 상품 ID 목록을 담은 요청 객체
      * @return 상품 정보 DTO 목록 (존재하는 상품만 반환)
      */
-    fun getProducts(productIds: List<UUID>): List<ProductResponse>
+    fun searchProducts(request: ProductSearchRequest): List<ProductResponse>
+
+    /**
+     * 상품 다건 조회 요청 DTO
+     */
+    data class ProductSearchRequest(
+        val ids: List<UUID>,
+    )
 
     /**
      * Product Service 응답 DTO

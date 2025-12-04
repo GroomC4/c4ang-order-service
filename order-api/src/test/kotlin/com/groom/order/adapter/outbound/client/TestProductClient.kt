@@ -88,7 +88,7 @@ class TestProductClient : ProductClient {
         return STUB_PRODUCTS[productId]
     }
 
-    override fun getProducts(productIds: List<UUID>): List<ProductClient.ProductResponse> {
-        return productIds.mapNotNull { STUB_PRODUCTS[it] }
+    override fun searchProducts(request: ProductClient.ProductSearchRequest): List<ProductClient.ProductResponse> {
+        return request.ids.mapNotNull { STUB_PRODUCTS[it] }
     }
 }

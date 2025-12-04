@@ -23,7 +23,8 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import java.util.UUID
 
 /**
@@ -37,8 +38,8 @@ import java.util.UUID
  * product-api/src/test/resources/contracts.internal/order-service/
  * ├── getProductById_success.yml     - 상품 조회 성공
  * ├── getProductById_notFound.yml    - 상품 조회 실패 (404)
- * ├── getProductsByIds_success.yml   - 상품 다건 조회 성공
- * └── getProductsByIds_empty.yml     - 상품 다건 조회 빈 결과
+ * ├── getProductsByIds_success.yml   - 상품 다건 조회 성공 (POST)
+ * └── getProductsByIds_empty.yml     - 상품 다건 조회 빈 결과 (POST)
  * ```
  *
  * ## 실행 방법
@@ -80,11 +81,7 @@ class ProductClientContractTest {
     /**
      * Contract Test 전용 Feign Client 인터페이스
      *
-     * Product Service의 Internal API Contract가 ids 파라미터를 쉼표로 구분된
-     * 단일 문자열로 기대하므로, Contract 검증을 위한 별도 인터페이스를 정의합니다.
-     *
-     * 실제 ProductFeignClient와 동일한 엔드포인트를 호출하지만,
-     * getProducts 메서드의 파라미터 형식이 다릅니다.
+     * ProductFeignClient와 동일한 엔드포인트를 호출합니다.
      */
     interface ContractTestProductFeignClient {
         @GetMapping("/internal/v1/products/{productId}")
@@ -93,13 +90,14 @@ class ProductClientContractTest {
         ): ProductClient.ProductResponse?
 
         /**
-         * 상품 다건 조회 (Contract 형식: 쉼표로 구분된 문자열)
+         * 상품 다건 조회
          *
-         * Product Service의 Contract는 ids 파라미터를 "id1,id2,id3" 형식으로 기대합니다.
+         * POST /internal/v1/products/search
+         * Request Body: { "ids": ["uuid1", "uuid2", ...] }
          */
-        @GetMapping("/internal/v1/products")
-        fun getProducts(
-            @RequestParam("ids") productIds: String,
+        @PostMapping("/internal/v1/products/search")
+        fun searchProducts(
+            @RequestBody request: ProductClient.ProductSearchRequest,
         ): List<ProductClient.ProductResponse>
     }
 
@@ -157,11 +155,13 @@ class ProductClientContractTest {
     @Test
     @DisplayName("getProductsByIds_success - 상품 다건 조회 성공")
     fun `상품 다건 조회 - 성공`() {
-        // given: Contract에 정의된 존재하는 상품 ID 목록 (쉼표로 구분된 문자열)
-        val productIdsString = "$EXISTING_PRODUCT_ID,$EXISTING_PRODUCT_ID_2"
+        // given: Contract에 정의된 존재하는 상품 ID 목록
+        val request = ProductClient.ProductSearchRequest(
+            ids = listOf(EXISTING_PRODUCT_ID, EXISTING_PRODUCT_ID_2)
+        )
 
         // when
-        val response = productFeignClient.getProducts(productIdsString)
+        val response = productFeignClient.searchProducts(request)
 
         // then: Contract 응답과 일치하는지 검증
         response.shouldNotBeNull()
@@ -179,10 +179,12 @@ class ProductClientContractTest {
     @DisplayName("getProductsByIds_empty - 존재하지 않는 상품 ID 목록 조회 시 빈 배열 반환")
     fun `상품 다건 조회 - 미존재시 빈 리스트 반환`() {
         // given: Contract에 정의된 존재하지 않는 상품 ID
-        val productIdsString = NON_EXISTING_PRODUCT_ID.toString()
+        val request = ProductClient.ProductSearchRequest(
+            ids = listOf(NON_EXISTING_PRODUCT_ID)
+        )
 
         // when
-        val response = productFeignClient.getProducts(productIdsString)
+        val response = productFeignClient.searchProducts(request)
 
         // then: Contract에 따라 빈 배열 반환
         response.shouldNotBeNull()

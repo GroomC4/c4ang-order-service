@@ -13,7 +13,7 @@ Order Service가 Product Service를 호출하기 위한 Internal API 스펙입�
 | Method | Endpoint | 설명 |
 |--------|----------|------|
 | GET | `/internal/v1/products/{productId}` | 상품 단건 조회 |
-| GET | `/internal/v1/products?ids={id1},{id2},...` | 상품 다건 조회 |
+| POST | `/internal/v1/products/search` | 상품 다건 조회 |
 
 ---
 
@@ -76,12 +76,24 @@ GET /internal/v1/products/{productId}
 ### Request
 
 ```
-GET /internal/v1/products?ids={id1},{id2},...
+POST /internal/v1/products/search
+Content-Type: application/json
 ```
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| ids | List<UUID> | Yes | 상품 ID 목록 (쉼표 구분) |
+#### Request Body
+
+```json
+{
+  "ids": [
+    "550e8400-e29b-41d4-a716-446655440000",
+    "550e8400-e29b-41d4-a716-446655440002"
+  ]
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| ids | List\<UUID\> | Yes | 조회할 상품 ID 목록 |
 
 ### Response
 
@@ -145,14 +157,14 @@ GET /internal/v1/products?ids={id1},{id2},...
 | 잘못된 UUID 형식 | 400 | BAD_REQUEST | productId 형식 오류 |
 | 서버 오류 | 500 | INTERNAL_SERVER_ERROR | 예상치 못한 오류 |
 
-### 상품 다건 조회 (GET /internal/v1/products?ids=...)
+### 상품 다건 조회 (POST /internal/v1/products/search)
 
 | 케이스 | HTTP Status | Error Code | 설명 |
 |--------|-------------|------------|------|
 | 성공 (전체) | 200 | - | 모든 상품 정보 반환 |
 | 성공 (일부) | 200 | - | 존재하는 상품만 반환 |
 | 성공 (빈 목록) | 200 | - | 빈 배열 반환 |
-| 잘못된 UUID 형식 | 400 | BAD_REQUEST | ids 파라미터 형식 오류 |
+| 잘못된 UUID 형식 | 400 | BAD_REQUEST | Request Body의 ids 형식 오류 |
 | 서버 오류 | 500 | INTERNAL_SERVER_ERROR | 예상치 못한 오류 |
 
 ---
@@ -170,6 +182,14 @@ GET /internal/v1/products?ids={id1},{id2},...
 ---
 
 ## DTO 정의
+
+### ProductSearchRequest
+
+```kotlin
+data class ProductSearchRequest(
+    val ids: List<UUID>
+)
+```
 
 ### ProductResponse
 

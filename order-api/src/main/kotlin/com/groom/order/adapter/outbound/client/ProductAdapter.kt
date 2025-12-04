@@ -35,7 +35,8 @@ class ProductAdapter(
      * @return 상품 정보 목록
      */
     override fun loadAllById(productIds: List<UUID>): List<ProductInfo> {
-        return productClient.getProducts(productIds).map { it.toProductInfo() }
+        val request = ProductClient.ProductSearchRequest(ids = productIds)
+        return productClient.searchProducts(request).map { it.toProductInfo() }
     }
 
     private fun ProductClient.ProductResponse.toProductInfo(): ProductInfo {
