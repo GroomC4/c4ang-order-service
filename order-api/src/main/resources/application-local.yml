@@ -12,6 +12,11 @@ spring:
       driver-class-name: org.postgresql.Driver
       hikari:
         maximum-pool-size: 5
+
+# Platform Core DataSource 라우팅 설정
+platform:
+  datasource:
+    replica-enabled: true
   jpa:
     hibernate:
       ddl-auto: none

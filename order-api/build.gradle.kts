@@ -7,7 +7,7 @@ plugins {
 }
 
 // Platform Core 버전 관리
-val platformCoreVersion = "2.4.2"
+val platformCoreVersion = "2.4.5"
 
 dependencies {
     // Kotlin
