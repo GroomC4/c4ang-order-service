@@ -6,21 +6,28 @@ import org.springframework.boot.context.properties.bind.DefaultValue
 /**
  * Kafka 토픽 설정
  *
- * Order Service에서 발행하는 토픽 목록
+ * Order Service에서 발행/소비하는 토픽 목록
  *
  * application.yml 예시:
  * ```yaml
  * kafka:
  *   topics:
+ *     # Producer Topics
  *     order-created: order.created
  *     order-confirmed: order.confirmed
  *     order-cancelled: order.cancelled
  *     order-expiration-notification: order.expiration.notification
  *     daily-statistics: daily.statistics
+ *     # Consumer Topics
+ *     stock-reserved: stock.reserved
+ *     payment-completed: payment.completed
+ *     payment-failed: payment.failed
+ *     payment-cancelled: payment.cancelled
  * ```
  */
 @ConfigurationProperties(prefix = "kafka.topics")
 data class KafkaTopicProperties(
+    // ===== Producer Topics =====
     @DefaultValue("order.created")
     val orderCreated: String = "order.created",
     @DefaultValue("order.confirmed")
@@ -31,4 +38,14 @@ data class KafkaTopicProperties(
     val orderExpirationNotification: String = "order.expiration.notification",
     @DefaultValue("daily.statistics")
     val dailyStatistics: String = "daily.statistics",
+
+    // ===== Consumer Topics =====
+    @DefaultValue("stock.reserved")
+    val stockReserved: String = "stock.reserved",
+    @DefaultValue("payment.completed")
+    val paymentCompleted: String = "payment.completed",
+    @DefaultValue("payment.failed")
+    val paymentFailed: String = "payment.failed",
+    @DefaultValue("payment.cancelled")
+    val paymentCancelled: String = "payment.cancelled",
 )
