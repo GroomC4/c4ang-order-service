@@ -42,3 +42,14 @@ feign:
         connectTimeout: 5000
         readTimeout: 5000
         loggerLevel: full
+
+# Kafka 설정 (테스트 환경)
+# bootstrap-servers와 schema-registry.url은 Testcontainers에서 동적으로 주입됩니다.
+kafka:
+  bootstrap-servers: ${testcontainers.kafka.bootstrap-servers:localhost:9092}
+  schema-registry:
+    url: ${testcontainers.schema-registry.url:http://localhost:8081}
+  topics:
+    order-created: order.created
+    order-confirmed: order.confirmed
+    order-cancelled: order.cancelled
