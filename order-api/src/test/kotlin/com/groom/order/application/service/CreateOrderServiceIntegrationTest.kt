@@ -114,7 +114,7 @@ class CreateOrderServiceIntegrationTest : IntegrationTestBase() {
         assertThat(result.reservationId).isNotNull()
         assertThat(result.expiresAt).isNotNull()
         assertThat(result.items).hasSize(1)
-        assertThat(result.items[0].productName).isEqualTo("무선 마우스")
+        assertThat(result.items[0].productName).isEqualTo("Gaming Mouse")
         assertThat(result.items[0].quantity).isEqualTo(2)
 
         // DB 검증
@@ -149,7 +149,7 @@ class CreateOrderServiceIntegrationTest : IntegrationTestBase() {
 
         // then
         assertThat(result.items).hasSize(2)
-        assertThat(result.totalAmount.toLong()).isEqualTo(170000L) // 50000 + 120000
+        assertThat(result.totalAmount.toLong()).isEqualTo(118000L) // 29000 + 89000
     }
 
     @Test

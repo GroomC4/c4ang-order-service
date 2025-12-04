@@ -61,6 +61,12 @@ dependencies {
     testImplementation("io.mockk:mockk:1.14.5")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
 
+    // Spring Cloud Contract Stub Runner (Consumer Contract Test)
+    testImplementation("org.springframework.cloud:spring-cloud-starter-contract-stub-runner")
+
+    // Feign Jackson (Consumer Contract Test에서 수동 Feign Client 구성에 필요)
+    testImplementation("io.github.openfeign:feign-jackson:13.3")
+
     // Platform Core - Testcontainers (테스트 전용)
     testImplementation("io.github.groomc4:testcontainers-starter:$platformCoreVersion")
 }
@@ -74,6 +80,10 @@ tasks.withType<Test> {
     systemProperty("user.timezone", "KST")
     jvmArgs("--add-opens", "java.base/java.time=ALL-UNNAMED")
 
+    // Stub Runner가 GitHub Packages에서 Stub을 다운로드하기 위한 인증 설정
+    systemProperty("stubrunner.username", System.getenv("GITHUB_ACTOR") ?: project.findProperty("gpr.user") ?: "")
+    systemProperty("stubrunner.password", System.getenv("GITHUB_TOKEN") ?: project.findProperty("gpr.key") ?: "")
+
     // 테스트 실행 로깅
     testLogging {
         events("passed", "skipped", "failed")
@@ -85,7 +95,10 @@ tasks.withType<Test> {
 }
 
 tasks.test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        // Contract 테스트는 별도 task(contractTest)로 실행
+        excludeTags("contract-test")
+    }
 }
 
 // 통합 테스트 전용 태스크 (Docker Compose 기반)
@@ -98,6 +111,26 @@ val integrationTest by tasks.registering(Test::class) {
 
     useJUnitPlatform {
         includeTags("integration-test")
+    }
+
+    testLogging {
+        events("passed", "skipped", "failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+
+    shouldRunAfter(tasks.test)
+}
+
+// Contract Test 전용 태스크 (Stub Runner 기반)
+val contractTest by tasks.registering(Test::class) {
+    description = "Runs contract tests with Stub Runner"
+    group = "verification"
+
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+
+    useJUnitPlatform {
+        includeTags("contract-test")
     }
 
     testLogging {

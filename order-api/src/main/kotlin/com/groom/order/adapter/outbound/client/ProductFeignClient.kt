@@ -1,0 +1,53 @@
+package com.groom.order.adapter.outbound.client
+
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Profile
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import java.util.UUID
+
+/**
+ * Product Service Feign Client
+ *
+ * Product 도메인의 Internal REST API를 호출하기 위한 Feign Client 구현체입니다.
+ * MSA 환경에서 Product Service와 HTTP로 통신합니다.
+ *
+ * Internal API는 서비스 간 통신 전용이므로 별도 인증이 필요하지 않습니다.
+ *
+ * 통합 테스트(test 프로필)에서는 TestProductClient가 @Primary로 주입되므로,
+ * 이 FeignClient는 비활성화됩니다.
+ * Consumer Contract Test(consumer-contract-test 프로필)에서는 활성화됩니다.
+ */
+@Profile("!test | consumer-contract-test")
+@FeignClient(
+    name = "product-service",
+    url = "\${feign.clients.product-service.url}",
+)
+interface ProductFeignClient : ProductClient {
+    /**
+     * 상품 단건 조회
+     *
+     * @param productId 상품 ID
+     * @return 상품 정보 DTO (미존재 시 FeignException 404 발생)
+     */
+    @GetMapping("/internal/v1/products/{productId}")
+    override fun getProduct(
+        @PathVariable productId: UUID,
+    ): ProductClient.ProductResponse?
+
+    /**
+     * 상품 다건 조회
+     *
+     * POST /internal/v1/products/search
+     * Request Body: { "ids": ["uuid1", "uuid2", ...] }
+     *
+     * @param request 상품 ID 목록을 담은 요청 객체
+     * @return 상품 정보 DTO 목록 (존재하는 상품만 반환)
+     */
+    @PostMapping("/internal/v1/products/search")
+    override fun searchProducts(
+        @RequestBody request: ProductClient.ProductSearchRequest,
+    ): List<ProductClient.ProductResponse>
+}

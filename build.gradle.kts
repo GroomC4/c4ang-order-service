@@ -25,10 +25,10 @@ allprojects {
             url = uri("https://packages.confluent.io/maven/")
         }
 
-        // GitHub Packages for platform-core
+        // GitHub Packages Hub (platform-core, contract stubs 등 모든 내부 패키지)
         maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/GroomC4/c4ang-platform-core")
+            name = "GitHubPackagesHub"
+            url = uri("https://maven.pkg.github.com/GroomC4/c4ang-packages-hub")
             credentials {
                 username = System.getenv("GITHUB_ACTOR") ?: findProperty("gpr.user") as String?
                 password = System.getenv("GITHUB_TOKEN") ?: findProperty("gpr.key") as String?

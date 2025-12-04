@@ -1,44 +1,37 @@
 package com.groom.order.adapter.outbound.client
 
-import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestParam
 import java.math.BigDecimal
 import java.util.UUID
 
 /**
- * Product Service HTTP Client (Feign)
+ * Product Service Client 인터페이스
  *
- * Product 도메인의 REST API를 호출하기 위한 Feign Client 인터페이스입니다.
- * MSA 환경에서 Product Service와 통신합니다.
+ * Product 도메인과의 통신을 추상화한 인터페이스입니다.
+ * HTTP(Feign), gRPC 등 다양한 구현체로 교체 가능합니다.
  */
-@FeignClient(
-    name = "product-service",
-    url = "\${feign.clients.product-service.url}",
-)
 interface ProductClient {
     /**
      * 상품 단건 조회
      *
      * @param productId 상품 ID
-     * @return 상품 정보 DTO
+     * @return 상품 정보 DTO (미존재 시 null 또는 예외 발생)
      */
-    @GetMapping("/api/v1/products/{productId}")
-    fun getProduct(
-        @PathVariable productId: UUID,
-    ): ProductResponse?
+    fun getProduct(productId: UUID): ProductResponse?
 
     /**
      * 상품 다건 조회
      *
-     * @param productIds 상품 ID 목록 (쿼리 파라미터)
-     * @return 상품 정보 DTO 목록
+     * @param request 상품 ID 목록을 담은 요청 객체
+     * @return 상품 정보 DTO 목록 (존재하는 상품만 반환)
      */
-    @GetMapping("/api/v1/products")
-    fun getProducts(
-        @RequestParam("ids") productIds: List<UUID>,
-    ): List<ProductResponse>
+    fun searchProducts(request: ProductSearchRequest): List<ProductResponse>
+
+    /**
+     * 상품 다건 조회 요청 DTO
+     */
+    data class ProductSearchRequest(
+        val ids: List<UUID>,
+    )
 
     /**
      * Product Service 응답 DTO

@@ -8,8 +8,11 @@ import java.util.UUID
 /**
  * Store 도메인 연동 Adapter (MSA 구현)
  *
- * StoreClient(Feign)를 통해 Store Service의 REST API를 호출하고,
+ * StoreClient를 통해 Store Service와 통신하고,
  * Order 도메인의 StoreInfo로 변환합니다.
+ *
+ * StoreClient는 인터페이스로 추상화되어 있어,
+ * 프로덕션에서는 StoreFeignClient(HTTP), 테스트에서는 TestStoreClient(stub)가 주입됩니다.
  */
 @Component
 class StoreAdapter(
@@ -22,14 +25,7 @@ class StoreAdapter(
      * @return 스토어 정보 (없으면 null)
      */
     override fun loadById(storeId: UUID): StoreInfo? {
-        // TODO: Store Service API 호출 후 StoreInfo로 변환
-        // val response = storeClient.getStore(storeId) ?: return null
-        // return StoreInfo(
-        //     id = response.id,
-        //     name = response.name,
-        //     status = response.status,
-        // )
-        TODO("Store Service HTTP 호출 구현 필요")
+        return storeClient.getStore(storeId)?.toStoreInfo()
     }
 
     /**
@@ -39,8 +35,14 @@ class StoreAdapter(
      * @return 존재 여부
      */
     override fun existsById(storeId: UUID): Boolean {
-        // TODO: Store Service API 호출
-        // return storeClient.existsStore(storeId).exists
-        TODO("Store Service HTTP 호출 구현 필요")
+        return storeClient.existsStore(storeId).exists
+    }
+
+    private fun StoreClient.StoreResponse.toStoreInfo(): StoreInfo {
+        return StoreInfo(
+            id = storeId,
+            name = name,
+            status = status,
+        )
     }
 }

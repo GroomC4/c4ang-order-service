@@ -1,0 +1,39 @@
+# Consumer Contract Test 전용 프로필
+# 다른 서비스의 Contract Stub을 검증하는 Consumer 측 테스트용
+# 인프라(DB, Redis, Kafka) 없이 Stub Runner만으로 검증
+# Testcontainers를 사용하지 않아 테스트 실행 속도가 빠름
+
+logging:
+  level:
+    root: WARN
+    com.groom.order: INFO
+    org.springframework.cloud.contract: DEBUG
+
+spring:
+  main:
+    # Consumer Contract Test는 전체 애플리케이션 컨텍스트가 필요 없음
+    lazy-initialization: true
+  autoconfigure:
+    exclude:
+      # 인프라 관련 자동 설정 비활성화
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+      - org.redisson.spring.starter.RedissonAutoConfigurationV2
+
+# Feign Client 설정 (Stub Runner가 제공하는 WireMock 서버 포트 사용)
+feign:
+  clients:
+    product-service:
+      url: http://localhost:8083
+    store-service:
+      url: http://localhost:8084
+
+# Stub Runner 설정
+stubrunner:
+  ids-to-service-ids:
+    product-service-contract-stubs: product-service
+    store-service-contract-stubs: store-service

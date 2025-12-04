@@ -1,17 +1,16 @@
 package com.groom.order.adapter.inbound.web
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.groom.order.common.IntegrationTestBase
 import com.groom.order.common.util.IstioHeaderExtractor
 import com.groom.order.adapter.inbound.web.dto.CancelOrderRequest
 import com.groom.order.adapter.inbound.web.dto.CreateOrderRequest
 import com.groom.order.adapter.inbound.web.dto.RefundOrderRequest
-import com.groom.order.common.annotation.IntegrationTest
 import org.hamcrest.CoreMatchers.not
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.context.jdbc.Sql
@@ -47,10 +46,8 @@ import java.util.UUID
     ),
 )
 @DisplayName("주문 명령(Command) 컨트롤러 인가 통합 테스트")
-@IntegrationTest
-@SpringBootTest
 @AutoConfigureMockMvc
-class OrderCommandControllerAuthorizationIntegrationTest {
+class OrderCommandControllerAuthorizationIntegrationTest : IntegrationTestBase() {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
@@ -195,39 +192,40 @@ class OrderCommandControllerAuthorizationIntegrationTest {
     }
 
     @Test
-    @DisplayName("PATCH /api/v1/orders/{orderId}/cancel - 인증 없이 주문 취소 시 401 Unauthorized")
-    fun cancelOrder_withoutAuthentication_shouldReturn401() {
+    @DisplayName("PATCH /api/v1/orders/{orderId}/cancel - Istio 헤더 없이 주문 취소 시 500 Internal Server Error (IllegalStateException)")
+    fun cancelOrder_withoutIstioHeaders_shouldReturn500() {
         // given
         val request = CancelOrderRequest(cancelReason = "단순 변심")
 
         // when & then
+        // Istio 환경에서는 인증이 게이트웨이에서 처리되며, 헤더가 없으면 IllegalStateException 발생
         mockMvc
             .perform(
                 patch("/api/v1/orders/$ORDER_PAYMENT_COMPLETED/cancel")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
-            .andExpect(status().isUnauthorized)
+            .andExpect(status().isInternalServerError)
     }
 
     @Test
-    @DisplayName("PATCH /api/v1/orders/{orderId}/cancel - SELLER 역할로 주문 취소 시 403 Forbidden")
-    fun cancelOrder_withSellerRole_shouldReturn403() {
-        // given
+    @DisplayName("PATCH /api/v1/orders/{orderId}/cancel - 다른 사용자의 주문 취소 시도 시 403 Forbidden")
+    fun cancelOrder_withOtherUsersOrder_shouldReturn403() {
+        // given: SELLER_USER_1이 CUSTOMER_USER_1 소유의 주문을 취소 시도
         val userId = SELLER_USER_1
         val request = CancelOrderRequest(cancelReason = "단순 변심")
 
         // when & then
+        // 본인의 주문이 아니므로 OrderAccessDenied 예외 발생 → 403 Forbidden
         mockMvc
             .perform(
                 patch("/api/v1/orders/$ORDER_PAYMENT_COMPLETED/cancel")
                     .header(ISTIO_USER_ID_HEADER, userId.toString())
-                    .header(ISTIO_USER_ROLE_HEADER, if (userId == SELLER_USER_1) "SELLER" else "CUSTOMER")
+                    .header(ISTIO_USER_ROLE_HEADER, "SELLER")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
-            .andExpect(status().`is`(not(401)))
-            .andExpect(status().`is`(not(403)))
+            .andExpect(status().isForbidden)
     }
 
     // ========== PATCH /api/v1/orders/{orderId}/refund (주문 환불) ==========
@@ -255,38 +253,39 @@ class OrderCommandControllerAuthorizationIntegrationTest {
     }
 
     @Test
-    @DisplayName("PATCH /api/v1/orders/{orderId}/refund - 인증 없이 주문 환불 시 401 Unauthorized")
-    fun refundOrder_withoutAuthentication_shouldReturn401() {
+    @DisplayName("PATCH /api/v1/orders/{orderId}/refund - Istio 헤더 없이 주문 환불 시 500 Internal Server Error (IllegalStateException)")
+    fun refundOrder_withoutIstioHeaders_shouldReturn500() {
         // given
         val request = RefundOrderRequest(refundReason = "상품 불량")
 
         // when & then
+        // Istio 환경에서는 인증이 게이트웨이에서 처리되며, 헤더가 없으면 IllegalStateException 발생
         mockMvc
             .perform(
                 patch("/api/v1/orders/$ORDER_DELIVERED/refund")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
-            .andExpect(status().isUnauthorized)
+            .andExpect(status().isInternalServerError)
     }
 
     @Test
-    @DisplayName("PATCH /api/v1/orders/{orderId}/refund - SELLER 역할로 주문 환불 시 403 Forbidden")
-    fun refundOrder_withSellerRole_shouldReturn403() {
-        // given
+    @DisplayName("PATCH /api/v1/orders/{orderId}/refund - 다른 사용자의 주문 환불 시도 시 403 Forbidden")
+    fun refundOrder_withOtherUsersOrder_shouldReturn403() {
+        // given: SELLER_USER_1이 CUSTOMER_USER_1 소유의 주문을 환불 시도
         val userId = SELLER_USER_1
         val request = RefundOrderRequest(refundReason = "상품 불량")
 
         // when & then
+        // 본인의 주문이 아니므로 OrderAccessDenied 예외 발생 → 403 Forbidden
         mockMvc
             .perform(
                 patch("/api/v1/orders/$ORDER_DELIVERED/refund")
                     .header(ISTIO_USER_ID_HEADER, userId.toString())
-                    .header(ISTIO_USER_ROLE_HEADER, if (userId == SELLER_USER_1) "SELLER" else "CUSTOMER")
+                    .header(ISTIO_USER_ROLE_HEADER, "SELLER")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
-            .andExpect(status().`is`(not(401)))
-            .andExpect(status().`is`(not(403)))
+            .andExpect(status().isForbidden)
     }
 }

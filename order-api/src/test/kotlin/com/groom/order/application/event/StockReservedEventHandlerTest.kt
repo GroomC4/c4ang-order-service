@@ -48,7 +48,7 @@ class StockReservedEventHandlerTest :
             )
 
             val logSlot = slot<StockReservationLog>()
-            every { saveStockReservationLogPort.save(capture(logSlot)) } just runs
+            every { saveStockReservationLogPort.save(capture(logSlot)) } answers { logSlot.captured }
             every {
                 orderAuditRecorder.record(
                     orderId = any(),
@@ -112,7 +112,7 @@ class StockReservedEventHandlerTest :
             )
 
             val logSlot = slot<StockReservationLog>()
-            every { saveStockReservationLogPort.save(capture(logSlot)) } just runs
+            every { saveStockReservationLogPort.save(capture(logSlot)) } answers { logSlot.captured }
             every {
                 orderAuditRecorder.record(
                     orderId = any(),
