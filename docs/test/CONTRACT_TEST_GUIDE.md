@@ -24,7 +24,7 @@ Contract 기반 Stub JAR 생성    →     Stub Runner로 Stub 로드
 
 ---
 
-## contract-test 프로필이 필요한 이유
+## consumer-contract-test 프로필이 필요한 이유
 
 ### 문제 1: 불필요한 인프라 초기화
 
@@ -55,8 +55,8 @@ class TestProductClient : ProductClient {
 Contract Test는 **실제 FeignClient가 WireMock을 호출**해야 하므로 충돌이 발생합니다.
 
 ```
-test 프로필                          contract-test 프로필
-─────────────                        ────────────────────
+test 프로필                          consumer-contract-test 프로필
+─────────────                        ──────────────────────────────
 ProductClient                        ProductClient
       ↓                                    ↓
 TestProductClient (@Primary)         ProductFeignClient
@@ -66,22 +66,22 @@ Stub 데이터 반환                      WireMock 서버 호출
 ❌ Contract 검증 불가                 ✅ Contract 검증 가능
 ```
 
-### 해결: contract-test 프로필 분리
+### 해결: consumer-contract-test 프로필 분리
 
 | 프로필 | 용도 | 인프라 | Client |
 |--------|------|--------|--------|
 | `test` | 단위/통합 테스트 | DB, Redis 필요 | TestClient (stub) |
-| `contract-test` | Contract 검증 | 불필요 | FeignClient (WireMock) |
+| `consumer-contract-test` | Contract 검증 | 불필요 | FeignClient (WireMock) |
 
 ---
 
 ## 설정 파일
 
-### application-contract-test.yml
+### application-consumer-contract-test.yml
 
 ```yaml
 # ====================================
-# Contract Test 프로필
+# Consumer Contract Test 프로필
 # ====================================
 # Stub Runner가 WireMock 서버를 띄우고, FeignClient가 해당 서버로 요청합니다.
 
@@ -138,7 +138,7 @@ logging:
 ```kotlin
 @Tag("contract-test")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
-@ActiveProfiles("contract-test")  // contract-test 프로필 사용
+@ActiveProfiles("consumer-contract-test")  // consumer-contract-test 프로필 사용
 @AutoConfigureStubRunner(
     ids = ["io.github.groomc4:product-api:+:stubs:8083"],
     stubsMode = StubRunnerProperties.StubsMode.LOCAL,
@@ -232,8 +232,8 @@ ls ~/.m2/repository/io/github/groomc4/product-api/*/product-api-*-stubs.jar
 
 ## 프로필별 비교
 
-| 항목 | test | contract-test |
-|------|------|---------------|
+| 항목 | test | consumer-contract-test |
+|------|------|------------------------|
 | **용도** | 비즈니스 로직 테스트 | API 계약 검증 |
 | **DB 초기화** | O (Testcontainers) | X |
 | **Redis 초기화** | O (Testcontainers) | X |
@@ -278,7 +278,7 @@ Port 8083 is already in use
 Expected WireMock call but got stub data
 ```
 
-**해결**: `@ActiveProfiles("contract-test")` 확인 (test가 아닌 contract-test)
+**해결**: `@ActiveProfiles("consumer-contract-test")` 확인 (test가 아닌 consumer-contract-test)
 
 ---
 
@@ -292,6 +292,6 @@ order-api/
     │   ├── ProductClientContractTest.kt      # Product 계약 테스트
     │   └── StoreClientContractTest.kt        # Store 계약 테스트
     └── resources/
-        ├── application-test.yml              # 일반 테스트 설정
-        └── application-contract-test.yml     # Contract 테스트 설정
+        ├── application-test.yml                      # 일반 테스트 설정
+        └── application-consumer-contract-test.yml    # Consumer Contract 테스트 설정
 ```
