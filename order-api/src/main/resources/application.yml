@@ -88,6 +88,8 @@ kafka:
     order-created: order.created
     order-confirmed: order.confirmed
     order-cancelled: order.cancelled
+    order-expiration-notification: order.expiration.notification
+    daily-statistics: daily.statistics
     # Store Service Consumer Topics (레거시)
     store-info-updated: store.info.updated
     store-deleted: store.deleted

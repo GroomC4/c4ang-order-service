@@ -1,13 +1,16 @@
 package com.groom.order.adapter.outbound.messaging
 
+import com.groom.ecommerce.analytics.event.avro.DailyStatistics
 import com.groom.ecommerce.order.event.avro.CancellationReason
 import com.groom.ecommerce.order.event.avro.OrderCancelled
 import com.groom.ecommerce.order.event.avro.OrderConfirmed
 import com.groom.ecommerce.order.event.avro.OrderCreated
+import com.groom.ecommerce.order.event.avro.OrderExpirationNotification
 import com.groom.order.configuration.kafka.KafkaTopicProperties
 import com.groom.order.domain.model.Order
 import com.groom.order.domain.model.OrderItem
 import com.groom.order.domain.model.OrderStatus
+import com.groom.order.domain.port.OrderEventPublisher
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -16,7 +19,6 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
-import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.clients.producer.RecordMetadata
 import org.apache.kafka.common.TopicPartition
 import org.junit.jupiter.api.BeforeEach
@@ -26,6 +28,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.support.SendResult
 import java.math.BigDecimal
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -425,6 +428,181 @@ class KafkaOrderEventPublisherTest {
 
             // then
             eventSlot.captured.cancellationReason shouldBe CancellationReason.SYSTEM_ERROR
+        }
+    }
+
+    @Nested
+    @DisplayName("publishOrderExpirationNotification")
+    inner class PublishOrderExpirationNotificationTest {
+
+        @Test
+        @DisplayName("주문 만료 알림 이벤트가 올바른 토픽과 파티션 키로 발행된다")
+        fun `주문 만료 알림 이벤트가 올바른 토픽과 파티션 키로 발행된다`() {
+            // given
+            val orderId = UUID.randomUUID()
+            val userId = UUID.randomUUID()
+            val expirationReason = "결제 시간 초과"
+            val expiredAt = LocalDateTime.now()
+
+            val topicSlot = slot<String>()
+            val keySlot = slot<String>()
+
+            every {
+                kafkaTemplate.send(capture(topicSlot), capture(keySlot), any())
+            } returns mockKafkaSendSuccess()
+
+            // when
+            publisher.publishOrderExpirationNotification(orderId, userId, expirationReason, expiredAt)
+
+            // then
+            topicSlot.captured shouldBe "order.expiration.notification"
+            keySlot.captured shouldBe orderId.toString()
+        }
+
+        @Test
+        @DisplayName("OrderExpirationNotification 이벤트에 정보가 올바르게 매핑된다")
+        fun `OrderExpirationNotification 이벤트에 정보가 올바르게 매핑된다`() {
+            // given
+            val orderId = UUID.randomUUID()
+            val userId = UUID.randomUUID()
+            val expirationReason = "결제 시간 초과"
+            val expiredAt = LocalDateTime.now()
+
+            val eventSlot = slot<OrderExpirationNotification>()
+
+            every {
+                kafkaTemplate.send(any<String>(), any(), capture(eventSlot))
+            } returns mockKafkaSendSuccess()
+
+            // when
+            publisher.publishOrderExpirationNotification(orderId, userId, expirationReason, expiredAt)
+
+            // then
+            val event = eventSlot.captured
+
+            event.eventId.shouldNotBeEmpty()
+            event.orderId shouldBe orderId.toString()
+            event.userId shouldBe userId.toString()
+            event.expirationReason shouldBe expirationReason
+            event.expiredAt shouldNotBe null
+        }
+    }
+
+    @Nested
+    @DisplayName("publishDailyStatistics")
+    inner class PublishDailyStatisticsTest {
+
+        @Test
+        @DisplayName("일일 통계 이벤트가 올바른 토픽과 파티션 키로 발행된다")
+        fun `일일 통계 이벤트가 올바른 토픽과 파티션 키로 발행된다`() {
+            // given
+            val targetDate = LocalDate.now().minusDays(1)
+            val statistics = OrderEventPublisher.DailyStatisticsData(
+                date = targetDate,
+                totalOrders = 10,
+                totalSales = BigDecimal("100000"),
+                avgOrderAmount = BigDecimal("10000"),
+                topProducts = listOf(
+                    OrderEventPublisher.TopProductData(
+                        productId = UUID.randomUUID(),
+                        productName = "인기 상품 1",
+                        totalSold = 5,
+                    ),
+                ),
+            )
+
+            val topicSlot = slot<String>()
+            val keySlot = slot<String>()
+
+            every {
+                kafkaTemplate.send(capture(topicSlot), capture(keySlot), any())
+            } returns mockKafkaSendSuccess()
+
+            // when
+            publisher.publishDailyStatistics(statistics)
+
+            // then
+            topicSlot.captured shouldBe "daily.statistics"
+            keySlot.captured shouldBe targetDate.toString()
+        }
+
+        @Test
+        @DisplayName("DailyStatistics 이벤트에 통계 정보가 올바르게 매핑된다")
+        fun `DailyStatistics 이벤트에 통계 정보가 올바르게 매핑된다`() {
+            // given
+            val targetDate = LocalDate.now().minusDays(1)
+            val productId1 = UUID.randomUUID()
+            val productId2 = UUID.randomUUID()
+            val statistics = OrderEventPublisher.DailyStatisticsData(
+                date = targetDate,
+                totalOrders = 100,
+                totalSales = BigDecimal("5000000"),
+                avgOrderAmount = BigDecimal("50000"),
+                topProducts = listOf(
+                    OrderEventPublisher.TopProductData(
+                        productId = productId1,
+                        productName = "인기 상품 1",
+                        totalSold = 50,
+                    ),
+                    OrderEventPublisher.TopProductData(
+                        productId = productId2,
+                        productName = "인기 상품 2",
+                        totalSold = 30,
+                    ),
+                ),
+            )
+
+            val eventSlot = slot<DailyStatistics>()
+
+            every {
+                kafkaTemplate.send(any<String>(), any(), capture(eventSlot))
+            } returns mockKafkaSendSuccess()
+
+            // when
+            publisher.publishDailyStatistics(statistics)
+
+            // then
+            val event = eventSlot.captured
+
+            event.eventId.shouldNotBeEmpty()
+            event.date shouldBe targetDate.toString()
+            event.totalOrders shouldBe 100
+            event.totalSales shouldBe BigDecimal("5000000")
+            event.avgOrderAmount shouldBe BigDecimal("50000")
+            event.topProducts shouldHaveSize 2
+            event.topProducts[0].productId shouldBe productId1.toString()
+            event.topProducts[0].productName shouldBe "인기 상품 1"
+            event.topProducts[0].totalSold shouldBe 50
+        }
+
+        @Test
+        @DisplayName("빈 통계 데이터도 정상적으로 발행된다")
+        fun `빈 통계 데이터도 정상적으로 발행된다`() {
+            // given
+            val targetDate = LocalDate.now().minusDays(1)
+            val statistics = OrderEventPublisher.DailyStatisticsData(
+                date = targetDate,
+                totalOrders = 0,
+                totalSales = BigDecimal.ZERO,
+                avgOrderAmount = BigDecimal.ZERO,
+                topProducts = emptyList(),
+            )
+
+            val eventSlot = slot<DailyStatistics>()
+
+            every {
+                kafkaTemplate.send(any<String>(), any(), capture(eventSlot))
+            } returns mockKafkaSendSuccess()
+
+            // when
+            publisher.publishDailyStatistics(statistics)
+
+            // then
+            val event = eventSlot.captured
+
+            event.totalOrders shouldBe 0
+            event.totalSales shouldBe BigDecimal.ZERO
+            event.topProducts shouldHaveSize 0
         }
     }
 }

@@ -74,4 +74,16 @@ interface LoadOrderPort {
      * @return 존재 여부
      */
     fun existsByOrderNumber(orderNumber: String): Boolean
+
+    /**
+     * 기간 내 확정된 주문 목록 조회 (일일 통계용)
+     *
+     * @param startDateTime 시작 시각 (포함)
+     * @param endDateTime 종료 시각 (미포함)
+     * @return 해당 기간 내 확정된 주문 목록
+     */
+    fun loadConfirmedOrdersBetween(
+        startDateTime: LocalDateTime,
+        endDateTime: LocalDateTime,
+    ): List<Order>
 }

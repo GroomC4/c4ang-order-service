@@ -15,6 +15,8 @@ import org.springframework.boot.context.properties.bind.DefaultValue
  *     order-created: order.created
  *     order-confirmed: order.confirmed
  *     order-cancelled: order.cancelled
+ *     order-expiration-notification: order.expiration.notification
+ *     daily-statistics: daily.statistics
  * ```
  */
 @ConfigurationProperties(prefix = "kafka.topics")
@@ -25,4 +27,8 @@ data class KafkaTopicProperties(
     val orderConfirmed: String = "order.confirmed",
     @DefaultValue("order.cancelled")
     val orderCancelled: String = "order.cancelled",
+    @DefaultValue("order.expiration.notification")
+    val orderExpirationNotification: String = "order.expiration.notification",
+    @DefaultValue("daily.statistics")
+    val dailyStatistics: String = "daily.statistics",
 )

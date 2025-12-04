@@ -53,3 +53,5 @@ kafka:
     order-created: order.created
     order-confirmed: order.confirmed
     order-cancelled: order.cancelled
+    order-expiration-notification: order.expiration.notification
+    daily-statistics: daily.statistics

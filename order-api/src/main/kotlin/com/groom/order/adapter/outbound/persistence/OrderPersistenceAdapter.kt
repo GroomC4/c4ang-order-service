@@ -38,6 +38,11 @@ class OrderPersistenceAdapter(
 
     override fun existsByOrderNumber(orderNumber: String): Boolean = orderJpaRepository.existsByOrderNumber(orderNumber)
 
+    override fun loadConfirmedOrdersBetween(
+        startDateTime: LocalDateTime,
+        endDateTime: LocalDateTime,
+    ): List<Order> = orderJpaRepository.findConfirmedOrdersBetween(startDateTime, endDateTime)
+
     override fun save(order: Order): Order = orderJpaRepository.save(order)
 
     override fun saveAll(orders: List<Order>): List<Order> = orderJpaRepository.saveAll(orders)
