@@ -35,7 +35,6 @@ import java.util.concurrent.CompletableFuture
 
 @DisplayName("KafkaOrderEventPublisher 단위 테스트")
 class KafkaOrderEventPublisherTest {
-
     private lateinit var kafkaTemplate: KafkaTemplate<String, Any>
     private lateinit var topicProperties: KafkaTopicProperties
     private lateinit var publisher: KafkaOrderEventPublisher
@@ -43,42 +42,46 @@ class KafkaOrderEventPublisherTest {
     @BeforeEach
     fun setup() {
         kafkaTemplate = mockk()
-        topicProperties = KafkaTopicProperties(
-            orderCreated = "order.created",
-            orderConfirmed = "order.confirmed",
-            orderCancelled = "order.cancelled",
-        )
+        topicProperties =
+            KafkaTopicProperties(
+                orderCreated = "order.created",
+                orderConfirmed = "order.confirmed",
+                orderCancelled = "order.cancelled",
+            )
         publisher = KafkaOrderEventPublisher(kafkaTemplate, topicProperties)
     }
 
     private fun createTestOrder(
-        status: OrderStatus = OrderStatus.PENDING,
+        status: OrderStatus = OrderStatus.ORDER_CREATED,
         confirmedAt: LocalDateTime? = null,
         cancelledAt: LocalDateTime? = null,
     ): Order {
-        val order = Order(
-            userExternalId = UUID.randomUUID(),
-            storeId = UUID.randomUUID(),
-            orderNumber = "ORD-20241204-001",
-            status = status,
-            paymentSummary = mapOf("method" to "CARD"),
-            timeline = listOf(mapOf("status" to status.name, "at" to LocalDateTime.now().toString())),
-            confirmedAt = confirmedAt,
-            cancelledAt = cancelledAt,
-        )
+        val order =
+            Order(
+                userExternalId = UUID.randomUUID(),
+                storeId = UUID.randomUUID(),
+                orderNumber = "ORD-20241204-001",
+                status = status,
+                paymentSummary = mapOf("method" to "CARD"),
+                timeline = listOf(mapOf("status" to status.name, "at" to LocalDateTime.now().toString())),
+                confirmedAt = confirmedAt,
+                cancelledAt = cancelledAt,
+            )
 
-        val item1 = OrderItem(
-            productId = UUID.randomUUID(),
-            productName = "테스트 상품 1",
-            quantity = 2,
-            unitPrice = BigDecimal("10000"),
-        )
-        val item2 = OrderItem(
-            productId = UUID.randomUUID(),
-            productName = "테스트 상품 2",
-            quantity = 1,
-            unitPrice = BigDecimal("25000"),
-        )
+        val item1 =
+            OrderItem(
+                productId = UUID.randomUUID(),
+                productName = "테스트 상품 1",
+                quantity = 2,
+                unitPrice = BigDecimal("10000"),
+            )
+        val item2 =
+            OrderItem(
+                productId = UUID.randomUUID(),
+                productName = "테스트 상품 2",
+                quantity = 1,
+                unitPrice = BigDecimal("25000"),
+            )
 
         order.addItem(item1)
         order.addItem(item2)
@@ -88,10 +91,15 @@ class KafkaOrderEventPublisherTest {
 
     private fun mockKafkaSendSuccess(): CompletableFuture<SendResult<String, Any>> {
         val future = CompletableFuture<SendResult<String, Any>>()
-        val recordMetadata = RecordMetadata(
-            TopicPartition("test-topic", 0),
-            0L, 0, 0L, 0, 0
-        )
+        val recordMetadata =
+            RecordMetadata(
+                TopicPartition("test-topic", 0),
+                0L,
+                0,
+                0L,
+                0,
+                0,
+            )
         val sendResult = mockk<SendResult<String, Any>>()
         every { sendResult.recordMetadata } returns recordMetadata
         future.complete(sendResult)
@@ -101,7 +109,6 @@ class KafkaOrderEventPublisherTest {
     @Nested
     @DisplayName("publishOrderCreated")
     inner class PublishOrderCreatedTest {
-
         @Test
         @DisplayName("주문 생성 이벤트가 올바른 토픽과 파티션 키로 발행된다")
         fun `주문 생성 이벤트가 올바른 토픽과 파티션 키로 발행된다`() {
@@ -199,15 +206,15 @@ class KafkaOrderEventPublisherTest {
     @Nested
     @DisplayName("publishOrderConfirmed")
     inner class PublishOrderConfirmedTest {
-
         @Test
         @DisplayName("주문 확정 이벤트가 올바른 토픽과 파티션 키로 발행된다")
         fun `주문 확정 이벤트가 올바른 토픽과 파티션 키로 발행된다`() {
             // given
-            val order = createTestOrder(
-                status = OrderStatus.PREPARING,
-                confirmedAt = LocalDateTime.now(),
-            )
+            val order =
+                createTestOrder(
+                    status = OrderStatus.PREPARING,
+                    confirmedAt = LocalDateTime.now(),
+                )
             val topicSlot = slot<String>()
             val keySlot = slot<String>()
 
@@ -228,10 +235,11 @@ class KafkaOrderEventPublisherTest {
         fun `OrderConfirmed 이벤트에 주문 정보가 올바르게 매핑된다`() {
             // given
             val confirmedAt = LocalDateTime.now()
-            val order = createTestOrder(
-                status = OrderStatus.PREPARING,
-                confirmedAt = confirmedAt,
-            )
+            val order =
+                createTestOrder(
+                    status = OrderStatus.PREPARING,
+                    confirmedAt = confirmedAt,
+                )
             val eventSlot = slot<OrderConfirmed>()
 
             every {
@@ -255,15 +263,15 @@ class KafkaOrderEventPublisherTest {
     @Nested
     @DisplayName("publishOrderCancelled")
     inner class PublishOrderCancelledTest {
-
         @Test
         @DisplayName("주문 취소 이벤트가 올바른 토픽과 파티션 키로 발행된다")
         fun `주문 취소 이벤트가 올바른 토픽과 파티션 키로 발행된다`() {
             // given
-            val order = createTestOrder(
-                status = OrderStatus.ORDER_CANCELLED,
-                cancelledAt = LocalDateTime.now(),
-            )
+            val order =
+                createTestOrder(
+                    status = OrderStatus.ORDER_CANCELLED,
+                    cancelledAt = LocalDateTime.now(),
+                )
             val topicSlot = slot<String>()
             val keySlot = slot<String>()
 
@@ -283,10 +291,11 @@ class KafkaOrderEventPublisherTest {
         @DisplayName("OrderCancelled 이벤트에 취소된 상품 목록이 포함된다")
         fun `OrderCancelled 이벤트에 취소된 상품 목록이 포함된다`() {
             // given
-            val order = createTestOrder(
-                status = OrderStatus.ORDER_CANCELLED,
-                cancelledAt = LocalDateTime.now(),
-            )
+            val order =
+                createTestOrder(
+                    status = OrderStatus.ORDER_CANCELLED,
+                    cancelledAt = LocalDateTime.now(),
+                )
             val eventSlot = slot<OrderCancelled>()
 
             every {
@@ -308,10 +317,11 @@ class KafkaOrderEventPublisherTest {
         @DisplayName("취소 사유가 null이면 USER_REQUESTED로 매핑된다")
         fun `취소 사유가 null이면 USER_REQUESTED로 매핑된다`() {
             // given
-            val order = createTestOrder(
-                status = OrderStatus.ORDER_CANCELLED,
-                cancelledAt = LocalDateTime.now(),
-            )
+            val order =
+                createTestOrder(
+                    status = OrderStatus.ORDER_CANCELLED,
+                    cancelledAt = LocalDateTime.now(),
+                )
             val eventSlot = slot<OrderCancelled>()
 
             every {
@@ -329,10 +339,11 @@ class KafkaOrderEventPublisherTest {
         @DisplayName("timeout 키워드가 포함되면 PAYMENT_TIMEOUT으로 매핑된다")
         fun `timeout 키워드가 포함되면 PAYMENT_TIMEOUT으로 매핑된다`() {
             // given
-            val order = createTestOrder(
-                status = OrderStatus.ORDER_CANCELLED,
-                cancelledAt = LocalDateTime.now(),
-            )
+            val order =
+                createTestOrder(
+                    status = OrderStatus.ORDER_CANCELLED,
+                    cancelledAt = LocalDateTime.now(),
+                )
             val eventSlot = slot<OrderCancelled>()
 
             every {
@@ -350,10 +361,11 @@ class KafkaOrderEventPublisherTest {
         @DisplayName("재고 키워드가 포함되면 STOCK_UNAVAILABLE로 매핑된다")
         fun `재고 키워드가 포함되면 STOCK_UNAVAILABLE로 매핑된다`() {
             // given
-            val order = createTestOrder(
-                status = OrderStatus.ORDER_CANCELLED,
-                cancelledAt = LocalDateTime.now(),
-            )
+            val order =
+                createTestOrder(
+                    status = OrderStatus.ORDER_CANCELLED,
+                    cancelledAt = LocalDateTime.now(),
+                )
             val eventSlot = slot<OrderCancelled>()
 
             every {
@@ -371,10 +383,11 @@ class KafkaOrderEventPublisherTest {
         @DisplayName("stock 키워드가 포함되면 STOCK_UNAVAILABLE로 매핑된다")
         fun `stock 키워드가 포함되면 STOCK_UNAVAILABLE로 매핑된다`() {
             // given
-            val order = createTestOrder(
-                status = OrderStatus.ORDER_CANCELLED,
-                cancelledAt = LocalDateTime.now(),
-            )
+            val order =
+                createTestOrder(
+                    status = OrderStatus.ORDER_CANCELLED,
+                    cancelledAt = LocalDateTime.now(),
+                )
             val eventSlot = slot<OrderCancelled>()
 
             every {
@@ -392,10 +405,11 @@ class KafkaOrderEventPublisherTest {
         @DisplayName("사용자 관련 키워드가 포함되면 USER_REQUESTED로 매핑된다")
         fun `사용자 관련 키워드가 포함되면 USER_REQUESTED로 매핑된다`() {
             // given
-            val order = createTestOrder(
-                status = OrderStatus.ORDER_CANCELLED,
-                cancelledAt = LocalDateTime.now(),
-            )
+            val order =
+                createTestOrder(
+                    status = OrderStatus.ORDER_CANCELLED,
+                    cancelledAt = LocalDateTime.now(),
+                )
             val eventSlot = slot<OrderCancelled>()
 
             every {
@@ -413,10 +427,11 @@ class KafkaOrderEventPublisherTest {
         @DisplayName("알 수 없는 사유는 SYSTEM_ERROR로 매핑된다")
         fun `알 수 없는 사유는 SYSTEM_ERROR로 매핑된다`() {
             // given
-            val order = createTestOrder(
-                status = OrderStatus.ORDER_CANCELLED,
-                cancelledAt = LocalDateTime.now(),
-            )
+            val order =
+                createTestOrder(
+                    status = OrderStatus.ORDER_CANCELLED,
+                    cancelledAt = LocalDateTime.now(),
+                )
             val eventSlot = slot<OrderCancelled>()
 
             every {
@@ -434,7 +449,6 @@ class KafkaOrderEventPublisherTest {
     @Nested
     @DisplayName("publishOrderExpirationNotification")
     inner class PublishOrderExpirationNotificationTest {
-
         @Test
         @DisplayName("주문 만료 알림 이벤트가 올바른 토픽과 파티션 키로 발행된다")
         fun `주문 만료 알림 이벤트가 올바른 토픽과 파티션 키로 발행된다`() {
@@ -491,25 +505,26 @@ class KafkaOrderEventPublisherTest {
     @Nested
     @DisplayName("publishDailyStatistics")
     inner class PublishDailyStatisticsTest {
-
         @Test
         @DisplayName("일일 통계 이벤트가 올바른 토픽과 파티션 키로 발행된다")
         fun `일일 통계 이벤트가 올바른 토픽과 파티션 키로 발행된다`() {
             // given
             val targetDate = LocalDate.now().minusDays(1)
-            val statistics = OrderEventPublisher.DailyStatisticsData(
-                date = targetDate,
-                totalOrders = 10,
-                totalSales = BigDecimal("100000"),
-                avgOrderAmount = BigDecimal("10000"),
-                topProducts = listOf(
-                    OrderEventPublisher.TopProductData(
-                        productId = UUID.randomUUID(),
-                        productName = "인기 상품 1",
-                        totalSold = 5,
-                    ),
-                ),
-            )
+            val statistics =
+                OrderEventPublisher.DailyStatisticsData(
+                    date = targetDate,
+                    totalOrders = 10,
+                    totalSales = BigDecimal("100000"),
+                    avgOrderAmount = BigDecimal("10000"),
+                    topProducts =
+                        listOf(
+                            OrderEventPublisher.TopProductData(
+                                productId = UUID.randomUUID(),
+                                productName = "인기 상품 1",
+                                totalSold = 5,
+                            ),
+                        ),
+                )
 
             val topicSlot = slot<String>()
             val keySlot = slot<String>()
@@ -533,24 +548,26 @@ class KafkaOrderEventPublisherTest {
             val targetDate = LocalDate.now().minusDays(1)
             val productId1 = UUID.randomUUID()
             val productId2 = UUID.randomUUID()
-            val statistics = OrderEventPublisher.DailyStatisticsData(
-                date = targetDate,
-                totalOrders = 100,
-                totalSales = BigDecimal("5000000"),
-                avgOrderAmount = BigDecimal("50000"),
-                topProducts = listOf(
-                    OrderEventPublisher.TopProductData(
-                        productId = productId1,
-                        productName = "인기 상품 1",
-                        totalSold = 50,
-                    ),
-                    OrderEventPublisher.TopProductData(
-                        productId = productId2,
-                        productName = "인기 상품 2",
-                        totalSold = 30,
-                    ),
-                ),
-            )
+            val statistics =
+                OrderEventPublisher.DailyStatisticsData(
+                    date = targetDate,
+                    totalOrders = 100,
+                    totalSales = BigDecimal("5000000"),
+                    avgOrderAmount = BigDecimal("50000"),
+                    topProducts =
+                        listOf(
+                            OrderEventPublisher.TopProductData(
+                                productId = productId1,
+                                productName = "인기 상품 1",
+                                totalSold = 50,
+                            ),
+                            OrderEventPublisher.TopProductData(
+                                productId = productId2,
+                                productName = "인기 상품 2",
+                                totalSold = 30,
+                            ),
+                        ),
+                )
 
             val eventSlot = slot<DailyStatistics>()
 
@@ -580,13 +597,14 @@ class KafkaOrderEventPublisherTest {
         fun `빈 통계 데이터도 정상적으로 발행된다`() {
             // given
             val targetDate = LocalDate.now().minusDays(1)
-            val statistics = OrderEventPublisher.DailyStatisticsData(
-                date = targetDate,
-                totalOrders = 0,
-                totalSales = BigDecimal.ZERO,
-                avgOrderAmount = BigDecimal.ZERO,
-                topProducts = emptyList(),
-            )
+            val statistics =
+                OrderEventPublisher.DailyStatisticsData(
+                    date = targetDate,
+                    totalOrders = 0,
+                    totalSales = BigDecimal.ZERO,
+                    avgOrderAmount = BigDecimal.ZERO,
+                    topProducts = emptyList(),
+                )
 
             val eventSlot = slot<DailyStatistics>()
 

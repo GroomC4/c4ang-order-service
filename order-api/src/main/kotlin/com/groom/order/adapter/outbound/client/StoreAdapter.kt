@@ -24,9 +24,7 @@ class StoreAdapter(
      * @param storeId 스토어 ID
      * @return 스토어 정보 (없으면 null)
      */
-    override fun loadById(storeId: UUID): StoreInfo? {
-        return storeClient.getStore(storeId)?.toStoreInfo()
-    }
+    override fun loadById(storeId: UUID): StoreInfo? = storeClient.getStore(storeId)?.toStoreInfo()
 
     /**
      * 스토어 존재 여부 확인
@@ -34,15 +32,12 @@ class StoreAdapter(
      * @param storeId 스토어 ID
      * @return 존재 여부
      */
-    override fun existsById(storeId: UUID): Boolean {
-        return storeClient.existsStore(storeId).exists
-    }
+    override fun existsById(storeId: UUID): Boolean = storeClient.existsStore(storeId).exists
 
-    private fun StoreClient.StoreResponse.toStoreInfo(): StoreInfo {
-        return StoreInfo(
+    private fun StoreClient.StoreResponse.toStoreInfo(): StoreInfo =
+        StoreInfo(
             id = storeId,
             name = name,
             status = status,
         )
-    }
 }

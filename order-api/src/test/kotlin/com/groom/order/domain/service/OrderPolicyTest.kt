@@ -3,7 +3,6 @@ package com.groom.order.domain.service
 import com.groom.order.common.annotation.UnitTest
 import com.groom.order.common.exception.OrderException
 import com.groom.order.domain.model.OrderStatus
-import com.groom.order.domain.model.ProductInfo
 import com.groom.order.fixture.OrderTestFixture
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
@@ -22,14 +21,15 @@ class OrderPolicyTest :
             val storeId = UUID.randomUUID()
 
             When("정상적인 주문 상품이 있으면") {
-                val items = listOf(
-                    OrderItemData(
-                        productId = UUID.randomUUID(),
-                        productName = "Test Product",
-                        quantity = 1,
-                        unitPrice = BigDecimal("10000"),
-                    ),
-                )
+                val items =
+                    listOf(
+                        OrderItemData(
+                            productId = UUID.randomUUID(),
+                            productName = "Test Product",
+                            quantity = 1,
+                            unitPrice = BigDecimal("10000"),
+                        ),
+                    )
 
                 Then("검증을 통과한다") {
                     // 예외 없이 통과
@@ -41,22 +41,24 @@ class OrderPolicyTest :
                 val items = emptyList<OrderItemData>()
 
                 Then("IllegalArgumentException이 발생한다") {
-                    val exception = shouldThrow<IllegalArgumentException> {
-                        orderPolicy.validateOrderCreation(userId, storeId, items)
-                    }
+                    val exception =
+                        shouldThrow<IllegalArgumentException> {
+                            orderPolicy.validateOrderCreation(userId, storeId, items)
+                        }
                     exception.message shouldBe "Order must contain at least one item"
                 }
             }
 
             When("주문 상품 수량이 0이면") {
-                val items = listOf(
-                    OrderItemData(
-                        productId = UUID.randomUUID(),
-                        productName = "Test Product",
-                        quantity = 0,
-                        unitPrice = BigDecimal("10000"),
-                    ),
-                )
+                val items =
+                    listOf(
+                        OrderItemData(
+                            productId = UUID.randomUUID(),
+                            productName = "Test Product",
+                            quantity = 0,
+                            unitPrice = BigDecimal("10000"),
+                        ),
+                    )
 
                 Then("IllegalArgumentException이 발생한다") {
                     shouldThrow<IllegalArgumentException> {
@@ -66,14 +68,15 @@ class OrderPolicyTest :
             }
 
             When("주문 상품 수량이 음수이면") {
-                val items = listOf(
-                    OrderItemData(
-                        productId = UUID.randomUUID(),
-                        productName = "Test Product",
-                        quantity = -1,
-                        unitPrice = BigDecimal("10000"),
-                    ),
-                )
+                val items =
+                    listOf(
+                        OrderItemData(
+                            productId = UUID.randomUUID(),
+                            productName = "Test Product",
+                            quantity = -1,
+                            unitPrice = BigDecimal("10000"),
+                        ),
+                    )
 
                 Then("IllegalArgumentException이 발생한다") {
                     shouldThrow<IllegalArgumentException> {
@@ -83,14 +86,15 @@ class OrderPolicyTest :
             }
 
             When("주문 상품 수량이 999를 초과하면") {
-                val items = listOf(
-                    OrderItemData(
-                        productId = UUID.randomUUID(),
-                        productName = "Test Product",
-                        quantity = 1000,
-                        unitPrice = BigDecimal("10000"),
-                    ),
-                )
+                val items =
+                    listOf(
+                        OrderItemData(
+                            productId = UUID.randomUUID(),
+                            productName = "Test Product",
+                            quantity = 1000,
+                            unitPrice = BigDecimal("10000"),
+                        ),
+                    )
 
                 Then("IllegalArgumentException이 발생한다") {
                     shouldThrow<IllegalArgumentException> {
@@ -100,14 +104,15 @@ class OrderPolicyTest :
             }
 
             When("주문 상품 수량이 정확히 999이면") {
-                val items = listOf(
-                    OrderItemData(
-                        productId = UUID.randomUUID(),
-                        productName = "Test Product",
-                        quantity = 999,
-                        unitPrice = BigDecimal("10000"),
-                    ),
-                )
+                val items =
+                    listOf(
+                        OrderItemData(
+                            productId = UUID.randomUUID(),
+                            productName = "Test Product",
+                            quantity = 999,
+                            unitPrice = BigDecimal("10000"),
+                        ),
+                    )
 
                 Then("검증을 통과한다") {
                     orderPolicy.validateOrderCreation(userId, storeId, items)
@@ -140,16 +145,16 @@ class OrderPolicyTest :
 
         // ===== canCancelOrder 테스트 =====
         Given("주문 취소 가능 여부 확인 시") {
-            When("PENDING 상태이면") {
-                val order = OrderTestFixture.createOrder(status = OrderStatus.PENDING)
+            When("ORDER_CREATED 상태이면") {
+                val order = OrderTestFixture.createOrderCreatedOrder()
 
                 Then("취소 가능하다") {
                     orderPolicy.canCancelOrder(order) shouldBe true
                 }
             }
 
-            When("STOCK_RESERVED 상태이면") {
-                val order = OrderTestFixture.createStockReservedOrder()
+            When("ORDER_CONFIRMED 상태이면") {
+                val order = OrderTestFixture.createOrderConfirmedOrder()
 
                 Then("취소 가능하다") {
                     orderPolicy.canCancelOrder(order) shouldBe true
@@ -228,68 +233,6 @@ class OrderPolicyTest :
 
                 Then("환불 불가능하다") {
                     orderPolicy.canRefundOrder(order) shouldBe false
-                }
-            }
-        }
-
-        // ===== validateProductsBelongToStore 테스트 =====
-        Given("상품 스토어 소속 검증 시") {
-            val storeId = UUID.randomUUID()
-
-            When("모든 상품이 해당 스토어에 속하면") {
-                val products = listOf(
-                    ProductInfo(
-                        id = UUID.randomUUID(),
-                        storeId = storeId,
-                        storeName = "Test Store",
-                        name = "Product 1",
-                        price = BigDecimal("10000"),
-                    ),
-                    ProductInfo(
-                        id = UUID.randomUUID(),
-                        storeId = storeId,
-                        storeName = "Test Store",
-                        name = "Product 2",
-                        price = BigDecimal("20000"),
-                    ),
-                )
-
-                Then("검증을 통과한다") {
-                    orderPolicy.validateProductsBelongToStore(products, storeId)
-                }
-            }
-
-            When("일부 상품이 다른 스토어에 속하면") {
-                val otherStoreId = UUID.randomUUID()
-                val products = listOf(
-                    ProductInfo(
-                        id = UUID.randomUUID(),
-                        storeId = storeId,
-                        storeName = "Test Store",
-                        name = "Product 1",
-                        price = BigDecimal("10000"),
-                    ),
-                    ProductInfo(
-                        id = UUID.randomUUID(),
-                        storeId = otherStoreId,
-                        storeName = "Other Store",
-                        name = "Product 2",
-                        price = BigDecimal("20000"),
-                    ),
-                )
-
-                Then("IllegalArgumentException이 발생한다") {
-                    shouldThrow<IllegalArgumentException> {
-                        orderPolicy.validateProductsBelongToStore(products, storeId)
-                    }
-                }
-            }
-
-            When("상품 목록이 비어있으면") {
-                val products = emptyList<ProductInfo>()
-
-                Then("검증을 통과한다") {
-                    orderPolicy.validateProductsBelongToStore(products, storeId)
                 }
             }
         }

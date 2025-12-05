@@ -13,35 +13,35 @@ import java.util.UUID
 @UnitTest
 class OrderTest :
     FunSpec({
-        // ===== markStockReserved 테스트 =====
-        test("markStockReserved should change status from PENDING to STOCK_RESERVED") {
-            // Given: PENDING 상태의 Order
-            val order = OrderTestFixture.createOrder(status = OrderStatus.PENDING)
+        // ===== confirm 테스트 =====
+        test("confirm should change status from ORDER_CREATED to ORDER_CONFIRMED") {
+            // Given: ORDER_CREATED 상태의 Order
+            val order = OrderTestFixture.createOrder(status = OrderStatus.ORDER_CREATED)
 
-            // When: markStockReserved 호출
-            order.markStockReserved()
+            // When: confirm 호출
+            order.confirm()
 
-            // Then: 상태가 STOCK_RESERVED로 변경
-            order.status shouldBe OrderStatus.STOCK_RESERVED
+            // Then: 상태가 ORDER_CONFIRMED로 변경
+            order.status shouldBe OrderStatus.ORDER_CONFIRMED
         }
 
-        test("markStockReserved should throw exception if order is not PENDING") {
-            // Given: STOCK_RESERVED 상태의 Order
-            val order = OrderTestFixture.createStockReservedOrder()
+        test("confirm should throw exception if order is not ORDER_CREATED") {
+            // Given: ORDER_CONFIRMED 상태의 Order
+            val order = OrderTestFixture.createOrderConfirmedOrder()
 
             // When & Then: IllegalArgumentException 발생
             val exception =
                 shouldThrow<IllegalArgumentException> {
-                    order.markStockReserved()
+                    order.confirm()
                 }
 
-            exception.message shouldBe "Only PENDING orders can mark stock reserved"
+            exception.message shouldBe "Only ORDER_CREATED orders can be confirmed"
         }
 
         // ===== markPaymentPending 테스트 =====
         test("markPaymentPending should set paymentId and change status to PAYMENT_PENDING") {
-            // Given: STOCK_RESERVED 상태의 Order
-            val order = OrderTestFixture.createStockReservedOrder()
+            // Given: ORDER_CONFIRMED 상태의 Order
+            val order = OrderTestFixture.createOrderConfirmedOrder()
 
             val paymentId = UUID.randomUUID()
 
@@ -53,11 +53,11 @@ class OrderTest :
             order.status shouldBe OrderStatus.PAYMENT_PENDING
         }
 
-        test("markPaymentPending should throw exception if order is not STOCK_RESERVED") {
-            // Given: PENDING 상태의 Order
+        test("markPaymentPending should throw exception if order is not ORDER_CONFIRMED") {
+            // Given: ORDER_CREATED 상태의 Order
             val order =
                 OrderTestFixture.createOrder(
-                    status = OrderStatus.PENDING,
+                    status = OrderStatus.ORDER_CREATED,
                 )
 
             val paymentId = UUID.randomUUID()
@@ -68,7 +68,7 @@ class OrderTest :
                     order.markPaymentPending(paymentId)
                 }
 
-            exception.message shouldBe "Only STOCK_RESERVED orders can mark payment pending"
+            exception.message shouldBe "Only ORDER_CONFIRMED orders can mark payment pending"
         }
 
         test("markPaymentPending should throw exception if order is PAYMENT_COMPLETED") {
@@ -86,7 +86,7 @@ class OrderTest :
                     order.markPaymentPending(newPaymentId)
                 }
 
-            exception.message shouldBe "Only STOCK_RESERVED orders can mark payment pending"
+            exception.message shouldBe "Only ORDER_CONFIRMED orders can mark payment pending"
         }
 
         // ===== completePayment 테스트 =====
@@ -104,8 +104,8 @@ class OrderTest :
         }
 
         test("completePayment should throw exception if order is not PAYMENT_PENDING") {
-            // Given: STOCK_RESERVED 상태의 Order
-            val order = OrderTestFixture.createStockReservedOrder()
+            // Given: ORDER_CONFIRMED 상태의 Order
+            val order = OrderTestFixture.createOrderConfirmedOrder()
             val paymentId = UUID.randomUUID()
 
             // When & Then: IllegalArgumentException 발생
@@ -133,7 +133,7 @@ class OrderTest :
 
         test("confirmOrder should throw exception if order is not PAYMENT_COMPLETED") {
             // Given: PENDING 상태의 Order
-            val order = OrderTestFixture.createOrder(status = OrderStatus.PENDING)
+            val order = OrderTestFixture.createOrder(status = OrderStatus.ORDER_CREATED)
 
             // When & Then: IllegalArgumentException 발생
             val exception =
@@ -147,7 +147,7 @@ class OrderTest :
         // ===== cancel 테스트 =====
         test("cancel should change status to ORDER_CANCELLED for PENDING order") {
             // Given: PENDING 상태의 Order
-            val order = OrderTestFixture.createOrder(status = OrderStatus.PENDING)
+            val order = OrderTestFixture.createOrder(status = OrderStatus.ORDER_CREATED)
             val reason = "고객 변심"
             val now = LocalDateTime.now()
 
@@ -216,7 +216,7 @@ class OrderTest :
 
         test("timeout should throw exception if order is not PAYMENT_PENDING or PAYMENT_PROCESSING") {
             // Given: PENDING 상태의 Order
-            val order = OrderTestFixture.createOrder(status = OrderStatus.PENDING)
+            val order = OrderTestFixture.createOrder(status = OrderStatus.ORDER_CREATED)
 
             // When & Then: IllegalArgumentException 발생
             val exception =
@@ -259,7 +259,7 @@ class OrderTest :
         // ===== reserveStock 테스트 =====
         test("reserveStock should set reservationId and expiresAt") {
             // Given: PENDING 상태의 Order
-            val order = OrderTestFixture.createOrder(status = OrderStatus.PENDING)
+            val order = OrderTestFixture.createOrder(status = OrderStatus.ORDER_CREATED)
             val reservationId = "RES-12345"
             val expiresAt = LocalDateTime.now().plusMinutes(10)
 
@@ -274,10 +274,11 @@ class OrderTest :
         // ===== calculateTotalAmount 테스트 =====
         test("calculateTotalAmount should return correct total for single item") {
             // Given: 단일 아이템이 있는 Order
-            val item = OrderTestFixture.createOrderItem(
-                quantity = 2,
-                unitPrice = BigDecimal("10000"),
-            )
+            val item =
+                OrderTestFixture.createOrderItem(
+                    quantity = 2,
+                    unitPrice = BigDecimal("10000"),
+                )
             val order = OrderTestFixture.createOrder(items = listOf(item))
 
             // When: calculateTotalAmount 호출
@@ -289,14 +290,16 @@ class OrderTest :
 
         test("calculateTotalAmount should return correct total for multiple items") {
             // Given: 다중 아이템이 있는 Order
-            val item1 = OrderTestFixture.createOrderItem(
-                quantity = 2,
-                unitPrice = BigDecimal("10000"),
-            )
-            val item2 = OrderTestFixture.createOrderItem(
-                quantity = 3,
-                unitPrice = BigDecimal("5000"),
-            )
+            val item1 =
+                OrderTestFixture.createOrderItem(
+                    quantity = 2,
+                    unitPrice = BigDecimal("10000"),
+                )
+            val item2 =
+                OrderTestFixture.createOrderItem(
+                    quantity = 3,
+                    unitPrice = BigDecimal("5000"),
+                )
             val order = OrderTestFixture.createOrder(items = listOf(item1, item2))
 
             // When: calculateTotalAmount 호출
@@ -334,10 +337,10 @@ class OrderTest :
 
         // ===== 비동기 플로우 통합 테스트 =====
         test("markPaymentPending should work correctly in async order-payment flow") {
-            // Given: 비동기 플로우 시뮬레이션 - STOCK_RESERVED 상태
-            val order = OrderTestFixture.createStockReservedOrder()
+            // Given: 비동기 플로우 시뮬레이션 - ORDER_CONFIRMED 상태
+            val order = OrderTestFixture.createOrderConfirmedOrder()
 
-            order.status shouldBe OrderStatus.STOCK_RESERVED
+            order.status shouldBe OrderStatus.ORDER_CONFIRMED
             order.paymentId shouldBe null
 
             // When 1: Payment 생성 및 연결 (OrderStockReservedEventHandler에서 수행)
@@ -356,9 +359,9 @@ class OrderTest :
             order.paymentId shouldBe paymentId
         }
 
-        test("full order lifecycle: PENDING -> STOCK_RESERVED -> PAYMENT_PENDING -> PAYMENT_COMPLETED -> PREPARING") {
-            // Given: PENDING 상태의 Order
-            val order = OrderTestFixture.createOrder(status = OrderStatus.PENDING)
+        test("full order lifecycle: ORDER_CREATED -> ORDER_CONFIRMED -> PAYMENT_PENDING -> PAYMENT_COMPLETED -> PREPARING") {
+            // Given: ORDER_CREATED 상태의 Order
+            val order = OrderTestFixture.createOrder(status = OrderStatus.ORDER_CREATED)
             val reservationId = "RES-12345"
             val paymentId = UUID.randomUUID()
             val expiresAt = LocalDateTime.now().plusMinutes(10)
@@ -367,9 +370,9 @@ class OrderTest :
             order.reserveStock(reservationId, expiresAt)
             order.reservationId shouldBe reservationId
 
-            // Step 2: 재고 예약 완료
-            order.markStockReserved()
-            order.status shouldBe OrderStatus.STOCK_RESERVED
+            // Step 2: 재고 예약 완료 (Product Service에서 stock.reserved 이벤트 수신)
+            order.confirm()
+            order.status shouldBe OrderStatus.ORDER_CONFIRMED
 
             // Step 3: 결제 대기
             order.markPaymentPending(paymentId)

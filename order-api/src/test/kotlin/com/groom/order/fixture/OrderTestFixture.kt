@@ -67,9 +67,24 @@ object OrderTestFixture {
     }
 
     /**
-     * 재고 예약 완료 상태의 Order 생성
+     * 주문 생성 상태의 Order 생성 (재고 예약 대기)
      */
-    fun createStockReservedOrder(
+    fun createOrderCreatedOrder(
+        userExternalId: UUID = UUID.randomUUID(),
+        storeId: UUID = UUID.randomUUID(),
+        items: List<OrderItem> = listOf(createOrderItem()),
+    ): Order =
+        createOrder(
+            userExternalId = userExternalId,
+            storeId = storeId,
+            status = OrderStatus.ORDER_CREATED,
+            items = items,
+        )
+
+    /**
+     * 주문 확정 상태의 Order 생성 (재고 예약 완료)
+     */
+    fun createOrderConfirmedOrder(
         userExternalId: UUID = UUID.randomUUID(),
         storeId: UUID = UUID.randomUUID(),
         reservationId: String = "RES-${UUID.randomUUID().toString().take(8)}",
@@ -78,7 +93,7 @@ object OrderTestFixture {
         createOrder(
             userExternalId = userExternalId,
             storeId = storeId,
-            status = OrderStatus.STOCK_RESERVED,
+            status = OrderStatus.ORDER_CONFIRMED,
             reservationId = reservationId,
             expiresAt = LocalDateTime.now().plusMinutes(10),
             items = items,

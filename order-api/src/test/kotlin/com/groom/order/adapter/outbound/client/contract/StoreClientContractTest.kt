@@ -59,7 +59,6 @@ import java.util.UUID
 )
 @DisplayName("Store Service Consumer Contract Test")
 class StoreClientContractTest {
-
     @Autowired
     private lateinit var stubFinder: StubFinder
 

@@ -10,10 +10,10 @@ CREATE TABLE IF NOT EXISTS p_order (
     user_id           UUID NOT NULL,
     store_id          UUID NOT NULL,
     order_number      TEXT NOT NULL,
-    status            TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN (
+    status            TEXT NOT NULL DEFAULT 'ORDER_CREATED' CHECK (status IN (
     -- 주문 접수 단계
-    'PENDING',
-    'STOCK_RESERVED',
+    'ORDER_CREATED',
+    'ORDER_CONFIRMED',
     -- 결제 단계
     'PAYMENT_PENDING',
     'PAYMENT_PROCESSING',

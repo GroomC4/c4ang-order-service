@@ -41,7 +41,7 @@ class ListOrdersServiceIntegrationTest : IntegrationTestBase() {
         private val PRODUCT_MOUSE = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-000000000001")
     }
 
-    private var orderStockReserved: UUID = UUID.randomUUID()
+    private var orderOrderConfirmed: UUID = UUID.randomUUID()
     private var orderPaymentCompleted: UUID = UUID.randomUUID()
     private var orderDelivered: UUID = UUID.randomUUID()
     private var orderCancelled: UUID = UUID.randomUUID()
@@ -57,10 +57,10 @@ class ListOrdersServiceIntegrationTest : IntegrationTestBase() {
             val now = LocalDateTime.now()
 
             // CUSTOMER_USER_1의 주문들 (다양한 상태와 시간)
-            // 1. STOCK_RESERVED (가장 최근)
-            orderStockReserved = UUID.randomUUID()
-            createOrder(orderStockReserved, CUSTOMER_USER_1, "STOCK_RESERVED", "ORD-LIST-001", now)
-            createOrderItem(orderStockReserved, 50000, 2)
+            // 1. ORDER_CONFIRMED (가장 최근)
+            orderOrderConfirmed = UUID.randomUUID()
+            createOrder(orderOrderConfirmed, CUSTOMER_USER_1, "ORDER_CONFIRMED", "ORD-LIST-001", now)
+            createOrderItem(orderOrderConfirmed, 50000, 2)
 
             // 2. PAYMENT_COMPLETED (1일 전)
             orderPaymentCompleted = UUID.randomUUID()
@@ -79,7 +79,7 @@ class ListOrdersServiceIntegrationTest : IntegrationTestBase() {
 
             // CUSTOMER_USER_2의 주문
             orderOtherUser = UUID.randomUUID()
-            createOrder(orderOtherUser, CUSTOMER_USER_2, "STOCK_RESERVED", "ORD-LIST-005", now)
+            createOrder(orderOtherUser, CUSTOMER_USER_2, "ORDER_CONFIRMED", "ORD-LIST-005", now)
             createOrderItem(orderOtherUser, 50000, 1)
 
             entityManager.flush()
@@ -134,7 +134,10 @@ class ListOrdersServiceIntegrationTest : IntegrationTestBase() {
     @AfterEach
     fun tearDown() {
         transactionApplier.applyPrimaryTransaction {
-            entityManager.createNativeQuery("DELETE FROM p_order_item WHERE order_id IN (SELECT id FROM p_order WHERE order_number LIKE 'ORD-LIST-%')").executeUpdate()
+            entityManager
+                .createNativeQuery(
+                    "DELETE FROM p_order_item WHERE order_id IN (SELECT id FROM p_order WHERE order_number LIKE 'ORD-LIST-%')",
+                ).executeUpdate()
             entityManager.createNativeQuery("DELETE FROM p_order WHERE order_number LIKE 'ORD-LIST-%'").executeUpdate()
             entityManager.flush()
         }
@@ -144,10 +147,11 @@ class ListOrdersServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("사용자의 전체 주문 목록 조회 성공")
     fun listOrders_shouldReturnAllOrdersForUser() {
         // given
-        val query = ListOrdersQuery(
-            requestUserId = CUSTOMER_USER_1,
-            status = null,
-        )
+        val query =
+            ListOrdersQuery(
+                requestUserId = CUSTOMER_USER_1,
+                status = null,
+            )
 
         // when
         val result = listOrdersService.listOrders(query)
@@ -160,10 +164,11 @@ class ListOrdersServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("주문 목록이 최신순으로 정렬되는지 확인")
     fun listOrders_shouldReturnOrdersSortedByCreatedAtDesc() {
         // given
-        val query = ListOrdersQuery(
-            requestUserId = CUSTOMER_USER_1,
-            status = null,
-        )
+        val query =
+            ListOrdersQuery(
+                requestUserId = CUSTOMER_USER_1,
+                status = null,
+            )
 
         // when
         val result = listOrdersService.listOrders(query)
@@ -177,20 +182,21 @@ class ListOrdersServiceIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    @DisplayName("STOCK_RESERVED 상태로 필터링 조회")
-    fun listOrders_withStockReservedFilter_shouldReturnFilteredOrders() {
+    @DisplayName("ORDER_CONFIRMED 상태로 필터링 조회")
+    fun listOrders_withOrderConfirmedFilter_shouldReturnFilteredOrders() {
         // given
-        val query = ListOrdersQuery(
-            requestUserId = CUSTOMER_USER_1,
-            status = OrderStatus.STOCK_RESERVED,
-        )
+        val query =
+            ListOrdersQuery(
+                requestUserId = CUSTOMER_USER_1,
+                status = OrderStatus.ORDER_CONFIRMED,
+            )
 
         // when
         val result = listOrdersService.listOrders(query)
 
         // then
         assertThat(result.orders).hasSize(1)
-        assertThat(result.orders[0].status).isEqualTo(OrderStatus.STOCK_RESERVED)
+        assertThat(result.orders[0].status).isEqualTo(OrderStatus.ORDER_CONFIRMED)
         assertThat(result.orders[0].orderNumber).isEqualTo("ORD-LIST-001")
     }
 
@@ -198,10 +204,11 @@ class ListOrdersServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("PAYMENT_COMPLETED 상태로 필터링 조회")
     fun listOrders_withPaymentCompletedFilter_shouldReturnFilteredOrders() {
         // given
-        val query = ListOrdersQuery(
-            requestUserId = CUSTOMER_USER_1,
-            status = OrderStatus.PAYMENT_COMPLETED,
-        )
+        val query =
+            ListOrdersQuery(
+                requestUserId = CUSTOMER_USER_1,
+                status = OrderStatus.PAYMENT_COMPLETED,
+            )
 
         // when
         val result = listOrdersService.listOrders(query)
@@ -215,10 +222,11 @@ class ListOrdersServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("DELIVERED 상태로 필터링 조회")
     fun listOrders_withDeliveredFilter_shouldReturnFilteredOrders() {
         // given
-        val query = ListOrdersQuery(
-            requestUserId = CUSTOMER_USER_1,
-            status = OrderStatus.DELIVERED,
-        )
+        val query =
+            ListOrdersQuery(
+                requestUserId = CUSTOMER_USER_1,
+                status = OrderStatus.DELIVERED,
+            )
 
         // when
         val result = listOrdersService.listOrders(query)
@@ -232,10 +240,11 @@ class ListOrdersServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("ORDER_CANCELLED 상태로 필터링 조회")
     fun listOrders_withCancelledFilter_shouldReturnFilteredOrders() {
         // given
-        val query = ListOrdersQuery(
-            requestUserId = CUSTOMER_USER_1,
-            status = OrderStatus.ORDER_CANCELLED,
-        )
+        val query =
+            ListOrdersQuery(
+                requestUserId = CUSTOMER_USER_1,
+                status = OrderStatus.ORDER_CANCELLED,
+            )
 
         // when
         val result = listOrdersService.listOrders(query)
@@ -249,10 +258,11 @@ class ListOrdersServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("해당 상태의 주문이 없을 때 빈 목록 반환")
     fun listOrders_withNoMatchingStatus_shouldReturnEmptyList() {
         // given: PREPARING 상태 주문이 없음
-        val query = ListOrdersQuery(
-            requestUserId = CUSTOMER_USER_1,
-            status = OrderStatus.PREPARING,
-        )
+        val query =
+            ListOrdersQuery(
+                requestUserId = CUSTOMER_USER_1,
+                status = OrderStatus.PREPARING,
+            )
 
         // when
         val result = listOrdersService.listOrders(query)
@@ -265,10 +275,11 @@ class ListOrdersServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("주문이 없는 사용자의 목록 조회 - 빈 목록 반환")
     fun listOrders_withUserHavingNoOrders_shouldReturnEmptyList() {
         // given
-        val query = ListOrdersQuery(
-            requestUserId = CUSTOMER_USER_NO_ORDERS,
-            status = null,
-        )
+        val query =
+            ListOrdersQuery(
+                requestUserId = CUSTOMER_USER_NO_ORDERS,
+                status = null,
+            )
 
         // when
         val result = listOrdersService.listOrders(query)
@@ -281,10 +292,11 @@ class ListOrdersServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("다른 사용자의 주문은 조회되지 않음")
     fun listOrders_shouldNotReturnOtherUsersOrders() {
         // given
-        val query = ListOrdersQuery(
-            requestUserId = CUSTOMER_USER_1,
-            status = null,
-        )
+        val query =
+            ListOrdersQuery(
+                requestUserId = CUSTOMER_USER_1,
+                status = null,
+            )
 
         // when
         val result = listOrdersService.listOrders(query)
@@ -298,10 +310,11 @@ class ListOrdersServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("각 주문에 필수 필드가 포함되는지 확인")
     fun listOrders_shouldContainRequiredFields() {
         // given
-        val query = ListOrdersQuery(
-            requestUserId = CUSTOMER_USER_1,
-            status = null,
-        )
+        val query =
+            ListOrdersQuery(
+                requestUserId = CUSTOMER_USER_1,
+                status = null,
+            )
 
         // when
         val result = listOrdersService.listOrders(query)
@@ -321,10 +334,11 @@ class ListOrdersServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("주문 항목 개수가 정확한지 확인")
     fun listOrders_shouldReturnCorrectItemCount() {
         // given
-        val query = ListOrdersQuery(
-            requestUserId = CUSTOMER_USER_1,
-            status = OrderStatus.STOCK_RESERVED,
-        )
+        val query =
+            ListOrdersQuery(
+                requestUserId = CUSTOMER_USER_1,
+                status = OrderStatus.ORDER_CONFIRMED,
+            )
 
         // when
         val result = listOrdersService.listOrders(query)

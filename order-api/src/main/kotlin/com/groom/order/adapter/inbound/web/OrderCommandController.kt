@@ -1,5 +1,11 @@
 package com.groom.order.adapter.inbound.web
 
+import com.groom.order.adapter.inbound.web.dto.CancelOrderRequest
+import com.groom.order.adapter.inbound.web.dto.CancelOrderResponse
+import com.groom.order.adapter.inbound.web.dto.CreateOrderRequest
+import com.groom.order.adapter.inbound.web.dto.CreateOrderResponse
+import com.groom.order.adapter.inbound.web.dto.RefundOrderRequest
+import com.groom.order.adapter.inbound.web.dto.RefundOrderResponse
 import com.groom.order.application.dto.CancelOrderCommand
 import com.groom.order.application.dto.CreateOrderCommand
 import com.groom.order.application.dto.RefundOrderCommand
@@ -7,12 +13,6 @@ import com.groom.order.application.service.CancelOrderService
 import com.groom.order.application.service.CreateOrderService
 import com.groom.order.application.service.RefundOrderService
 import com.groom.order.common.util.IstioHeaderExtractor
-import com.groom.order.adapter.inbound.web.dto.CancelOrderRequest
-import com.groom.order.adapter.inbound.web.dto.CancelOrderResponse
-import com.groom.order.adapter.inbound.web.dto.CreateOrderRequest
-import com.groom.order.adapter.inbound.web.dto.CreateOrderResponse
-import com.groom.order.adapter.inbound.web.dto.RefundOrderRequest
-import com.groom.order.adapter.inbound.web.dto.RefundOrderResponse
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -52,26 +52,25 @@ class OrderCommandController(
      *
      * POST /api/v1/orders
      *
-     * 비동기 주문-결제 플로우:
+     * 이벤트 기반 비동기 플로우:
      * 1. 멱등성 체크 (idempotencyKey)
-     * 2. 상점 및 상품 검증
-     * 3. Redis 재고 예약 (10분 TTL)
-     * 4. 주문 생성 (STOCK_RESERVED 상태)
-     * 5. 도메인 이벤트 발행
+     * 2. 주문 생성 (ORDER_CREATED 상태)
+     * 3. order.created 이벤트 발행 → Product Service
+     * 4. Product Service에서 재고 예약 후 stock.reserved/failed 발행
+     * 5. Order Service에서 이벤트 소비 후 주문 상태 업데이트
      *
-     * @param request 주문 생성 요청
-     * @return 생성된 주문 정보 (orderId, reservationId, expiresAt 포함)
+     * @param request 주문 생성 요청 (상품 정보 포함)
+     * @return 생성된 주문 정보 (status: ORDER_CREATED)
      */
     // Istio Gateway handles authorization
-    @Operation(summary = "주문 생성", description = "새로운 주문을 생성하고 재고를 예약합니다.")
+    @Operation(summary = "주문 생성", description = "새로운 주문을 생성합니다. 재고 예약은 비동기로 처리됩니다.")
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "201", description = "주문 생성 성공"),
+            ApiResponse(responseCode = "201", description = "주문 생성 성공 (재고 확인 대기 중)"),
             ApiResponse(responseCode = "400", description = "잘못된 요청"),
             ApiResponse(responseCode = "401", description = "인증 실패"),
             ApiResponse(responseCode = "403", description = "권한 없음"),
-            ApiResponse(responseCode = "404", description = "상점 또는 상품을 찾을 수 없음"),
-            ApiResponse(responseCode = "409", description = "재고 부족 또는 중복 주문"),
+            ApiResponse(responseCode = "409", description = "중복 주문"),
         ],
     )
     @PostMapping
@@ -92,7 +91,9 @@ class OrderCommandController(
                     request.items.map { item ->
                         CreateOrderCommand.OrderItemDto(
                             productId = item.productId,
+                            productName = item.productName,
                             quantity = item.quantity,
+                            unitPrice = item.unitPrice,
                         )
                     },
                 note = request.note,
@@ -100,7 +101,7 @@ class OrderCommandController(
 
         val result = createOrderService.createOrder(command)
 
-        logger.info { "Order created successfully: ${result.orderNumber}" }
+        logger.info { "Order created successfully: ${result.orderNumber} (status: ORDER_CREATED)" }
 
         return CreateOrderResponse.from(result)
     }

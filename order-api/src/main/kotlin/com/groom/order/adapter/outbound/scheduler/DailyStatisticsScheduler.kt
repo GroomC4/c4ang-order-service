@@ -79,27 +79,28 @@ class DailyStatisticsScheduler(
             val avgOrderAmount = totalSales.divide(BigDecimal(totalOrders), 2, RoundingMode.HALF_UP)
 
             // 3. 인기 상품 집계 (판매 수량 기준 Top 5)
-            val topProducts = confirmedOrders
-                .flatMap { it.items }
-                .groupBy { it.productId to it.productName }
-                .map { (productInfo, items) ->
-                    OrderEventPublisher.TopProductData(
-                        productId = productInfo.first,
-                        productName = productInfo.second,
-                        totalSold = items.sumOf { it.quantity },
-                    )
-                }
-                .sortedByDescending { it.totalSold }
-                .take(TOP_PRODUCTS_LIMIT)
+            val topProducts =
+                confirmedOrders
+                    .flatMap { it.items }
+                    .groupBy { it.productId to it.productName }
+                    .map { (productInfo, items) ->
+                        OrderEventPublisher.TopProductData(
+                            productId = productInfo.first,
+                            productName = productInfo.second,
+                            totalSold = items.sumOf { it.quantity },
+                        )
+                    }.sortedByDescending { it.totalSold }
+                    .take(TOP_PRODUCTS_LIMIT)
 
             // 4. 통계 이벤트 발행
-            val statisticsData = OrderEventPublisher.DailyStatisticsData(
-                date = targetDate,
-                totalOrders = totalOrders,
-                totalSales = totalSales,
-                avgOrderAmount = avgOrderAmount,
-                topProducts = topProducts,
-            )
+            val statisticsData =
+                OrderEventPublisher.DailyStatisticsData(
+                    date = targetDate,
+                    totalOrders = totalOrders,
+                    totalSales = totalSales,
+                    avgOrderAmount = avgOrderAmount,
+                    topProducts = topProducts,
+                )
 
             orderEventPublisher.publishDailyStatistics(statisticsData)
 
@@ -114,13 +115,14 @@ class DailyStatisticsScheduler(
     }
 
     private fun publishEmptyStatistics(targetDate: LocalDate) {
-        val emptyStatistics = OrderEventPublisher.DailyStatisticsData(
-            date = targetDate,
-            totalOrders = 0,
-            totalSales = BigDecimal.ZERO,
-            avgOrderAmount = BigDecimal.ZERO,
-            topProducts = emptyList(),
-        )
+        val emptyStatistics =
+            OrderEventPublisher.DailyStatisticsData(
+                date = targetDate,
+                totalOrders = 0,
+                totalSales = BigDecimal.ZERO,
+                avgOrderAmount = BigDecimal.ZERO,
+                topProducts = emptyList(),
+            )
 
         orderEventPublisher.publishDailyStatistics(emptyStatistics)
 

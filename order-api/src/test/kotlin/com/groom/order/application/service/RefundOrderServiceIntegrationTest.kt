@@ -149,7 +149,10 @@ class RefundOrderServiceIntegrationTest : IntegrationTestBase() {
     @AfterEach
     fun tearDown() {
         transactionApplier.applyPrimaryTransaction {
-            entityManager.createNativeQuery("DELETE FROM p_order_item WHERE order_id IN (SELECT id FROM p_order WHERE order_number LIKE 'ORD-REFUND-%')").executeUpdate()
+            entityManager
+                .createNativeQuery(
+                    "DELETE FROM p_order_item WHERE order_id IN (SELECT id FROM p_order WHERE order_number LIKE 'ORD-REFUND-%')",
+                ).executeUpdate()
             entityManager.createNativeQuery("DELETE FROM p_order WHERE order_number LIKE 'ORD-REFUND-%'").executeUpdate()
             entityManager.flush()
         }
@@ -159,11 +162,12 @@ class RefundOrderServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("DELIVERED 상태 주문 환불 성공")
     fun refundOrder_withDeliveredStatus_shouldSucceed() {
         // given
-        val command = RefundOrderCommand(
-            orderId = orderDelivered,
-            requestUserId = CUSTOMER_USER_1,
-            refundReason = "상품 불량",
-        )
+        val command =
+            RefundOrderCommand(
+                orderId = orderDelivered,
+                requestUserId = CUSTOMER_USER_1,
+                refundReason = "상품 불량",
+            )
 
         // when
         val result = refundOrderService.refundOrder(command)
@@ -186,11 +190,12 @@ class RefundOrderServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("다중 상품 주문 환불 시 총액 정확히 계산")
     fun refundOrder_withMultipleItems_shouldCalculateCorrectAmount() {
         // given
-        val command = RefundOrderCommand(
-            orderId = orderDeliveredMultiItem,
-            requestUserId = CUSTOMER_USER_1,
-            refundReason = "전체 환불",
-        )
+        val command =
+            RefundOrderCommand(
+                orderId = orderDeliveredMultiItem,
+                requestUserId = CUSTOMER_USER_1,
+                refundReason = "전체 환불",
+            )
 
         // when
         val result = refundOrderService.refundOrder(command)
@@ -203,11 +208,12 @@ class RefundOrderServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("PAYMENT_COMPLETED 상태 주문 환불 시 실패")
     fun refundOrder_withPaymentCompletedStatus_shouldFail() {
         // given
-        val command = RefundOrderCommand(
-            orderId = orderPaymentCompleted,
-            requestUserId = CUSTOMER_USER_1,
-            refundReason = "환불 요청",
-        )
+        val command =
+            RefundOrderCommand(
+                orderId = orderPaymentCompleted,
+                requestUserId = CUSTOMER_USER_1,
+                refundReason = "환불 요청",
+            )
 
         // when & then
         assertThatThrownBy { refundOrderService.refundOrder(command) }
@@ -218,11 +224,12 @@ class RefundOrderServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("PREPARING 상태 주문 환불 시 실패")
     fun refundOrder_withPreparingStatus_shouldFail() {
         // given
-        val command = RefundOrderCommand(
-            orderId = orderPreparing,
-            requestUserId = CUSTOMER_USER_1,
-            refundReason = "환불 요청",
-        )
+        val command =
+            RefundOrderCommand(
+                orderId = orderPreparing,
+                requestUserId = CUSTOMER_USER_1,
+                refundReason = "환불 요청",
+            )
 
         // when & then
         assertThatThrownBy { refundOrderService.refundOrder(command) }
@@ -233,11 +240,12 @@ class RefundOrderServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("SHIPPED 상태 주문 환불 시 실패")
     fun refundOrder_withShippedStatus_shouldFail() {
         // given
-        val command = RefundOrderCommand(
-            orderId = orderShipped,
-            requestUserId = CUSTOMER_USER_1,
-            refundReason = "환불 요청",
-        )
+        val command =
+            RefundOrderCommand(
+                orderId = orderShipped,
+                requestUserId = CUSTOMER_USER_1,
+                refundReason = "환불 요청",
+            )
 
         // when & then
         assertThatThrownBy { refundOrderService.refundOrder(command) }
@@ -249,11 +257,12 @@ class RefundOrderServiceIntegrationTest : IntegrationTestBase() {
     fun refundOrder_withNonExistentOrder_shouldThrowOrderNotFound() {
         // given
         val nonExistentOrderId = UUID.randomUUID()
-        val command = RefundOrderCommand(
-            orderId = nonExistentOrderId,
-            requestUserId = CUSTOMER_USER_1,
-            refundReason = "환불",
-        )
+        val command =
+            RefundOrderCommand(
+                orderId = nonExistentOrderId,
+                requestUserId = CUSTOMER_USER_1,
+                refundReason = "환불",
+            )
 
         // when & then
         assertThatThrownBy { refundOrderService.refundOrder(command) }
@@ -264,11 +273,12 @@ class RefundOrderServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("다른 사용자의 주문 환불 시 OrderAccessDenied 예외 발생")
     fun refundOrder_withOtherUsersOrder_shouldThrowOrderAccessDenied() {
         // given: CUSTOMER_USER_1이 CUSTOMER_USER_2의 주문 환불 시도
-        val command = RefundOrderCommand(
-            orderId = orderOtherUser,
-            requestUserId = CUSTOMER_USER_1,
-            refundReason = "환불",
-        )
+        val command =
+            RefundOrderCommand(
+                orderId = orderOtherUser,
+                requestUserId = CUSTOMER_USER_1,
+                refundReason = "환불",
+            )
 
         // when & then
         assertThatThrownBy { refundOrderService.refundOrder(command) }
@@ -279,11 +289,12 @@ class RefundOrderServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("환불 사유 없이 환불 성공")
     fun refundOrder_withoutRefundReason_shouldSucceed() {
         // given
-        val command = RefundOrderCommand(
-            orderId = orderDelivered,
-            requestUserId = CUSTOMER_USER_1,
-            refundReason = null,
-        )
+        val command =
+            RefundOrderCommand(
+                orderId = orderDelivered,
+                requestUserId = CUSTOMER_USER_1,
+                refundReason = null,
+            )
 
         // when
         val result = refundOrderService.refundOrder(command)

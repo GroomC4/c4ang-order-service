@@ -31,22 +31,21 @@ class KafkaProducerConfig(
 ) {
     @Bean
     fun producerFactory(): ProducerFactory<String, Any> {
-        val configProps = mutableMapOf<String, Any>(
-            ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
-            ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java,
-            ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to KafkaAvroSerializer::class.java,
-            ProducerConfig.ACKS_CONFIG to acks,
-            ProducerConfig.RETRIES_CONFIG to retries,
-            ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG to enableIdempotence,
-            KafkaAvroSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG to schemaRegistryUrl,
-            // Schema Registry에 스키마 자동 등록
-            KafkaAvroSerializerConfig.AUTO_REGISTER_SCHEMAS to true,
-        )
+        val configProps =
+            mutableMapOf<String, Any>(
+                ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
+                ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java,
+                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to KafkaAvroSerializer::class.java,
+                ProducerConfig.ACKS_CONFIG to acks,
+                ProducerConfig.RETRIES_CONFIG to retries,
+                ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG to enableIdempotence,
+                KafkaAvroSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG to schemaRegistryUrl,
+                // Schema Registry에 스키마 자동 등록
+                KafkaAvroSerializerConfig.AUTO_REGISTER_SCHEMAS to true,
+            )
         return DefaultKafkaProducerFactory(configProps)
     }
 
     @Bean
-    fun kafkaTemplate(): KafkaTemplate<String, Any> {
-        return KafkaTemplate(producerFactory())
-    }
+    fun kafkaTemplate(): KafkaTemplate<String, Any> = KafkaTemplate(producerFactory())
 }

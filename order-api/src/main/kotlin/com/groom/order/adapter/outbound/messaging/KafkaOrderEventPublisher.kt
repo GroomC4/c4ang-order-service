@@ -8,7 +8,6 @@ import com.groom.ecommerce.order.event.avro.OrderCancelled
 import com.groom.ecommerce.order.event.avro.OrderConfirmed
 import com.groom.ecommerce.order.event.avro.OrderCreated
 import com.groom.ecommerce.order.event.avro.OrderExpirationNotification
-import com.groom.ecommerce.order.event.avro.OrderItem as AvroOrderItem
 import com.groom.order.configuration.kafka.KafkaTopicProperties
 import com.groom.order.domain.model.Order
 import com.groom.order.domain.port.OrderEventPublisher
@@ -19,6 +18,7 @@ import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.UUID
+import com.groom.ecommerce.order.event.avro.OrderItem as AvroOrderItem
 
 /**
  * Kafka를 통한 주문 이벤트 발행 어댑터
@@ -49,29 +49,34 @@ class KafkaOrderEventPublisher(
         val eventId = UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
 
-        val avroItems = order.items.map { item ->
-            AvroOrderItem.newBuilder()
-                .setProductId(item.productId.toString())
-                .setQuantity(item.quantity)
-                .setUnitPrice(item.unitPrice)
-                .build()
-        }
+        val avroItems =
+            order.items.map { item ->
+                AvroOrderItem
+                    .newBuilder()
+                    .setProductId(item.productId.toString())
+                    .setQuantity(item.quantity)
+                    .setUnitPrice(item.unitPrice)
+                    .build()
+            }
 
-        val event = OrderCreated.newBuilder()
-            .setEventId(eventId)
-            .setEventTimestamp(now)
-            .setOrderId(order.id.toString())
-            .setUserId(order.userExternalId.toString())
-            .setStoreId(order.storeId.toString())
-            .setItems(avroItems)
-            .setTotalAmount(order.calculateTotalAmount())
-            .setCreatedAt(order.createdAt?.toInstant(ZoneOffset.UTC)?.toEpochMilli() ?: now)
-            .build()
+        val event =
+            OrderCreated
+                .newBuilder()
+                .setEventId(eventId)
+                .setEventTimestamp(now)
+                .setOrderId(order.id.toString())
+                .setUserId(order.userExternalId.toString())
+                .setStoreId(order.storeId.toString())
+                .setItems(avroItems)
+                .setTotalAmount(order.calculateTotalAmount())
+                .setCreatedAt(order.createdAt?.toInstant(ZoneOffset.UTC)?.toEpochMilli() ?: now)
+                .build()
 
         val topic = topicProperties.orderCreated
         val partitionKey = order.id.toString()
 
-        kafkaTemplate.send(topic, partitionKey, event)
+        kafkaTemplate
+            .send(topic, partitionKey, event)
             .whenComplete { result, ex ->
                 if (ex != null) {
                     logger.error(ex) {
@@ -91,19 +96,22 @@ class KafkaOrderEventPublisher(
         val eventId = UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
 
-        val event = OrderConfirmed.newBuilder()
-            .setEventId(eventId)
-            .setEventTimestamp(now)
-            .setOrderId(order.id.toString())
-            .setUserId(order.userExternalId.toString())
-            .setTotalAmount(order.calculateTotalAmount())
-            .setConfirmedAt(order.confirmedAt?.toInstant(ZoneOffset.UTC)?.toEpochMilli() ?: now)
-            .build()
+        val event =
+            OrderConfirmed
+                .newBuilder()
+                .setEventId(eventId)
+                .setEventTimestamp(now)
+                .setOrderId(order.id.toString())
+                .setUserId(order.userExternalId.toString())
+                .setTotalAmount(order.calculateTotalAmount())
+                .setConfirmedAt(order.confirmedAt?.toInstant(ZoneOffset.UTC)?.toEpochMilli() ?: now)
+                .build()
 
         val topic = topicProperties.orderConfirmed
         val partitionKey = order.id.toString()
 
-        kafkaTemplate.send(topic, partitionKey, event)
+        kafkaTemplate
+            .send(topic, partitionKey, event)
             .whenComplete { result, ex ->
                 if (ex != null) {
                     logger.error(ex) {
@@ -126,29 +134,34 @@ class KafkaOrderEventPublisher(
         val eventId = UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
 
-        val cancelledItems = order.items.map { item ->
-            CancelledOrderItem.newBuilder()
-                .setProductId(item.productId.toString())
-                .setQuantity(item.quantity)
-                .build()
-        }
+        val cancelledItems =
+            order.items.map { item ->
+                CancelledOrderItem
+                    .newBuilder()
+                    .setProductId(item.productId.toString())
+                    .setQuantity(item.quantity)
+                    .build()
+            }
 
         val reason = mapToCancellationReason(cancellationReason)
 
-        val event = OrderCancelled.newBuilder()
-            .setEventId(eventId)
-            .setEventTimestamp(now)
-            .setOrderId(order.id.toString())
-            .setUserId(order.userExternalId.toString())
-            .setItems(cancelledItems)
-            .setCancellationReason(reason)
-            .setCancelledAt(order.cancelledAt?.toInstant(ZoneOffset.UTC)?.toEpochMilli() ?: now)
-            .build()
+        val event =
+            OrderCancelled
+                .newBuilder()
+                .setEventId(eventId)
+                .setEventTimestamp(now)
+                .setOrderId(order.id.toString())
+                .setUserId(order.userExternalId.toString())
+                .setItems(cancelledItems)
+                .setCancellationReason(reason)
+                .setCancelledAt(order.cancelledAt?.toInstant(ZoneOffset.UTC)?.toEpochMilli() ?: now)
+                .build()
 
         val topic = topicProperties.orderCancelled
         val partitionKey = order.id.toString()
 
-        kafkaTemplate.send(topic, partitionKey, event)
+        kafkaTemplate
+            .send(topic, partitionKey, event)
             .whenComplete { result, ex ->
                 if (ex != null) {
                     logger.error(ex) {
@@ -173,19 +186,22 @@ class KafkaOrderEventPublisher(
         val eventId = UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
 
-        val event = OrderExpirationNotification.newBuilder()
-            .setEventId(eventId)
-            .setEventTimestamp(now)
-            .setOrderId(orderId.toString())
-            .setUserId(userId.toString())
-            .setExpirationReason(expirationReason)
-            .setExpiredAt(expiredAt.toInstant(ZoneOffset.UTC).toEpochMilli())
-            .build()
+        val event =
+            OrderExpirationNotification
+                .newBuilder()
+                .setEventId(eventId)
+                .setEventTimestamp(now)
+                .setOrderId(orderId.toString())
+                .setUserId(userId.toString())
+                .setExpirationReason(expirationReason)
+                .setExpiredAt(expiredAt.toInstant(ZoneOffset.UTC).toEpochMilli())
+                .build()
 
         val topic = topicProperties.orderExpirationNotification
         val partitionKey = orderId.toString()
 
-        kafkaTemplate.send(topic, partitionKey, event)
+        kafkaTemplate
+            .send(topic, partitionKey, event)
             .whenComplete { result, ex ->
                 if (ex != null) {
                     logger.error(ex) {
@@ -205,29 +221,34 @@ class KafkaOrderEventPublisher(
         val eventId = UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
 
-        val topProducts = statistics.topProducts.map { product ->
-            TopProduct.newBuilder()
-                .setProductId(product.productId.toString())
-                .setProductName(product.productName)
-                .setTotalSold(product.totalSold)
-                .build()
-        }
+        val topProducts =
+            statistics.topProducts.map { product ->
+                TopProduct
+                    .newBuilder()
+                    .setProductId(product.productId.toString())
+                    .setProductName(product.productName)
+                    .setTotalSold(product.totalSold)
+                    .build()
+            }
 
-        val event = DailyStatistics.newBuilder()
-            .setEventId(eventId)
-            .setEventTimestamp(now)
-            .setDate(statistics.date.toString())
-            .setTotalOrders(statistics.totalOrders)
-            .setTotalSales(statistics.totalSales)
-            .setAvgOrderAmount(statistics.avgOrderAmount)
-            .setTopProducts(topProducts)
-            .setGeneratedAt(now)
-            .build()
+        val event =
+            DailyStatistics
+                .newBuilder()
+                .setEventId(eventId)
+                .setEventTimestamp(now)
+                .setDate(statistics.date.toString())
+                .setTotalOrders(statistics.totalOrders)
+                .setTotalSales(statistics.totalSales)
+                .setAvgOrderAmount(statistics.avgOrderAmount)
+                .setTopProducts(topProducts)
+                .setGeneratedAt(now)
+                .build()
 
         val topic = topicProperties.dailyStatistics
         val partitionKey = statistics.date.toString()
 
-        kafkaTemplate.send(topic, partitionKey, event)
+        kafkaTemplate
+            .send(topic, partitionKey, event)
             .whenComplete { result, ex ->
                 if (ex != null) {
                     logger.error(ex) {
@@ -244,16 +265,19 @@ class KafkaOrderEventPublisher(
             }
     }
 
-    private fun mapToCancellationReason(reason: String?): CancellationReason {
-        return when {
+    private fun mapToCancellationReason(reason: String?): CancellationReason =
+        when {
             reason == null -> CancellationReason.USER_REQUESTED
+
             reason.contains("timeout", ignoreCase = true) -> CancellationReason.PAYMENT_TIMEOUT
+
             reason.contains("stock", ignoreCase = true) ||
                 reason.contains("재고", ignoreCase = true) -> CancellationReason.STOCK_UNAVAILABLE
+
             reason.contains("user", ignoreCase = true) ||
                 reason.contains("사용자", ignoreCase = true) ||
                 reason.contains("고객", ignoreCase = true) -> CancellationReason.USER_REQUESTED
+
             else -> CancellationReason.SYSTEM_ERROR
         }
-    }
 }

@@ -55,7 +55,7 @@ class ListOrdersServiceTest :
                     userExternalId = userId,
                     storeId = storeId,
                     orderNumber = "ORD-002",
-                    status = OrderStatus.PENDING,
+                    status = OrderStatus.ORDER_CREATED,
                     items = listOf(item2),
                 )
 
@@ -73,7 +73,7 @@ class ListOrdersServiceTest :
                     result.orders[0].itemCount shouldBe 1
 
                     result.orders[1].orderNumber shouldBe "ORD-002"
-                    result.orders[1].status shouldBe OrderStatus.PENDING
+                    result.orders[1].status shouldBe OrderStatus.ORDER_CREATED
                     result.orders[1].totalAmount shouldBe BigDecimal("10000")
                     result.orders[1].itemCount shouldBe 1
 

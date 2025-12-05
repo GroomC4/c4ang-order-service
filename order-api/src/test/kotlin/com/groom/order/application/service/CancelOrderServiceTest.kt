@@ -5,13 +5,11 @@ import com.groom.order.common.annotation.UnitTest
 import com.groom.order.common.domain.DomainEventPublisher
 import com.groom.order.common.exception.OrderException
 import com.groom.order.domain.event.OrderCancelledEvent
-import com.groom.order.domain.model.Order
 import com.groom.order.domain.model.OrderStatus
 import com.groom.order.domain.port.LoadOrderPort
 import com.groom.order.domain.port.SaveOrderPort
 import com.groom.order.domain.service.OrderManager
 import com.groom.order.fixture.OrderTestFixture
-import com.groom.order.adapter.outbound.stock.StockReservationService
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.BehaviorSpec
@@ -21,7 +19,6 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
-import io.mockk.verify
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -33,7 +30,6 @@ class CancelOrderServiceTest :
         Given("취소 가능한 주문이 있는 경우") {
             val loadOrderPort = mockk<LoadOrderPort>()
             val saveOrderPort = mockk<SaveOrderPort>()
-            val stockReservationService = mockk<StockReservationService>()
             val orderManager = mockk<OrderManager>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
 
@@ -41,7 +37,6 @@ class CancelOrderServiceTest :
                 CancelOrderService(
                     loadOrderPort,
                     saveOrderPort,
-                    stockReservationService,
                     orderManager,
                     domainEventPublisher,
                 )
@@ -58,7 +53,6 @@ class CancelOrderServiceTest :
                         storeId = storeId,
                         reservationId = reservationId,
                     ).apply {
-                        // TestFixture에서 id 설정
                         OrderTestFixture.setField(this, "id", orderId)
                     }
 
@@ -77,31 +71,22 @@ class CancelOrderServiceTest :
                 // 실제 동작처럼 Order의 상태를 변경
                 order.status = OrderStatus.ORDER_CANCELLED
                 order.cancelledAt = LocalDateTime.now()
-                order.failureReason = "고객 변심" // cancelReason은 failureReason 필드에 저장됨
+                order.failureReason = "고객 변심"
                 cancelEvent
             }
-            every { stockReservationService.cancelReservation(reservationId) } just runs
             every { saveOrderPort.save(any()) } answers { firstArg() }
-
             every { domainEventPublisher.publish(any()) } just runs
 
             When("주문을 취소하면") {
                 val command = CancelOrderCommand(orderId, userId, "고객 변심")
-
-                // order.reservationId 검증 (디버깅용)
-                order.reservationId shouldBe reservationId
-
                 val result = service.cancelOrder(command)
 
-                Then("주문이 취소되고 재고가 복구된다") {
+                Then("주문이 취소되고 OrderCancelledEvent가 발행된다") {
                     result shouldNotBe null
                     result.orderId shouldBe orderId
                     result.status shouldBe OrderStatus.ORDER_CANCELLED
                     result.cancelReason shouldBe "고객 변심"
                     result.cancelledAt shouldNotBe null
-
-                    // 결과 상태로 검증하므로 repository.save, event publish verify는 불필요
-                    // 재고 복구는 외부 시스템 호출이지만 통합 테스트에서 검증
                 }
             }
         }
@@ -109,7 +94,6 @@ class CancelOrderServiceTest :
         Given("배송 완료된 주문을 취소하려는 경우") {
             val loadOrderPort = mockk<LoadOrderPort>()
             val saveOrderPort = mockk<SaveOrderPort>()
-            val stockReservationService = mockk<StockReservationService>()
             val orderManager = mockk<OrderManager>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
 
@@ -117,7 +101,6 @@ class CancelOrderServiceTest :
                 CancelOrderService(
                     loadOrderPort,
                     saveOrderPort,
-                    stockReservationService,
                     orderManager,
                     domainEventPublisher,
                 )
@@ -146,8 +129,6 @@ class CancelOrderServiceTest :
                     shouldThrow<OrderException.CannotCancelOrder> {
                         service.cancelOrder(command)
                     }
-
-                    // 예외 발생으로 검증하므로 verify 불필요
                 }
             }
         }
@@ -155,7 +136,6 @@ class CancelOrderServiceTest :
         Given("다른 사용자의 주문을 취소하려는 경우") {
             val loadOrderPort = mockk<LoadOrderPort>()
             val saveOrderPort = mockk<SaveOrderPort>()
-            val stockReservationService = mockk<StockReservationService>()
             val orderManager = mockk<OrderManager>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
 
@@ -163,7 +143,6 @@ class CancelOrderServiceTest :
                 CancelOrderService(
                     loadOrderPort,
                     saveOrderPort,
-                    stockReservationService,
                     orderManager,
                     domainEventPublisher,
                 )
@@ -178,7 +157,7 @@ class CancelOrderServiceTest :
                     id = orderId,
                     userExternalId = orderOwnerId,
                     storeId = storeId,
-                    status = OrderStatus.PENDING,
+                    status = OrderStatus.ORDER_CREATED,
                 )
 
             every { loadOrderPort.loadById(orderId) } returns order
@@ -192,8 +171,6 @@ class CancelOrderServiceTest :
                     shouldThrow<OrderException.OrderAccessDenied> {
                         service.cancelOrder(command)
                     }
-
-                    // 예외 발생으로 검증하므로 verify 불필요
                 }
             }
         }
@@ -201,7 +178,6 @@ class CancelOrderServiceTest :
         Given("존재하지 않는 주문을 취소하려는 경우") {
             val loadOrderPort = mockk<LoadOrderPort>()
             val saveOrderPort = mockk<SaveOrderPort>()
-            val stockReservationService = mockk<StockReservationService>()
             val orderManager = mockk<OrderManager>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
 
@@ -209,7 +185,6 @@ class CancelOrderServiceTest :
                 CancelOrderService(
                     loadOrderPort,
                     saveOrderPort,
-                    stockReservationService,
                     orderManager,
                     domainEventPublisher,
                 )
@@ -226,8 +201,6 @@ class CancelOrderServiceTest :
                     shouldThrow<OrderException.OrderNotFound> {
                         service.cancelOrder(command)
                     }
-
-                    // 예외 발생으로 검증하므로 verify 불필요
                 }
             }
         }

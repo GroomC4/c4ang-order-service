@@ -5,7 +5,6 @@ import com.groom.order.domain.event.OrderTimeoutEvent
 import com.groom.order.domain.model.OrderStatus
 import com.groom.order.domain.port.LoadOrderPort
 import com.groom.order.domain.port.SaveOrderPort
-import com.groom.order.adapter.outbound.stock.StockReservationService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.scheduling.annotation.Scheduled
@@ -18,11 +17,13 @@ import java.time.LocalDateTime
  *
  * 결제 대기 중인 주문 중 만료 시간(expiresAt)이 지난 주문을 자동으로 타임아웃 처리합니다.
  *
- * 처리 프로세스:
+ * 이벤트 기반 플로우:
  * 1. 결제 대기/처리 중 상태의 주문 중 만료된 주문 조회
  * 2. 주문 타임아웃 처리 (상태 변경: PAYMENT_TIMEOUT)
- * 3. Redis 재고 예약 복구 (reservationId 사용)
- * 4. 도메인 이벤트 발행 (OrderTimeoutEvent)
+ * 3. 도메인 이벤트 발행 (OrderTimeoutEvent)
+ * 4. Product Service에서 order.timeout 이벤트 소비 후 재고 복구
+ *
+ * Note: 재고 복구는 이벤트를 통해 Product Service에서 처리합니다.
  *
  * 실행 주기: 1분마다 (cron = "0 * * * * *")
  */
@@ -30,7 +31,6 @@ import java.time.LocalDateTime
 class OrderTimeoutScheduler(
     private val loadOrderPort: LoadOrderPort,
     private val saveOrderPort: SaveOrderPort,
-    private val stockReservationService: StockReservationService,
     private val domainEventPublisher: DomainEventPublisher,
 ) {
     private val logger = KotlinLogging.logger {}
@@ -77,26 +77,15 @@ class OrderTimeoutScheduler(
             // 2. 각 주문에 대해 타임아웃 처리
             expiredOrders.forEach { order ->
                 try {
-                    logger.info { "Processing timeout for order: ${order.orderNumber}, reservationId: ${order.reservationId}" }
+                    logger.info { "Processing timeout for order: ${order.orderNumber}" }
 
                     // 2-1. 주문 타임아웃 처리
                     order.timeout()
 
-                    // 2-2. Redis 재고 예약 복구
-                    order.reservationId?.let { reservationId ->
-                        try {
-                            stockReservationService.cancelReservation(reservationId)
-                            logger.info { "Stock reservation cancelled for order: ${order.orderNumber}" }
-                        } catch (e: Exception) {
-                            logger.error(e) { "Failed to cancel stock reservation: $reservationId" }
-                            // 재고 복구 실패는 로그만 남기고 계속 진행 (별도 모니터링 필요)
-                        }
-                    }
-
-                    // 2-3. 주문 저장 (JPA dirty checking)
+                    // 2-2. 주문 저장 (JPA dirty checking)
                     saveOrderPort.save(order)
 
-                    // 2-4. 도메인 이벤트 발행
+                    // 2-3. 도메인 이벤트 발행 (order.timeout → Product Service에서 재고 복구)
                     val event =
                         OrderTimeoutEvent(
                             orderId = order.id,

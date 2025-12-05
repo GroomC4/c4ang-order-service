@@ -19,8 +19,8 @@ import java.util.UUID
  * Order 애그리게이트 루트.
  * DDL: p_order 테이블
  *
- * 비동기 주문-결제 플로우:
- * PENDING → STOCK_RESERVED → PAYMENT_PENDING → PAYMENT_COMPLETED → PREPARING → SHIPPED → DELIVERED
+ * 이벤트 기반 비동기 플로우:
+ * ORDER_CREATED → ORDER_CONFIRMED → PAYMENT_PENDING → PAYMENT_COMPLETED → PREPARING → SHIPPED → DELIVERED
  */
 @Entity
 @Table(name = "p_order")
@@ -28,7 +28,7 @@ class Order(
     @Column(name = "user_id", nullable = false) val userExternalId: UUID,
     @Column(name = "store_id", nullable = false) val storeId: UUID,
     @Column(name = "order_number", nullable = false, unique = true) val orderNumber: String,
-    @Enumerated(EnumType.STRING) @Column(nullable = false) var status: OrderStatus = OrderStatus.PENDING,
+    @Enumerated(EnumType.STRING) @Column(nullable = false) var status: OrderStatus = OrderStatus.ORDER_CREATED,
     @Type(JsonType::class) @Column(nullable = false, columnDefinition = "json") val paymentSummary: Map<String, Any>,
     @Type(JsonType::class) @Column(nullable = false, columnDefinition = "json") val timeline: List<Map<String, Any>>,
     @Column val note: String? = null,
@@ -77,23 +77,23 @@ class Order(
     }
 
     /**
-     * 재고 예약 완료 처리 (이벤트 핸들러 전용)
-     * PENDING → STOCK_RESERVED
+     * 주문 확정 처리 (stock.reserved 이벤트 수신 시)
+     * ORDER_CREATED → ORDER_CONFIRMED
      */
-    fun markStockReserved() {
-        require(status == OrderStatus.PENDING) { "Only PENDING orders can mark stock reserved" }
-        this.status = OrderStatus.STOCK_RESERVED
+    fun confirm() {
+        require(status == OrderStatus.ORDER_CREATED) { "Only ORDER_CREATED orders can be confirmed" }
+        this.status = OrderStatus.ORDER_CONFIRMED
     }
 
     /**
      * 결제 대기 상태로 전환
-     * STOCK_RESERVED → PAYMENT_PENDING
+     * ORDER_CONFIRMED → PAYMENT_PENDING
      *
      * Payment 생성 시점에 호출되며 Order와 Payment를 연결합니다.
      */
     fun markPaymentPending(paymentId: UUID) {
-        require(status == OrderStatus.STOCK_RESERVED) {
-            "Only STOCK_RESERVED orders can mark payment pending"
+        require(status == OrderStatus.ORDER_CONFIRMED) {
+            "Only ORDER_CONFIRMED orders can mark payment pending"
         }
 
         this.status = OrderStatus.PAYMENT_PENDING
