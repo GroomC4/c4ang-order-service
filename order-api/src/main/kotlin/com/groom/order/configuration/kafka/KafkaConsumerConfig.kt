@@ -19,34 +19,38 @@ import org.springframework.util.backoff.FixedBackOff
 /**
  * Kafka Consumer 설정
  *
- * Order Service에서 소비하는 이벤트:
+ * Order Service에서 소비하는 이벤트를 2개의 Consumer Group으로 분리:
+ *
+ * ## 1. order-service (일반 이벤트)
  * - stock.reserved: 재고 예약 완료 (Product Service) → 주문 확정 처리
- * - payment.completed: 결제 완료 (Payment Service) → 재고 확정 요청
+ * - payment.completed: 결제 완료 (Payment Service) → 재고 확정 및 order.stock.confirmed 발행
  * - payment.failed: 결제 실패 (Payment Service) → 주문 취소 처리
+ * - payment.cancelled: 결제 취소 (Payment Service) → 주문 취소 처리
+ *
+ * ## 2. order-service-saga (SAGA 보상 이벤트)
  * - saga.stock-reservation.failed: 재고 예약 실패 (Product Service) → 주문 취소 처리
  * - saga.payment-initialization.failed: 결제 대기 생성 실패 (Payment Service) → 주문 취소 처리
- * - saga.payment-completion.compensate: 결제 보상 (Payment Service) → 주문 취소 처리
  *
  * Avro 역직렬화를 사용하며, Schema Registry와 연동됩니다.
  *
  * @see <a href="https://github.com/c4ang/c4ang-contract-hub/blob/main/docs/interface/kafka-event-specifications.md">Kafka 이벤트 명세서</a>
- *
- * TODO: Consumer Group 분리 검토 (docs/TODO_KAFKA_EVENT_ALIGNMENT.md Phase 4 참고)
- *   - order-service-saga-compensation: SAGA 보상 이벤트 처리
- *   - order-service-saga-payment: Payment Saga 이벤트 처리
  */
 @Configuration
 @EnableKafka
 class KafkaConsumerConfig(
     @Value("\${kafka.bootstrap-servers}") private val bootstrapServers: String,
     @Value("\${kafka.schema-registry.url}") private val schemaRegistryUrl: String,
-    @Value("\${kafka.consumer.group-id:order-service}") private val groupId: String,
+    @Value("\${kafka.consumer.group-id:order-service}") private val defaultGroupId: String,
+    @Value("\${kafka.consumer.saga-group-id:order-service-saga}") private val sagaGroupId: String,
     @Value("\${kafka.consumer.auto-offset-reset:earliest}") private val autoOffsetReset: String,
     @Value("\${kafka.consumer.enable-auto-commit:false}") private val enableAutoCommit: Boolean,
     @Value("\${kafka.consumer.max-poll-records:500}") private val maxPollRecords: Int,
 ) {
-    @Bean
-    fun consumerFactory(): ConsumerFactory<String, SpecificRecord> {
+    /**
+     * 기본 Consumer Factory (group-id 포함하지 않음)
+     * 각 ContainerFactory에서 group-id를 설정합니다.
+     */
+    private fun createConsumerFactory(groupId: String): ConsumerFactory<String, SpecificRecord> {
         val configProps =
             mutableMapOf<String, Any>(
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
@@ -64,10 +68,15 @@ class KafkaConsumerConfig(
         return DefaultKafkaConsumerFactory(configProps)
     }
 
-    @Bean
-    fun kafkaListenerContainerFactory(): ConcurrentKafkaListenerContainerFactory<String, SpecificRecord> {
+    /**
+     * Container Factory 생성 공통 로직
+     */
+    private fun createContainerFactory(
+        groupId: String,
+        concurrency: Int = 3,
+    ): ConcurrentKafkaListenerContainerFactory<String, SpecificRecord> {
         val factory = ConcurrentKafkaListenerContainerFactory<String, SpecificRecord>()
-        factory.consumerFactory = consumerFactory()
+        factory.consumerFactory = createConsumerFactory(groupId)
 
         // 수동 커밋 모드 (AckMode.MANUAL_IMMEDIATE)
         factory.containerProperties.ackMode = ContainerProperties.AckMode.MANUAL_IMMEDIATE
@@ -80,8 +89,35 @@ class KafkaConsumerConfig(
         )
 
         // 동시성 설정 (파티션 수에 맞게 조정)
-        factory.setConcurrency(3)
+        factory.setConcurrency(concurrency)
 
         return factory
     }
+
+    // ===== Consumer Factories =====
+
+    @Bean
+    fun consumerFactory(): ConsumerFactory<String, SpecificRecord> = createConsumerFactory(defaultGroupId)
+
+    // ===== Container Factories =====
+
+    /**
+     * 일반 이벤트용 Container Factory
+     *
+     * Consumer Group: order-service
+     * 처리 이벤트: stock.reserved, payment.completed, payment.failed, payment.cancelled
+     */
+    @Bean
+    fun kafkaListenerContainerFactory(): ConcurrentKafkaListenerContainerFactory<String, SpecificRecord> =
+        createContainerFactory(defaultGroupId)
+
+    /**
+     * SAGA 보상 이벤트용 Container Factory
+     *
+     * Consumer Group: order-service-saga
+     * 처리 이벤트: saga.stock-reservation.failed, saga.payment-initialization.failed
+     */
+    @Bean
+    fun sagaListenerContainerFactory(): ConcurrentKafkaListenerContainerFactory<String, SpecificRecord> =
+        createContainerFactory(sagaGroupId)
 }

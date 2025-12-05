@@ -19,6 +19,7 @@ import java.util.UUID
  * 주문을 취소하고 재고 복원 이벤트를 발행합니다.
  *
  * 토픽: saga.payment-initialization.failed
+ * Consumer Group: order-service-saga
  *
  * @see <a href="https://github.com/c4ang/c4ang-contract-hub/blob/main/docs/interface/kafka-event-specifications.md">Kafka 이벤트 명세서</a>
  */
@@ -30,8 +31,7 @@ class PaymentInitializationFailedKafkaListener(
 
     @KafkaListener(
         topics = ["\${kafka.topics.saga-payment-initialization-failed:saga.payment-initialization.failed}"],
-        groupId = "\${kafka.consumer.group-id:order-service}",
-        containerFactory = "kafkaListenerContainerFactory",
+        containerFactory = "sagaListenerContainerFactory",
     )
     fun onPaymentInitializationFailed(
         record: ConsumerRecord<String, PaymentInitializationFailed>,

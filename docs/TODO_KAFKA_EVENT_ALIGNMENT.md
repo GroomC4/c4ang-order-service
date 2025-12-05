@@ -135,19 +135,23 @@ order.confirmed 발행 → Payment Service: 결제 대기 생성 실패 → saga
 | 3.3 | `handlePaymentInitializationFailed()` 구현체 추가 | `OrderEventHandlerService.kt` | ✅ |
 | 3.4 | `publishOrderConfirmationCompensate()` 구현 검토 | `OrderEventPublisher.kt` | ⏸️ (order.cancelled로 처리) |
 
-### 3.4 Phase 4: Consumer Group 분리 (우선순위: 낮음) ⏸️ 보류
+### 3.4 Phase 4: Consumer Group 분리 (우선순위: 낮음) ✅ 완료
 
-문서 권장:
-- `order-service-saga-compensation`: SAGA 보상 이벤트 처리
-- `order-service-saga-payment`: Payment Saga 이벤트 처리
+**구현 전략**: 옵션 B - 이벤트 특성 기반 분리 (2개 그룹)
+
+| Consumer Group | ContainerFactory | 이벤트 |
+|----------------|------------------|--------|
+| `order-service` | `kafkaListenerContainerFactory` | `stock.reserved`, `payment.completed`, `payment.failed`, `payment.cancelled` |
+| `order-service-saga` | `sagaListenerContainerFactory` | `saga.stock-reservation.failed`, `saga.payment-initialization.failed` |
 
 | # | 작업 | 파일 | 상태 |
 |---|------|------|------|
-| 4.1 | Consumer Group 분리 전략 수립 | - | ⏸️ TODO로 남김 |
-| 4.2 | KafkaConsumerConfig 수정 | `KafkaConsumerConfig.kt` | ⏸️ TODO로 남김 |
+| 4.1 | Consumer Group 분리 전략 수립 (옵션 B 선택) | - | ✅ |
+| 4.2 | KafkaConsumerConfig 수정 - 2개 ContainerFactory | `KafkaConsumerConfig.kt` | ✅ |
+| 4.3 | StockReservationFailedKafkaListener 수정 | `StockReservationFailedKafkaListener.kt` | ✅ |
+| 4.4 | PaymentInitializationFailedKafkaListener 수정 | `PaymentInitializationFailedKafkaListener.kt` | ✅ |
 
-> **참고**: 현재 단일 Consumer Group(`order-service`)으로도 정상 동작합니다.
-> 추후 성능 최적화 또는 장애 격리가 필요할 때 분리를 검토합니다.
+> **장점**: SAGA 보상 이벤트 처리 지연이 일반 이벤트에 영향을 주지 않도록 격리
 
 ---
 

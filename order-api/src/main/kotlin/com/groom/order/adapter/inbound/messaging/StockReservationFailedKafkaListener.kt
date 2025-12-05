@@ -13,12 +13,13 @@ import java.time.ZoneId
 import java.util.UUID
 
 /**
- * 재고 예약 실패 이벤트 Kafka Listener
+ * 재고 예약 실패 이벤트 Kafka Listener (SAGA 보상)
  *
  * Product Service에서 발행한 StockReservationFailed 이벤트를 수신하여
  * 주문을 취소합니다.
  *
  * 토픽: saga.stock-reservation.failed
+ * Consumer Group: order-service-saga
  *
  * @see <a href="https://github.com/c4ang/c4ang-contract-hub/blob/main/docs/interface/kafka-event-specifications.md">Kafka 이벤트 명세서</a>
  */
@@ -30,8 +31,7 @@ class StockReservationFailedKafkaListener(
 
     @KafkaListener(
         topics = ["\${kafka.topics.saga-stock-reservation-failed:saga.stock-reservation.failed}"],
-        groupId = "\${kafka.consumer.group-id:order-service}",
-        containerFactory = "kafkaListenerContainerFactory",
+        containerFactory = "sagaListenerContainerFactory",
     )
     fun onStockReservationFailed(
         record: ConsumerRecord<String, StockReservationFailed>,
