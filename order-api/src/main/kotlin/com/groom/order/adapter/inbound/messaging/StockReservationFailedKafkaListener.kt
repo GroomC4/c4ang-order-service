@@ -18,7 +18,9 @@ import java.util.UUID
  * Product Service에서 발행한 StockReservationFailed 이벤트를 수신하여
  * 주문을 취소합니다.
  *
- * 토픽: stock.reservation.failed
+ * 토픽: saga.stock-reservation.failed
+ *
+ * @see <a href="https://github.com/c4ang/c4ang-contract-hub/blob/main/docs/interface/kafka-event-specifications.md">Kafka 이벤트 명세서</a>
  */
 @Component
 class StockReservationFailedKafkaListener(
@@ -27,7 +29,7 @@ class StockReservationFailedKafkaListener(
     private val logger = KotlinLogging.logger {}
 
     @KafkaListener(
-        topics = ["\${kafka.topics.stock-reservation-failed:stock.reservation.failed}"],
+        topics = ["\${kafka.topics.saga-stock-reservation-failed:saga.stock-reservation.failed}"],
         groupId = "\${kafka.consumer.group-id:order-service}",
         containerFactory = "kafkaListenerContainerFactory",
     )
