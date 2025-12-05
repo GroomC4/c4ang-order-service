@@ -63,6 +63,7 @@ class KafkaTestHelper(
         val event =
             StockReserved.newBuilder()
                 .setEventId(UUID.randomUUID().toString())
+                .setEventTimestamp(Instant.now().toEpochMilli())
                 .setOrderId(orderId.toString())
                 .setReservedItems(
                     items.map { item ->
@@ -91,6 +92,7 @@ class KafkaTestHelper(
         val event =
             StockReservationFailed.newBuilder()
                 .setEventId(UUID.randomUUID().toString())
+                .setEventTimestamp(Instant.now().toEpochMilli())
                 .setOrderId(orderId.toString())
                 .setFailedItems(
                     failedItems.map { item ->
