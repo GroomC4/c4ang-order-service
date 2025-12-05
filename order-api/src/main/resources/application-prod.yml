@@ -75,11 +75,6 @@ spring.data.redis:
 # Feign Client 설정
 feign:
   clients:
-    product-service:
-      url: ${PRODUCT_SERVICE_URL}
-      connect-timeout: 3000
-      read-timeout: 3000
-      logger-level: basic
     store-service:
       url: ${STORE_SERVICE_URL}
       connect-timeout: 3000
@@ -87,10 +82,6 @@ feign:
       logger-level: basic
   client:
     config:
-      product-service:
-        connectTimeout: 3000
-        readTimeout: 3000
-        loggerLevel: basic
       store-service:
         connectTimeout: 3000
         readTimeout: 3000

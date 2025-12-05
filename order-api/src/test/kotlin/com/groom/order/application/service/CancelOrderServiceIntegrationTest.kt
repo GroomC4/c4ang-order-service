@@ -13,7 +13,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.redisson.api.RedissonClient
 import org.springframework.beans.factory.annotation.Autowired
 import java.time.LocalDateTime
 import java.util.UUID
@@ -33,9 +32,6 @@ class CancelOrderServiceIntegrationTest : IntegrationTestBase() {
 
     @Autowired
     private lateinit var loadOrderPort: LoadOrderPort
-
-    @Autowired
-    private lateinit var redissonClient: RedissonClient
 
     @Autowired
     private lateinit var transactionApplier: TransactionApplier
@@ -59,7 +55,6 @@ class CancelOrderServiceIntegrationTest : IntegrationTestBase() {
 
     @BeforeEach
     fun setUp() {
-        redissonClient.getAtomicLong("product:remaining-stock:$PRODUCT_MOUSE").set(100)
         createTestOrders()
     }
 
@@ -137,10 +132,6 @@ class CancelOrderServiceIntegrationTest : IntegrationTestBase() {
 
     @AfterEach
     fun tearDown() {
-        redissonClient.getAtomicLong("product:remaining-stock:$PRODUCT_MOUSE").delete()
-        val expiryIndex = redissonClient.getScoredSortedSet<String>("product:reservation-expiry-index")
-        expiryIndex.clear()
-
         // 테스트 데이터 정리
         transactionApplier.applyPrimaryTransaction {
             entityManager

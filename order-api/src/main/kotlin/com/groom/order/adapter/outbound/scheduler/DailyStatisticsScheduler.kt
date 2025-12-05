@@ -3,7 +3,6 @@ package com.groom.order.adapter.outbound.scheduler
 import com.groom.order.domain.port.LoadOrderPort
 import com.groom.order.domain.port.OrderEventPublisher
 import io.github.oshai.kotlinlogging.KotlinLogging
-import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
@@ -43,17 +42,9 @@ class DailyStatisticsScheduler(
      * 전일 주문 통계 집계 및 발행
      * 매일 자정에 실행
      *
-     * 분산 환경에서 중복 실행 방지:
-     * - ShedLock을 통해 WAS 인스턴스 중 하나만 실행
-     * - lockAtMostFor: 최대 30분 (대용량 데이터 처리 고려)
-     * - lockAtLeastFor: 최소 5분 (너무 빈번한 실행 방지)
+     * Note: 분산 환경에서 중복 실행 방지가 필요한 경우 ShedLock 도입 고려
      */
     @Scheduled(cron = "0 0 0 * * *")
-    @SchedulerLock(
-        name = "DailyStatisticsScheduler.aggregateAndPublishDailyStatistics",
-        lockAtMostFor = "30m",
-        lockAtLeastFor = "5m",
-    )
     fun aggregateAndPublishDailyStatistics() {
         val targetDate = LocalDate.now().minusDays(1)
         val startDateTime = LocalDateTime.of(targetDate, LocalTime.MIN)

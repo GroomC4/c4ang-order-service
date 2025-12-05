@@ -40,12 +40,6 @@ dependencies {
     // Logging
     implementation("io.github.oshai:kotlin-logging-jvm:7.0.13")
 
-    // Redisson (Redis 클라이언트 with 원자적 연산 지원)
-    implementation("org.redisson:redisson-spring-boot-starter:3.24.3")
-
-    // ShedLock (분산 스케줄러 락)
-    implementation("net.javacrumbs.shedlock:shedlock-spring:5.10.0")
-    implementation("net.javacrumbs.shedlock:shedlock-provider-redis-spring:5.10.0")
 
     // Database
     runtimeOnly("org.postgresql:postgresql")
@@ -60,6 +54,7 @@ dependencies {
     testImplementation("io.kotest:kotest-assertions-core:5.9.1")
     testImplementation("io.mockk:mockk:1.14.5")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
+    testImplementation("org.awaitility:awaitility-kotlin:4.2.0")
 
     // Spring Cloud Contract Stub Runner (Consumer Contract Test)
     testImplementation("org.springframework.cloud:spring-cloud-starter-contract-stub-runner")

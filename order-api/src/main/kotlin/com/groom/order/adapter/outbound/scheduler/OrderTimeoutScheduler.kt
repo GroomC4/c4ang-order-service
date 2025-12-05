@@ -6,7 +6,6 @@ import com.groom.order.domain.model.OrderStatus
 import com.groom.order.domain.port.LoadOrderPort
 import com.groom.order.domain.port.SaveOrderPort
 import io.github.oshai.kotlinlogging.KotlinLogging
-import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -39,17 +38,9 @@ class OrderTimeoutScheduler(
      * 만료된 주문 자동 타임아웃 처리
      * 매분 00초에 실행
      *
-     * 분산 환경에서 중복 실행 방지:
-     * - ShedLock을 통해 WAS 인스턴스 중 하나만 실행
-     * - lockAtMostFor: 최대 9분 (비정상 종료 시 자동 해제)
-     * - lockAtLeastFor: 최소 30초 (너무 빈번한 실행 방지)
+     * Note: 분산 환경에서 중복 실행 방지가 필요한 경우 ShedLock 도입 고려
      */
     @Scheduled(cron = "0 * * * * *")
-    @SchedulerLock(
-        name = "OrderTimeoutScheduler.processExpiredOrders",
-        lockAtMostFor = "9m",
-        lockAtLeastFor = "30s",
-    )
     @Transactional
     fun processExpiredOrders() {
         val now = LocalDateTime.now()

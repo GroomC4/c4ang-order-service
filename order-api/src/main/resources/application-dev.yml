@@ -64,11 +64,6 @@ spring.data.redis:
 # Feign Client 설정 (k3d 서비스 이름 사용)
 feign:
   clients:
-    product-service:
-      url: ${PRODUCT_SERVICE_URL:http://product-api:8083}
-      connect-timeout: 5000
-      read-timeout: 5000
-      logger-level: full
     store-service:
       url: ${STORE_SERVICE_URL:http://store-api:8084}
       connect-timeout: 5000
@@ -76,10 +71,6 @@ feign:
       logger-level: full
   client:
     config:
-      product-service:
-        connectTimeout: 5000
-        readTimeout: 5000
-        loggerLevel: full
       store-service:
         connectTimeout: 5000
         readTimeout: 5000

@@ -50,11 +50,6 @@ springdoc:
 # Feign Client 설정 (FeignClientProperties로 관리)
 feign:
   clients:
-    product-service:
-      url: http://localhost:8083
-      connect-timeout: 5000
-      read-timeout: 5000
-      logger-level: basic
     store-service:
       url: http://localhost:8084
       connect-timeout: 5000
