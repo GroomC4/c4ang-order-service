@@ -371,6 +371,16 @@ class GlobalExceptionHandler {
                     logger.warn(e) { "Order access denied: orderId=${e.orderId}, userId=${e.userId}" }
                     ErrorCode.ORDER_ACCESS_DENIED to HttpStatus.FORBIDDEN
                 }
+
+                is OrderException.OrderStatusInvalid -> {
+                    logger.warn(e) { "Order status invalid: orderId=${e.orderId}, current=${e.currentStatus}, required=${e.requiredStatus}" }
+                    ErrorCode.ORDER_STATUS_INVALID to HttpStatus.CONFLICT
+                }
+
+                is OrderException.PaymentAlreadyExists -> {
+                    logger.warn(e) { "Payment already exists: orderId=${e.orderId}, existingPaymentId=${e.existingPaymentId}" }
+                    ErrorCode.PAYMENT_ALREADY_EXISTS to HttpStatus.CONFLICT
+                }
             }
 
         return ResponseEntity(

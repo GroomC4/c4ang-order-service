@@ -424,7 +424,7 @@ sealed class OrderException(
      */
     data class OrderNotFound(
         val orderId: UUID,
-    ) : OrderException("주문을 찾을 수 없습니다: $orderId")
+    ) : OrderException("요청하신 주문을 찾을 수 없습니다. 주문 번호를 확인해주세요.")
 
     /**
      * 주문 취소 불가능
@@ -455,4 +455,26 @@ sealed class OrderException(
         val orderId: UUID,
         val userId: UUID,
     ) : OrderException("주문에 대한 접근 권한이 없습니다")
+
+    /**
+     * 주문 상태가 유효하지 않은 경우
+     * @param orderId 주문 ID
+     * @param currentStatus 현재 상태
+     * @param requiredStatus 필요한 상태
+     */
+    data class OrderStatusInvalid(
+        val orderId: UUID,
+        val currentStatus: String,
+        val requiredStatus: String,
+    ) : OrderException("결제를 진행할 수 없는 주문 상태입니다. 주문이 확정된 후에 결제를 진행해주세요.")
+
+    /**
+     * 이미 결제가 연결되어 있는 경우
+     * @param orderId 주문 ID
+     * @param existingPaymentId 기존 결제 ID
+     */
+    data class PaymentAlreadyExists(
+        val orderId: UUID,
+        val existingPaymentId: UUID,
+    ) : OrderException("이 주문은 이미 결제가 진행 중입니다. 기존 결제를 취소한 후 다시 시도해주세요.")
 }

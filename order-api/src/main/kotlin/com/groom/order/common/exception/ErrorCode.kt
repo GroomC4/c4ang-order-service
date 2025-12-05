@@ -67,6 +67,8 @@ object ErrorCode {
     const val CANNOT_CANCEL_ORDER = "CANNOT_CANCEL_ORDER" // 주문 취소 불가
     const val CANNOT_REFUND_ORDER = "CANNOT_REFUND_ORDER" // 주문 환불 불가
     const val ORDER_ACCESS_DENIED = "ORDER_ACCESS_DENIED" // 주문 접근 권한 없음
+    const val ORDER_STATUS_INVALID = "ORDER_STATUS_INVALID" // 주문 상태 불일치
+    const val PAYMENT_ALREADY_EXISTS = "PAYMENT_ALREADY_EXISTS" // 이미 결제가 연결됨
 
     // ========== 리소스 관련 에러 ==========
     const val RESOURCE_NOT_FOUND = "RESOURCE_NOT_FOUND" // 리소스 없음

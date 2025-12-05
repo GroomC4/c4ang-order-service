@@ -4,10 +4,14 @@ plugins {
     kotlin("jvm")
     kotlin("plugin.spring")
     kotlin("plugin.jpa")
+    id("org.springframework.cloud.contract") version "4.1.4"
+    `maven-publish`
 }
 
 // Platform Core 버전 관리
 val platformCoreVersion = "2.4.5"
+// Spring Cloud Contract 버전
+val springCloudContractVersion = "4.1.4"
 
 dependencies {
     // Kotlin
@@ -40,7 +44,6 @@ dependencies {
     // Logging
     implementation("io.github.oshai:kotlin-logging-jvm:7.0.13")
 
-
     // Database
     runtimeOnly("org.postgresql:postgresql")
     implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.7.3")
@@ -56,14 +59,18 @@ dependencies {
     testImplementation("com.ninja-squad:springmockk:4.0.2")
     testImplementation("org.awaitility:awaitility-kotlin:4.2.0")
 
-    // Spring Cloud Contract Stub Runner (Consumer Contract Test)
-    testImplementation("org.springframework.cloud:spring-cloud-starter-contract-stub-runner")
-
-    // Feign Jackson (Consumer Contract Test에서 수동 Feign Client 구성에 필요)
-    testImplementation("io.github.openfeign:feign-jackson:13.3")
-
     // Platform Core - Testcontainers (테스트 전용)
     testImplementation("io.github.groomc4:testcontainers-starter:$platformCoreVersion")
+
+    // Spring Cloud Contract (Provider-side testing)
+    testImplementation("org.springframework.cloud:spring-cloud-starter-contract-verifier:$springCloudContractVersion")
+    testImplementation("io.rest-assured:rest-assured:5.3.2")
+    testImplementation("io.rest-assured:spring-mock-mvc:5.3.2")
+
+    // Spring Cloud Contract Stub Runner (Consumer Contract Test)
+    testImplementation("org.springframework.cloud:spring-cloud-starter-contract-stub-runner")
+    // Feign Jackson for contract tests
+    testImplementation("io.github.openfeign:feign-jackson:13.3")
 }
 
 // 모든 Test 태스크에 공통 설정 적용
@@ -90,10 +97,7 @@ tasks.withType<Test> {
 }
 
 tasks.test {
-    useJUnitPlatform {
-        // Contract 테스트는 별도 task(contractTest)로 실행
-        excludeTags("contract-test")
-    }
+    useJUnitPlatform()
 }
 
 // 통합 테스트 전용 태스크 (Docker Compose 기반)
@@ -116,48 +120,37 @@ val integrationTest by tasks.registering(Test::class) {
     shouldRunAfter(tasks.test)
 }
 
-// Contract Test 전용 태스크 (Stub Runner 기반)
-val contractTest by tasks.registering(Test::class) {
-    description = "Runs contract tests with Stub Runner"
-    group = "verification"
+// Spring Cloud Contract 설정 (Provider Contract Test)
+contracts {
+    testMode.set(org.springframework.cloud.contract.verifier.config.TestMode.MOCKMVC)
+    baseClassForTests.set("com.groom.order.common.ContractTestBase")
+    contractsDslDir.set(file("src/test/resources/contracts"))
+    baseClassMappings.apply {
+        baseClassMapping(".*internal.*", "com.groom.order.common.ContractTestBase")
+    }
+}
 
-    testClassesDirs = sourceSets["test"].output.classesDirs
-    classpath = sourceSets["test"].runtimeClasspath
+// Contract Stub 발행 설정 (Consumer가 사용할 수 있도록 GitHub Packages에 발행)
+publishing {
+    publications {
+        create<MavenPublication>("stubs") {
+            groupId = "com.groom"
+            artifactId = "order-service-contract-stubs"
+            version = project.version.toString()
 
-    useJUnitPlatform {
-        includeTags("contract-test")
+            // Contract Stub JAR을 발행
+            artifact(tasks.named("verifierStubsJar"))
+        }
     }
 
-    testLogging {
-        events("passed", "skipped", "failed")
-        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/GroomC4/c4ang-packages-hub")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR") ?: project.findProperty("gpr.user") as String?
+                password = System.getenv("GITHUB_TOKEN") ?: project.findProperty("gpr.key") as String?
+            }
+        }
     }
-
-    shouldRunAfter(tasks.test)
-}
-
-// Docker Compose 연동 태스크 추가
-val dockerComposeUp by tasks.registering(Exec::class) {
-    group = "docker"
-    description = "Run docker compose up for local infrastructure."
-    commandLine(
-        "sh",
-        "-c",
-        "command -v docker >/dev/null 2>&1 && docker compose up -d || echo 'docker not found, skipping docker compose up'",
-    )
-    workingDir = project.projectDir
-}
-val dockerComposeDown by tasks.registering(Exec::class) {
-    group = "docker"
-    description = "Run docker compose down for local infrastructure."
-    commandLine(
-        "sh",
-        "-c",
-        "command -v docker >/dev/null 2>&1 && docker compose down || echo 'docker not found, skipping docker compose down'",
-    )
-    workingDir = project.projectDir
-}
-tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
-    dependsOn(dockerComposeUp)
-    finalizedBy(dockerComposeDown)
 }
