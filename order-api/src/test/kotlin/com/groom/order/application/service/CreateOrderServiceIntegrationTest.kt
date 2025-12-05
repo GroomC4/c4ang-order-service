@@ -7,12 +7,9 @@ import com.groom.order.domain.model.OrderStatus
 import com.groom.order.domain.port.LoadOrderPort
 import jakarta.persistence.EntityManager
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.redisson.api.RedissonClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.SqlGroup
@@ -22,14 +19,29 @@ import java.util.UUID
 /**
  * CreateOrderService 통합 테스트
  *
- * TODO: 이벤트 기반 아키텍처로 전환 후 재작성 필요
+ * TODO: 이벤트 기반 아키텍처에 맞게 재작성 필요
  *
- * 주문 생성 서비스의 전체 플로우를 검증합니다.
- * - DB와 실제 통합
- * - 멱등성, 주문 생성 등 테스트
- * - 재고 예약은 이벤트 기반으로 Product Service에서 처리
+ * 재작성 방향:
+ * 1. 주문 생성 테스트
+ *    - CreateOrderService.createOrder() 호출
+ *    - 주문이 ORDER_CREATED 상태로 DB에 저장됨
+ *    - order.created 이벤트가 Kafka로 발행됨
+ *
+ * 2. 멱등성 테스트
+ *    - 동일한 idempotencyKey로 중복 호출 시 기존 주문 반환
+ *
+ * 3. 외부 이벤트 수신 후 상태 변경 테스트 (KafkaTestHelper 사용)
+ *    - stock.reserved 이벤트 수신 → ORDER_CONFIRMED 상태로 변경
+ *    - stock.reservation.failed 이벤트 수신 → ORDER_CANCELLED 상태로 변경
+ *
+ * Note:
+ * - Store 검증은 TestStoreClient로 처리됨 (HTTP 호출 Mock)
+ * - 재고 관리는 Product Service 책임 (이 테스트에서 검증하지 않음)
+ *
+ * @see com.groom.order.common.kafka.KafkaTestHelper 외부 이벤트 시뮬레이션
+ * @see com.groom.order.adapter.outbound.client.TestStoreClient Store 서비스 Mock
  */
-@Disabled("이벤트 기반 아키텍처로 전환 후 재작성 필요")
+@Disabled("이벤트 기반 아키텍처에 맞게 재작성 필요")
 @SqlGroup(
     Sql(
         scripts = ["/sql/cleanup-order-command-business-test.sql"],
@@ -53,9 +65,6 @@ class CreateOrderServiceIntegrationTest : IntegrationTestBase() {
     private lateinit var loadOrderPort: LoadOrderPort
 
     @Autowired
-    private lateinit var redissonClient: RedissonClient
-
-    @Autowired
     private lateinit var transactionApplier: TransactionApplier
 
     @Autowired
@@ -70,24 +79,6 @@ class CreateOrderServiceIntegrationTest : IntegrationTestBase() {
         private val PRODUCT_LOW_STOCK = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-000000000003")
     }
 
-    @BeforeEach
-    fun setUp() {
-        // Redis 재고 초기화
-        redissonClient.getAtomicLong("product:remaining-stock:$PRODUCT_MOUSE").set(100)
-        redissonClient.getAtomicLong("product:remaining-stock:$PRODUCT_KEYBOARD").set(50)
-        redissonClient.getAtomicLong("product:remaining-stock:$PRODUCT_LOW_STOCK").set(2)
-    }
-
-    @AfterEach
-    fun tearDown() {
-        // Redis 키 정리
-        redissonClient.getAtomicLong("product:remaining-stock:$PRODUCT_MOUSE").delete()
-        redissonClient.getAtomicLong("product:remaining-stock:$PRODUCT_KEYBOARD").delete()
-        redissonClient.getAtomicLong("product:remaining-stock:$PRODUCT_LOW_STOCK").delete()
-
-        val expiryIndex = redissonClient.getScoredSortedSet<String>("product:reservation-expiry-index")
-        expiryIndex.clear()
-    }
 
     @Test
     @DisplayName("단일 상품 주문 생성 성공")

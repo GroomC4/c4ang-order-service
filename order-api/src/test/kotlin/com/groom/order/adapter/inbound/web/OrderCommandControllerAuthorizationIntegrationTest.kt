@@ -7,7 +7,6 @@ import com.groom.order.adapter.inbound.web.dto.RefundOrderRequest
 import com.groom.order.common.IntegrationTestBase
 import com.groom.order.common.util.IstioHeaderExtractor
 import org.hamcrest.CoreMatchers.not
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -27,15 +26,15 @@ import java.util.UUID
 /**
  * OrderCommandController 인가 통합 테스트
  *
- * TODO: 이벤트 기반 아키텍처로 전환 후 재작성 필요 (Step 6)
- *
  * 실제 데이터를 사용하여 주문 명령(생성, 취소, 환불) API의 인증/인가를 검증합니다.
- * - JWT 토큰을 사용한 실제 인증 플로우 테스트
+ * - Istio 헤더를 사용한 인증 플로우 테스트
  * - CUSTOMER 역할: 모든 주문 명령 API 접근 가능
- * - SELLER 역할: 접근 불가 (403 Forbidden)
- * - 인증 없음: 접근 불가 (401 Unauthorized)
+ * - SELLER 역할: 본인 주문만 접근 가능 (다른 사용자 주문 시 403 Forbidden)
+ * - 인증 없음: 접근 불가 (500 Internal Server Error - Istio 헤더 누락)
+ *
+ * Note: 이 테스트는 인증/인가만 검증합니다. 비즈니스 로직(주문 생성, 이벤트 발행 등)은
+ *       별도의 비즈니스 로직 통합 테스트에서 검증합니다.
  */
-@Disabled("이벤트 기반 아키텍처로 전환 후 재작성 필요 - Step 6")
 @SqlGroup(
     Sql(
         scripts = ["/sql/cleanup-order-command-controller.sql"],

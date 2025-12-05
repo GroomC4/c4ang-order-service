@@ -22,18 +22,14 @@ spring:
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
       - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
-      - org.redisson.spring.starter.RedissonAutoConfigurationV2
 
 # Feign Client 설정 (Stub Runner가 제공하는 WireMock 서버 포트 사용)
 feign:
   clients:
-    product-service:
-      url: http://localhost:8083
     store-service:
       url: http://localhost:8084
 
 # Stub Runner 설정
 stubrunner:
   ids-to-service-ids:
-    product-service-contract-stubs: product-service
     store-service-contract-stubs: store-service

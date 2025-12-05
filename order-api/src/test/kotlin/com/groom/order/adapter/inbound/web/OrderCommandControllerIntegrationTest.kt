@@ -13,7 +13,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.redisson.api.RedissonClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.http.MediaType
@@ -32,14 +31,26 @@ import java.util.UUID
 /**
  * OrderCommandController 비즈니스 로직 통합 테스트
  *
- * TODO: 이벤트 기반 아키텍처로 전환 후 재작성 필요 (Step 6)
+ * TODO: 이벤트 기반 아키텍처에 맞게 재작성 필요
  *
- * 주문 생성, 취소, 환불 API의 비즈니스 로직을 검증합니다.
- * - 인증/인가 테스트는 별도의 Authorization 테스트에서 수행
- * - 재고 예약은 이벤트 기반으로 Product Service에서 처리
- * - 실제 데이터베이스와 통합 테스트
+ * 재작성 방향:
+ * 1. 주문 생성 테스트
+ *    - 주문 생성 API 호출 → 주문이 ORDER_CREATED 상태로 DB에 저장됨
+ *    - order.created 이벤트가 Kafka로 발행됨 (KafkaTestHelper로 검증)
+ *
+ * 2. 외부 이벤트 수신 테스트 (KafkaTestHelper 사용)
+ *    - stock.reserved 이벤트 수신 → 주문 상태가 ORDER_CONFIRMED로 변경
+ *    - payment.completed 이벤트 수신 → 주문 상태가 PAYMENT_COMPLETED로 변경
+ *
+ * 3. 주문 취소/환불 테스트
+ *    - 취소/환불 API 호출 → 상태 변경 + order.cancelled 이벤트 발행
+ *
+ * Note: Store 검증은 TestStoreClient로 처리됨 (HTTP 호출 Mock)
+ *
+ * @see com.groom.order.common.kafka.KafkaTestHelper 외부 이벤트 시뮬레이션
+ * @see com.groom.order.adapter.outbound.client.TestStoreClient Store 서비스 Mock
  */
-@Disabled("이벤트 기반 아키텍처로 전환 후 재작성 필요 - Step 6")
+@Disabled("이벤트 기반 아키텍처에 맞게 재작성 필요")
 @AutoConfigureMockMvc
 @SqlGroup(
     Sql(
@@ -62,9 +73,6 @@ class OrderCommandControllerIntegrationTest : IntegrationTestBase() {
 
     @Autowired
     private lateinit var objectMapper: ObjectMapper
-
-    @Autowired
-    private lateinit var redissonClient: RedissonClient
 
     @Autowired
     private lateinit var transactionApplier: TransactionApplier
@@ -96,11 +104,6 @@ class OrderCommandControllerIntegrationTest : IntegrationTestBase() {
 
     @BeforeEach
     fun setUp() {
-        // Redis 재고 초기화 (테스트 데이터와 동기화)
-        redissonClient.getAtomicLong("product:remaining-stock:$PRODUCT_MOUSE").set(100)
-        redissonClient.getAtomicLong("product:remaining-stock:$PRODUCT_KEYBOARD").set(50)
-        redissonClient.getAtomicLong("product:remaining-stock:$PRODUCT_LOW_STOCK").set(2)
-
         // 테스트용 주문 생성 (각기 다른 상태로 설정)
         createTestOrders()
     }
@@ -268,14 +271,7 @@ class OrderCommandControllerIntegrationTest : IntegrationTestBase() {
 
     @AfterEach
     fun tearDown() {
-        // Redis 키 정리
-        redissonClient.getAtomicLong("product:remaining-stock:$PRODUCT_MOUSE").delete()
-        redissonClient.getAtomicLong("product:remaining-stock:$PRODUCT_KEYBOARD").delete()
-        redissonClient.getAtomicLong("product:remaining-stock:$PRODUCT_LOW_STOCK").delete()
-
-        // 예약 관련 키 정리
-        val expiryIndex = redissonClient.getScoredSortedSet<String>("product:reservation-expiry-index")
-        expiryIndex.clear()
+        // 테스트 데이터 정리는 SQL 스크립트에서 처리
     }
 
     // ========== POST /api/v1/orders (주문 생성) ==========
