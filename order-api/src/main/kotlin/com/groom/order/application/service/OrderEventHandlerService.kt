@@ -280,4 +280,50 @@ class OrderEventHandlerService(
 
         logger.info { "PaymentCancelled processed: orderId=$orderId, newStatus=${order.status}" }
     }
+
+    /**
+     * 결제 대기 생성 실패 이벤트 처리 (SAGA 보상)
+     *
+     * Payment Service에서 결제 대기 생성이 실패하면:
+     * 1. 주문 상태를 ORDER_CANCELLED로 변경
+     * 2. OrderCancelled 이벤트 발행 (Product Service가 재고 복원)
+     *
+     * 토픽: saga.payment-initialization.failed
+     *
+     * @see <a href="https://github.com/c4ang/c4ang-contract-hub/blob/main/docs/interface/kafka-event-specifications.md">Kafka 이벤트 명세서</a>
+     */
+    @Transactional
+    override fun handlePaymentInitializationFailed(
+        orderId: UUID,
+        failureReason: String,
+        failedAt: LocalDateTime,
+    ) {
+        logger.info { "Processing PaymentInitializationFailed event: orderId=$orderId, reason=$failureReason" }
+
+        val order =
+            loadOrderPort.loadById(orderId)
+                ?: throw OrderException.OrderNotFound(orderId)
+
+        // 상태 전이: ORDER_CONFIRMED → ORDER_CANCELLED
+        order.cancel("결제 대기 생성 실패: $failureReason", failedAt)
+        saveOrderPort.save(order)
+
+        // 감사 로그 기록
+        orderAuditRecorder.record(
+            orderId = orderId,
+            eventType = OrderAuditEventType.ORDER_CANCELLED,
+            changeSummary = "결제 대기 생성 실패로 인한 주문 취소 (SAGA 보상)",
+            actorUserId = null,
+            metadata =
+                mapOf(
+                    "failureReason" to failureReason,
+                    "failedAt" to failedAt.toString(),
+                ),
+        )
+
+        // OrderCancelled 이벤트 발행 → Product Service가 재고 복원
+        orderEventPublisher.publishOrderCancelled(order, "PAYMENT_INITIALIZATION_FAILED: $failureReason")
+
+        logger.info { "PaymentInitializationFailed processed: orderId=$orderId, newStatus=${order.status}" }
+    }
 }
