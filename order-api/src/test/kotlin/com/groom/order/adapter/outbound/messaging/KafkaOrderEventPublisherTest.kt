@@ -42,12 +42,7 @@ class KafkaOrderEventPublisherTest {
     @BeforeEach
     fun setup() {
         kafkaTemplate = mockk()
-        topicProperties =
-            KafkaTopicProperties(
-                orderCreated = "order.created",
-                orderConfirmed = "order.confirmed",
-                orderCancelled = "order.cancelled",
-            )
+        topicProperties = KafkaTopicProperties()
         publisher = KafkaOrderEventPublisher(kafkaTemplate, topicProperties)
     }
 
@@ -537,7 +532,7 @@ class KafkaOrderEventPublisherTest {
             publisher.publishDailyStatistics(statistics)
 
             // then
-            topicSlot.captured shouldBe "daily.statistics"
+            topicSlot.captured shouldBe "analytics.daily.statistics"
             keySlot.captured shouldBe targetDate.toString()
         }
 

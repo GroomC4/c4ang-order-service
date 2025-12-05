@@ -3,6 +3,7 @@ package com.groom.order.application.service
 import com.groom.order.common.annotation.UnitTest
 import com.groom.order.common.exception.OrderException
 import com.groom.order.domain.model.Order
+import com.groom.order.domain.model.OrderAuditEventType
 import com.groom.order.domain.model.OrderStatus
 import com.groom.order.domain.port.LoadOrderPort
 import com.groom.order.domain.port.OrderEventHandler
@@ -15,9 +16,8 @@ import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.every
-import io.mockk.just
+import io.mockk.justRun
 import io.mockk.mockk
-import io.mockk.runs
 import io.mockk.verify
 import java.math.BigDecimal
 import java.time.LocalDateTime
@@ -62,8 +62,8 @@ class OrderEventHandlerServiceTest :
 
             every { loadOrderPort.loadById(orderId) } returns order
             every { saveOrderPort.save(any()) } answers { firstArg() }
-            every { orderAuditRecorder.record(any(), any(), any(), any(), any()) } just runs
-            every { orderEventPublisher.publishOrderConfirmed(any()) } just runs
+            justRun { orderAuditRecorder.record(any(), any(), any(), any(), any()) }
+            justRun { orderEventPublisher.publishOrderConfirmed(any()) }
 
             When("StockReserved 이벤트를 처리하면") {
                 service.handleStockReserved(orderId, reservedItems, reservedAt)
@@ -107,9 +107,34 @@ class OrderEventHandlerServiceTest :
             val totalAmount = BigDecimal("50000")
             val completedAt = LocalDateTime.now()
 
+            // 예상되는 confirmedItems 생성
+            val expectedConfirmedItems =
+                order.items.map { item ->
+                    OrderEventPublisher.ConfirmedItemInfo(
+                        productId = item.productId,
+                        quantity = item.quantity,
+                    )
+                }
+
             every { loadOrderPort.loadById(orderId) } returns order
-            every { saveOrderPort.save(any()) } answers { firstArg() }
-            every { orderAuditRecorder.record(any(), any(), any(), any(), any()) } just runs
+            every { saveOrderPort.save(order) } returns order
+            justRun {
+                orderAuditRecorder.record(
+                    orderId = orderId,
+                    eventType = OrderAuditEventType.PAYMENT_COMPLETED,
+                    changeSummary = "결제 완료 및 주문 확정 (Kafka 이벤트)",
+                    actorUserId = null,
+                    metadata = any(),
+                )
+            }
+            justRun {
+                orderEventPublisher.publishStockConfirmed(
+                    orderId = orderId,
+                    paymentId = paymentId,
+                    confirmedItems = expectedConfirmedItems,
+                    confirmedAt = completedAt,
+                )
+            }
 
             When("PaymentCompleted 이벤트를 처리하면") {
                 service.handlePaymentCompleted(orderId, paymentId, totalAmount, completedAt)
@@ -126,10 +151,21 @@ class OrderEventHandlerServiceTest :
                     verify(exactly = 1) {
                         orderAuditRecorder.record(
                             orderId = orderId,
-                            eventType = any(),
-                            changeSummary = any(),
+                            eventType = OrderAuditEventType.PAYMENT_COMPLETED,
+                            changeSummary = "결제 완료 및 주문 확정 (Kafka 이벤트)",
                             actorUserId = null,
                             metadata = any(),
+                        )
+                    }
+                }
+
+                Then("StockConfirmed 이벤트가 올바른 파라미터로 발행된다") {
+                    verify(exactly = 1) {
+                        orderEventPublisher.publishStockConfirmed(
+                            orderId = orderId,
+                            paymentId = paymentId,
+                            confirmedItems = expectedConfirmedItems,
+                            confirmedAt = completedAt,
                         )
                     }
                 }
@@ -150,9 +186,22 @@ class OrderEventHandlerServiceTest :
             val failedAt = LocalDateTime.now()
 
             every { loadOrderPort.loadById(orderId) } returns order
-            every { saveOrderPort.save(any()) } answers { firstArg() }
-            every { orderAuditRecorder.record(any(), any(), any(), any(), any()) } just runs
-            every { orderEventPublisher.publishOrderCancelled(any(), any()) } just runs
+            every { saveOrderPort.save(order) } returns order
+            justRun {
+                orderAuditRecorder.record(
+                    orderId = orderId,
+                    eventType = OrderAuditEventType.ORDER_CANCELLED,
+                    changeSummary = "결제 실패로 인한 주문 취소",
+                    actorUserId = null,
+                    metadata = any(),
+                )
+            }
+            justRun {
+                orderEventPublisher.publishOrderCancelled(
+                    order,
+                    "PAYMENT_FAILED: $failureReason",
+                )
+            }
 
             When("PaymentFailed 이벤트를 처리하면") {
                 service.handlePaymentFailed(orderId, paymentId, failureReason, failedAt)
@@ -194,9 +243,22 @@ class OrderEventHandlerServiceTest :
             val cancelledAt = LocalDateTime.now()
 
             every { loadOrderPort.loadById(orderId) } returns order
-            every { saveOrderPort.save(any()) } answers { firstArg() }
-            every { orderAuditRecorder.record(any(), any(), any(), any(), any()) } just runs
-            every { orderEventPublisher.publishOrderCancelled(any(), any()) } just runs
+            every { saveOrderPort.save(order) } returns order
+            justRun {
+                orderAuditRecorder.record(
+                    orderId = orderId,
+                    eventType = OrderAuditEventType.ORDER_CANCELLED,
+                    changeSummary = "결제 취소로 인한 주문 취소",
+                    actorUserId = null,
+                    metadata = any(),
+                )
+            }
+            justRun {
+                orderEventPublisher.publishOrderCancelled(
+                    order,
+                    "PAYMENT_CANCELLED: $cancellationReason",
+                )
+            }
 
             When("PaymentCancelled 이벤트를 처리하면") {
                 service.handlePaymentCancelled(orderId, paymentId, cancellationReason, cancelledAt)
@@ -246,7 +308,7 @@ class OrderEventHandlerServiceTest :
 
             every { loadOrderPort.loadById(orderId) } returns order
             every { saveOrderPort.save(any()) } answers { firstArg() }
-            every { orderAuditRecorder.record(any(), any(), any(), any(), any()) } just runs
+            justRun { orderAuditRecorder.record(any(), any(), any(), any(), any()) }
 
             When("StockReservationFailed 이벤트를 처리하면") {
                 service.handleStockReservationFailed(orderId, failedItems, failureReason, failedAt)
@@ -395,6 +457,7 @@ class OrderEventHandlerServiceTest :
                 )
 
             every { loadOrderPort.loadById(orderId) } returns order
+            justRun { orderEventPublisher.publishStockConfirmationFailed(any(), any(), any(), any()) }
 
             When("PaymentCompleted 이벤트가 재수신되면") {
                 Then("IllegalArgumentException이 발생한다 (이미 처리됨)") {
@@ -420,6 +483,7 @@ class OrderEventHandlerServiceTest :
                 )
 
             every { loadOrderPort.loadById(orderId) } returns order
+            justRun { orderEventPublisher.publishStockConfirmationFailed(any(), any(), any(), any()) }
 
             When("StockReserved 이벤트를 수신하면") {
                 Then("IllegalArgumentException이 발생한다 (잘못된 상태)") {
@@ -456,6 +520,7 @@ class OrderEventHandlerServiceTest :
                 )
 
             every { loadOrderPort.loadById(orderId) } returns order
+            justRun { orderEventPublisher.publishStockConfirmationFailed(any(), any(), any(), any()) }
 
             When("PaymentCompleted 이벤트를 수신하면") {
                 Then("IllegalArgumentException이 발생한다 (PAYMENT_PENDING이 아님)") {

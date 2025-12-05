@@ -5,7 +5,7 @@ import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig
 import org.apache.avro.specific.SpecificRecord
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.StringDeserializer
-import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.kafka.annotation.EnableKafka
@@ -34,34 +34,30 @@ import org.springframework.util.backoff.FixedBackOff
  * Avro 역직렬화를 사용하며, Schema Registry와 연동됩니다.
  *
  * @see <a href="https://github.com/c4ang/c4ang-contract-hub/blob/main/docs/interface/kafka-event-specifications.md">Kafka 이벤트 명세서</a>
+ * @see KafkaConsumerProperties
  */
 @Configuration
 @EnableKafka
+@EnableConfigurationProperties(KafkaConsumerProperties::class)
 class KafkaConsumerConfig(
-    @Value("\${kafka.bootstrap-servers}") private val bootstrapServers: String,
-    @Value("\${kafka.schema-registry.url}") private val schemaRegistryUrl: String,
-    @Value("\${kafka.consumer.group-id:order-service}") private val defaultGroupId: String,
-    @Value("\${kafka.consumer.saga-group-id:order-service-saga}") private val sagaGroupId: String,
-    @Value("\${kafka.consumer.auto-offset-reset:earliest}") private val autoOffsetReset: String,
-    @Value("\${kafka.consumer.enable-auto-commit:false}") private val enableAutoCommit: Boolean,
-    @Value("\${kafka.consumer.max-poll-records:500}") private val maxPollRecords: Int,
+    private val properties: KafkaConsumerProperties,
 ) {
     /**
-     * 기본 Consumer Factory (group-id 포함하지 않음)
-     * 각 ContainerFactory에서 group-id를 설정합니다.
+     * Consumer Factory 생성
      */
     private fun createConsumerFactory(groupId: String): ConsumerFactory<String, SpecificRecord> {
+        val consumer = properties.consumer
         val configProps =
             mutableMapOf<String, Any>(
-                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
+                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to properties.bootstrapServers,
                 ConsumerConfig.GROUP_ID_CONFIG to groupId,
                 ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
                 ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to KafkaAvroDeserializer::class.java,
-                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to autoOffsetReset,
-                ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG to enableAutoCommit,
-                ConsumerConfig.MAX_POLL_RECORDS_CONFIG to maxPollRecords,
+                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to consumer.autoOffsetReset,
+                ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG to consumer.enableAutoCommit,
+                ConsumerConfig.MAX_POLL_RECORDS_CONFIG to consumer.maxPollRecords,
                 // Schema Registry 설정
-                KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG to schemaRegistryUrl,
+                KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG to properties.schemaRegistry.url,
                 // SpecificRecord로 역직렬화 (GenericRecord 대신)
                 KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG to true,
             )
@@ -97,7 +93,8 @@ class KafkaConsumerConfig(
     // ===== Consumer Factories =====
 
     @Bean
-    fun consumerFactory(): ConsumerFactory<String, SpecificRecord> = createConsumerFactory(defaultGroupId)
+    fun consumerFactory(): ConsumerFactory<String, SpecificRecord> =
+        createConsumerFactory(properties.consumer.groupId)
 
     // ===== Container Factories =====
 
@@ -109,7 +106,7 @@ class KafkaConsumerConfig(
      */
     @Bean
     fun kafkaListenerContainerFactory(): ConcurrentKafkaListenerContainerFactory<String, SpecificRecord> =
-        createContainerFactory(defaultGroupId)
+        createContainerFactory(properties.consumer.groupId)
 
     /**
      * SAGA 보상 이벤트용 Container Factory
@@ -119,5 +116,5 @@ class KafkaConsumerConfig(
      */
     @Bean
     fun sagaListenerContainerFactory(): ConcurrentKafkaListenerContainerFactory<String, SpecificRecord> =
-        createContainerFactory(sagaGroupId)
+        createContainerFactory(properties.consumer.sagaGroupId)
 }
