@@ -116,11 +116,17 @@ class OrderEventHandlerService(
     }
 
     /**
-     * 결제 완료 이벤트 처리
+     * 결제 완료 이벤트 처리 (Payment Saga)
      *
      * Payment Service에서 결제가 완료되면:
      * 1. 주문 상태를 PAYMENT_COMPLETED로 변경
      * 2. 주문 확정 처리 (PREPARING 상태로 변경)
+     * 3. StockConfirmed 이벤트 발행 (Payment Service가 Saga 완료)
+     *
+     * 실패 시:
+     * - StockConfirmationFailed 이벤트 발행 (Payment Service가 결제 취소)
+     *
+     * @see <a href="https://github.com/c4ang/c4ang-contract-hub/blob/main/docs/interface/kafka-event-sequence.md#4-payment-order-saga-결제-완료">Payment-Order Saga</a>
      */
     @Transactional
     override fun handlePaymentCompleted(
@@ -135,27 +141,56 @@ class OrderEventHandlerService(
             loadOrderPort.loadById(orderId)
                 ?: throw OrderException.OrderNotFound(orderId)
 
-        // 상태 전이: PAYMENT_PENDING → PAYMENT_COMPLETED
-        order.completePayment(paymentId)
-        // 상태 전이: PAYMENT_COMPLETED → PREPARING (주문 확정)
-        order.confirmOrder(completedAt)
-        saveOrderPort.save(order)
+        try {
+            // 상태 전이: PAYMENT_PENDING → PAYMENT_COMPLETED
+            order.completePayment(paymentId)
+            // 상태 전이: PAYMENT_COMPLETED → PREPARING (주문 확정)
+            order.confirmOrder(completedAt)
+            saveOrderPort.save(order)
 
-        // 감사 로그 기록
-        orderAuditRecorder.record(
-            orderId = orderId,
-            eventType = OrderAuditEventType.PAYMENT_COMPLETED,
-            changeSummary = "결제 완료 및 주문 확정 (Kafka 이벤트)",
-            actorUserId = null,
-            metadata =
-                mapOf(
-                    "paymentId" to paymentId.toString(),
-                    "totalAmount" to totalAmount.toString(),
-                    "completedAt" to completedAt.toString(),
-                ),
-        )
+            // 감사 로그 기록
+            orderAuditRecorder.record(
+                orderId = orderId,
+                eventType = OrderAuditEventType.PAYMENT_COMPLETED,
+                changeSummary = "결제 완료 및 주문 확정 (Kafka 이벤트)",
+                actorUserId = null,
+                metadata =
+                    mapOf(
+                        "paymentId" to paymentId.toString(),
+                        "totalAmount" to totalAmount.toString(),
+                        "completedAt" to completedAt.toString(),
+                    ),
+            )
 
-        logger.info { "PaymentCompleted processed: orderId=$orderId, newStatus=${order.status}" }
+            // StockConfirmed 이벤트 발행 → Payment Service가 Saga 완료 처리
+            val confirmedItems =
+                order.items.map { item ->
+                    OrderEventPublisher.ConfirmedItemInfo(
+                        productId = item.productId,
+                        quantity = item.quantity,
+                    )
+                }
+            orderEventPublisher.publishStockConfirmed(
+                orderId = orderId,
+                paymentId = paymentId,
+                confirmedItems = confirmedItems,
+                confirmedAt = completedAt,
+            )
+
+            logger.info { "PaymentCompleted processed: orderId=$orderId, newStatus=${order.status}" }
+        } catch (e: Exception) {
+            logger.error(e) { "Failed to process PaymentCompleted event: orderId=$orderId" }
+
+            // StockConfirmationFailed 이벤트 발행 → Payment Service가 결제 취소
+            orderEventPublisher.publishStockConfirmationFailed(
+                orderId = orderId,
+                paymentId = paymentId,
+                failureReason = e.message ?: "재고 확정 실패",
+                failedAt = completedAt,
+            )
+
+            throw e
+        }
     }
 
     /**
