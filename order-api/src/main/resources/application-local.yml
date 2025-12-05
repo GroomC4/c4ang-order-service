@@ -58,15 +58,10 @@ logging:
 # - X-User-Role: CUSTOMER
 #
 # 커스텀 헤더로 테스트하려면:
-# curl -H "X-User-Id: your-uuid" -H "X-User-Role: CUSTOMER" http://localhost:8082/api/v1/orders
+# curl -H "X-User-Id: your-uuid" -H "X-User-Role: CUSTOMER" http://localhost:8084/api/v1/orders
 
 feign:
   clients:
-    product-service:
-      url: http://localhost:8083
-      connect-timeout: 10000
-      read-timeout: 10000
-      logger-level: full
     store-service:
       url: http://localhost:8084
       connect-timeout: 10000
@@ -74,8 +69,6 @@ feign:
       logger-level: full
   client:
     config:
-      product-service:
-        loggerLevel: full
       store-service:
         loggerLevel: full
 
