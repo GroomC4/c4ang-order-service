@@ -9,6 +9,8 @@ import java.util.UUID
  *
  * 다른 서비스에서 발행한 이벤트를 처리하는 인터페이스입니다.
  * Kafka Consumer가 이 인터페이스를 통해 도메인 로직을 호출합니다.
+ *
+ * @see <a href="https://github.com/c4ang/c4ang-contract-hub/blob/main/docs/interface/kafka-event-specifications.md">Kafka 이벤트 명세서</a>
  */
 interface OrderEventHandler {
     /**
@@ -99,6 +101,25 @@ interface OrderEventHandler {
         paymentId: UUID,
         cancellationReason: String,
         cancelledAt: LocalDateTime,
+    )
+
+    /**
+     * 결제 대기 생성 실패 이벤트 처리 (SAGA 보상)
+     *
+     * Payment Service에서 결제 대기 생성이 실패하면 호출됩니다.
+     * 주문 상태: ORDER_CONFIRMED → ORDER_CANCELLED
+     * (재고 복원을 위해 OrderCancelled 이벤트 발행)
+     *
+     * 토픽: saga.payment-initialization.failed
+     *
+     * @param orderId 주문 ID
+     * @param failureReason 실패 사유
+     * @param failedAt 실패 시각
+     */
+    fun handlePaymentInitializationFailed(
+        orderId: UUID,
+        failureReason: String,
+        failedAt: LocalDateTime,
     )
 
     /**

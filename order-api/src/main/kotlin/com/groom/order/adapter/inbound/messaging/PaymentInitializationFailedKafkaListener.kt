@@ -1,6 +1,6 @@
 package com.groom.order.adapter.inbound.messaging
 
-import com.groom.ecommerce.saga.event.avro.StockReservationFailed
+import com.groom.ecommerce.saga.event.avro.PaymentInitializationFailed
 import com.groom.order.domain.port.OrderEventHandler
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -13,67 +13,57 @@ import java.time.ZoneId
 import java.util.UUID
 
 /**
- * 재고 예약 실패 이벤트 Kafka Listener (SAGA 보상)
+ * 결제 대기 생성 실패 이벤트 Kafka Listener (SAGA 보상)
  *
- * Product Service에서 발행한 StockReservationFailed 이벤트를 수신하여
- * 주문을 취소합니다.
+ * Payment Service에서 발행한 PaymentInitializationFailed 이벤트를 수신하여
+ * 주문을 취소하고 재고 복원 이벤트를 발행합니다.
  *
- * 토픽: saga.stock-reservation.failed
+ * 토픽: saga.payment-initialization.failed
  * Consumer Group: order-service-saga
  *
  * @see <a href="https://github.com/c4ang/c4ang-contract-hub/blob/main/docs/interface/kafka-event-specifications.md">Kafka 이벤트 명세서</a>
  */
 @Component
-class StockReservationFailedKafkaListener(
+class PaymentInitializationFailedKafkaListener(
     private val orderEventHandler: OrderEventHandler,
 ) {
     private val logger = KotlinLogging.logger {}
 
     @KafkaListener(
-        topics = ["\${kafka.topics.saga-stock-reservation-failed:saga.stock-reservation.failed}"],
+        topics = ["\${kafka.topics.saga-payment-initialization-failed:saga.payment-initialization.failed}"],
         containerFactory = "sagaListenerContainerFactory",
     )
-    fun onStockReservationFailed(
-        record: ConsumerRecord<String, StockReservationFailed>,
+    fun onPaymentInitializationFailed(
+        record: ConsumerRecord<String, PaymentInitializationFailed>,
         acknowledgment: Acknowledgment,
     ) {
         val event = record.value()
         val orderId = UUID.fromString(event.orderId)
 
         logger.info {
-            "Received StockReservationFailed event: " +
+            "Received PaymentInitializationFailed event: " +
                 "orderId=$orderId, eventId=${event.eventId}, " +
                 "reason=${event.failureReason}, " +
                 "partition=${record.partition()}, offset=${record.offset()}"
         }
 
         try {
-            val failedItems =
-                event.failedItems.map { item ->
-                    OrderEventHandler.FailedItemInfo(
-                        productId = UUID.fromString(item.productId),
-                        requestedQuantity = item.requestedQuantity,
-                        availableStock = item.availableStock,
-                    )
-                }
-
             val failedAt =
                 LocalDateTime.ofInstant(
                     Instant.ofEpochMilli(event.failedAt),
                     ZoneId.systemDefault(),
                 )
 
-            orderEventHandler.handleStockReservationFailed(
+            orderEventHandler.handlePaymentInitializationFailed(
                 orderId = orderId,
-                failedItems = failedItems,
                 failureReason = event.failureReason,
                 failedAt = failedAt,
             )
 
             acknowledgment.acknowledge()
-            logger.info { "StockReservationFailed event processed successfully: orderId=$orderId" }
+            logger.info { "PaymentInitializationFailed event processed successfully: orderId=$orderId" }
         } catch (e: Exception) {
-            logger.error(e) { "Failed to process StockReservationFailed event: orderId=$orderId" }
+            logger.error(e) { "Failed to process PaymentInitializationFailed event: orderId=$orderId" }
             throw e // DefaultErrorHandler가 재시도 처리
         }
     }

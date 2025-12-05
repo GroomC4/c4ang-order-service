@@ -4,10 +4,13 @@ import com.groom.ecommerce.analytics.event.avro.DailyStatistics
 import com.groom.ecommerce.analytics.event.avro.TopProduct
 import com.groom.ecommerce.order.event.avro.CancellationReason
 import com.groom.ecommerce.order.event.avro.CancelledOrderItem
+import com.groom.ecommerce.order.event.avro.ConfirmedOrderItem
 import com.groom.ecommerce.order.event.avro.OrderCancelled
 import com.groom.ecommerce.order.event.avro.OrderConfirmed
 import com.groom.ecommerce.order.event.avro.OrderCreated
 import com.groom.ecommerce.order.event.avro.OrderExpirationNotification
+import com.groom.ecommerce.order.event.avro.StockConfirmed
+import com.groom.ecommerce.saga.event.avro.StockConfirmationFailed
 import com.groom.order.configuration.kafka.KafkaTopicProperties
 import com.groom.order.domain.model.Order
 import com.groom.order.domain.port.OrderEventPublisher
@@ -31,11 +34,15 @@ import com.groom.ecommerce.order.event.avro.OrderItem as AvroOrderItem
  * - order.confirmed: Payment Service가 결제 대기 생성
  * - order.cancelled: Product Service가 재고 복원 처리
  * - order.expiration.notification: Notification Service가 고객 알림 발송
- * - daily.statistics: Analytics Service가 리포트 생성
+ * - analytics.daily.statistics: Analytics Service가 리포트 생성
+ * - order.stock.confirmed: Payment Service가 Saga 완료 처리
+ * - saga.stock-confirmation.failed: Payment Service가 보상 트랜잭션 실행
  *
  * ## 파티션 키
  * 모든 이벤트는 `orderId`를 파티션 키로 사용하여
  * 동일 주문의 이벤트가 순서대로 처리되도록 보장합니다.
+ *
+ * @see <a href="https://github.com/c4ang/c4ang-contract-hub/blob/main/docs/interface/kafka-event-specifications.md">Kafka 이벤트 명세서</a>
  */
 @Component
 @EnableConfigurationProperties(KafkaTopicProperties::class)
@@ -260,6 +267,95 @@ class KafkaOrderEventPublisher(
                             "totalOrders=${statistics.totalOrders}, totalSales=${statistics.totalSales}, " +
                             "topic=$topic, partition=${result.recordMetadata.partition()}, " +
                             "offset=${result.recordMetadata.offset()}"
+                    }
+                }
+            }
+    }
+
+    override fun publishStockConfirmed(
+        orderId: UUID,
+        paymentId: UUID,
+        confirmedItems: List<OrderEventPublisher.ConfirmedItemInfo>,
+        confirmedAt: LocalDateTime,
+    ) {
+        val eventId = UUID.randomUUID().toString()
+        val now = System.currentTimeMillis()
+
+        val avroItems =
+            confirmedItems.map { item ->
+                ConfirmedOrderItem
+                    .newBuilder()
+                    .setProductId(item.productId.toString())
+                    .setQuantity(item.quantity)
+                    .build()
+            }
+
+        val event =
+            StockConfirmed
+                .newBuilder()
+                .setEventId(eventId)
+                .setEventTimestamp(now)
+                .setOrderId(orderId.toString())
+                .setPaymentId(paymentId.toString())
+                .setConfirmedItems(avroItems)
+                .setConfirmedAt(confirmedAt.toInstant(ZoneOffset.UTC).toEpochMilli())
+                .build()
+
+        val topic = topicProperties.orderStockConfirmed
+        val partitionKey = orderId.toString()
+
+        kafkaTemplate
+            .send(topic, partitionKey, event)
+            .whenComplete { result, ex ->
+                if (ex != null) {
+                    logger.error(ex) {
+                        "Failed to publish StockConfirmed event: orderId=$orderId, topic=$topic"
+                    }
+                } else {
+                    logger.info {
+                        "Published StockConfirmed event: orderId=$orderId, paymentId=$paymentId, " +
+                            "eventId=$eventId, topic=$topic, partition=${result.recordMetadata.partition()}, " +
+                            "offset=${result.recordMetadata.offset()}"
+                    }
+                }
+            }
+    }
+
+    override fun publishStockConfirmationFailed(
+        orderId: UUID,
+        paymentId: UUID,
+        failureReason: String,
+        failedAt: LocalDateTime,
+    ) {
+        val eventId = UUID.randomUUID().toString()
+        val now = System.currentTimeMillis()
+
+        val event =
+            StockConfirmationFailed
+                .newBuilder()
+                .setEventId(eventId)
+                .setEventTimestamp(now)
+                .setOrderId(orderId.toString())
+                .setPaymentId(paymentId.toString())
+                .setFailureReason(failureReason)
+                .setFailedAt(failedAt.toInstant(ZoneOffset.UTC).toEpochMilli())
+                .build()
+
+        val topic = topicProperties.sagaStockConfirmationFailed
+        val partitionKey = orderId.toString()
+
+        kafkaTemplate
+            .send(topic, partitionKey, event)
+            .whenComplete { result, ex ->
+                if (ex != null) {
+                    logger.error(ex) {
+                        "Failed to publish StockConfirmationFailed event: orderId=$orderId, topic=$topic"
+                    }
+                } else {
+                    logger.info {
+                        "Published StockConfirmationFailed event: orderId=$orderId, paymentId=$paymentId, " +
+                            "reason=$failureReason, eventId=$eventId, topic=$topic, " +
+                            "partition=${result.recordMetadata.partition()}, offset=${result.recordMetadata.offset()}"
                     }
                 }
             }
