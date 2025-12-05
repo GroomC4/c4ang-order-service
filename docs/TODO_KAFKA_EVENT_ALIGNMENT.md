@@ -108,34 +108,34 @@ order.confirmed 발행 → Payment Service: 결제 대기 생성 실패 → saga
 
 ## 3. 작업 목록
 
-### 3.1 Phase 1: 토픽 네이밍 정렬 (우선순위: 높음)
+### 3.1 Phase 1: 토픽 네이밍 정렬 (우선순위: 높음) ✅ 완료
 
 | # | 작업 | 파일 | 상태 |
 |---|------|------|------|
-| 1.1 | `stock.reservation.failed` → `saga.stock-reservation.failed` 변경 | `StockReservationFailedKafkaListener.kt` | ⬜ |
-| 1.2 | `daily.statistics` → `analytics.daily.statistics` 변경 | `KafkaTopicProperties.kt`, `KafkaOrderEventPublisher.kt` | ⬜ |
-| 1.3 | KafkaTopicProperties에 SAGA 토픽 추가 | `KafkaTopicProperties.kt` | ⬜ |
+| 1.1 | `stock.reservation.failed` → `saga.stock-reservation.failed` 변경 | `StockReservationFailedKafkaListener.kt` | ✅ |
+| 1.2 | `daily.statistics` → `analytics.daily.statistics` 변경 | `KafkaTopicProperties.kt`, `KafkaOrderEventPublisher.kt` | ✅ |
+| 1.3 | KafkaTopicProperties에 SAGA 토픽 추가 | `KafkaTopicProperties.kt` | ✅ |
 
-### 3.2 Phase 2: Payment Saga 이벤트 구현 (우선순위: 높음)
-
-| # | 작업 | 파일 | 상태 |
-|---|------|------|------|
-| 2.1 | `publishStockConfirmed()` 인터페이스 추가 | `OrderEventPublisher.kt` | ⬜ |
-| 2.2 | `publishStockConfirmed()` 구현체 추가 | `KafkaOrderEventPublisher.kt` | ⬜ |
-| 2.3 | `publishStockConfirmationFailed()` 인터페이스 추가 | `OrderEventPublisher.kt` | ⬜ |
-| 2.4 | `publishStockConfirmationFailed()` 구현체 추가 | `KafkaOrderEventPublisher.kt` | ⬜ |
-| 2.5 | `handlePaymentCompleted()` 수정 - 재고 확정 이벤트 발행 | `OrderEventHandlerService.kt` | ⬜ |
-
-### 3.3 Phase 3: SAGA 보상 이벤트 구현 (우선순위: 중간)
+### 3.2 Phase 2: Payment Saga 이벤트 구현 (우선순위: 높음) ✅ 완료
 
 | # | 작업 | 파일 | 상태 |
 |---|------|------|------|
-| 3.1 | `PaymentInitializationFailedKafkaListener` 생성 | 새 파일 | ⬜ |
-| 3.2 | `handlePaymentInitializationFailed()` 인터페이스 추가 | `OrderEventHandler.kt` | ⬜ |
-| 3.3 | `handlePaymentInitializationFailed()` 구현체 추가 | `OrderEventHandlerService.kt` | ⬜ |
-| 3.4 | `publishOrderConfirmationCompensate()` 구현 검토 | `OrderEventPublisher.kt` | ⬜ |
+| 2.1 | `publishStockConfirmed()` 인터페이스 추가 | `OrderEventPublisher.kt` | ✅ |
+| 2.2 | `publishStockConfirmed()` 구현체 추가 | `KafkaOrderEventPublisher.kt` | ✅ |
+| 2.3 | `publishStockConfirmationFailed()` 인터페이스 추가 | `OrderEventPublisher.kt` | ✅ |
+| 2.4 | `publishStockConfirmationFailed()` 구현체 추가 | `KafkaOrderEventPublisher.kt` | ✅ |
+| 2.5 | `handlePaymentCompleted()` 수정 - 재고 확정 이벤트 발행 | `OrderEventHandlerService.kt` | ✅ |
 
-### 3.4 Phase 4: Consumer Group 분리 (우선순위: 낮음)
+### 3.3 Phase 3: SAGA 보상 이벤트 구현 (우선순위: 중간) ✅ 완료
+
+| # | 작업 | 파일 | 상태 |
+|---|------|------|------|
+| 3.1 | `PaymentInitializationFailedKafkaListener` 생성 | 새 파일 | ✅ |
+| 3.2 | `handlePaymentInitializationFailed()` 인터페이스 추가 | `OrderEventHandler.kt` | ✅ |
+| 3.3 | `handlePaymentInitializationFailed()` 구현체 추가 | `OrderEventHandlerService.kt` | ✅ |
+| 3.4 | `publishOrderConfirmationCompensate()` 구현 검토 | `OrderEventPublisher.kt` | ⏸️ (order.cancelled로 처리) |
+
+### 3.4 Phase 4: Consumer Group 분리 (우선순위: 낮음) ⏸️ 보류
 
 문서 권장:
 - `order-service-saga-compensation`: SAGA 보상 이벤트 처리
@@ -143,14 +143,17 @@ order.confirmed 발행 → Payment Service: 결제 대기 생성 실패 → saga
 
 | # | 작업 | 파일 | 상태 |
 |---|------|------|------|
-| 4.1 | Consumer Group 분리 전략 수립 | - | ⬜ |
-| 4.2 | KafkaConsumerConfig 수정 | `KafkaConsumerConfig.kt` | ⬜ |
+| 4.1 | Consumer Group 분리 전략 수립 | - | ⏸️ TODO로 남김 |
+| 4.2 | KafkaConsumerConfig 수정 | `KafkaConsumerConfig.kt` | ⏸️ TODO로 남김 |
+
+> **참고**: 현재 단일 Consumer Group(`order-service`)으로도 정상 동작합니다.
+> 추후 성능 최적화 또는 장애 격리가 필요할 때 분리를 검토합니다.
 
 ---
 
 ## 4. 이벤트 플로우 다이어그램
 
-### 4.1 Order Creation Saga (현재 구현)
+### 4.1 Order Creation Saga ✅ 구현 완료
 
 ```
 Client → Order Service: POST /orders
@@ -158,23 +161,25 @@ Client → Order Service: POST /orders
          ├─ order.created ─────────────────→ Product Service
          │                                       │
          │ ← stock.reserved ─────────────────────┘ (성공)
-         │ ← saga.stock-reservation.failed ──────┘ (실패) ※토픽명 변경 필요
+         │ ← saga.stock-reservation.failed ──────┘ (실패) ✅
          │
          ├─ order.confirmed ───────────────→ Payment Service
+         │                                       │
+         │ ← saga.payment-initialization.failed ─┘ (실패) ✅
          │
          └─ [주문 확정 대기]
 ```
 
-### 4.2 Payment Saga (구현 필요)
+### 4.2 Payment Saga ✅ 구현 완료
 
 ```
 Payment Service: payment.completed ────→ Order Service
                                               │
                                               ├─ 재고 확정 성공
-                                              │   └─ order.stock.confirmed ────→ Payment Service ※미구현
+                                              │   └─ order.stock.confirmed ────→ Payment Service ✅
                                               │
                                               └─ 재고 확정 실패
-                                                  └─ saga.stock-confirmation.failed ─→ Payment Service ※미구현
+                                                  └─ saga.stock-confirmation.failed ─→ Payment Service ✅
                                                          │
                                                          └─ saga.payment-completion.compensate ─→ Order Service
                                                                 │

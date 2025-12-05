@@ -23,9 +23,17 @@ import org.springframework.util.backoff.FixedBackOff
  * - stock.reserved: 재고 예약 완료 (Product Service) → 주문 확정 처리
  * - payment.completed: 결제 완료 (Payment Service) → 재고 확정 요청
  * - payment.failed: 결제 실패 (Payment Service) → 주문 취소 처리
- * - payment.cancelled: 결제 취소 (Payment Service) → 주문 취소 처리
+ * - saga.stock-reservation.failed: 재고 예약 실패 (Product Service) → 주문 취소 처리
+ * - saga.payment-initialization.failed: 결제 대기 생성 실패 (Payment Service) → 주문 취소 처리
+ * - saga.payment-completion.compensate: 결제 보상 (Payment Service) → 주문 취소 처리
  *
  * Avro 역직렬화를 사용하며, Schema Registry와 연동됩니다.
+ *
+ * @see <a href="https://github.com/c4ang/c4ang-contract-hub/blob/main/docs/interface/kafka-event-specifications.md">Kafka 이벤트 명세서</a>
+ *
+ * TODO: Consumer Group 분리 검토 (docs/TODO_KAFKA_EVENT_ALIGNMENT.md Phase 4 참고)
+ *   - order-service-saga-compensation: SAGA 보상 이벤트 처리
+ *   - order-service-saga-payment: Payment Saga 이벤트 처리
  */
 @Configuration
 @EnableKafka
