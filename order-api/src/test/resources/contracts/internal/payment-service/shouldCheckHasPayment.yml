@@ -1,0 +1,13 @@
+description: "주문에 결제가 연결되어 있는지 확인한다"
+name: shouldCheckHasPayment
+request:
+  method: GET
+  url: /internal/v1/orders/550e8400-e29b-41d4-a716-446655440000/has-payment
+  headers:
+    Accept: application/json
+response:
+  status: 200
+  headers:
+    Content-Type: application/json
+  body:
+    hasPayment: false

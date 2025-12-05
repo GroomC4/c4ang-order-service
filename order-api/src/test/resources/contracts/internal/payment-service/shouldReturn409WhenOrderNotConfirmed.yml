@@ -1,0 +1,16 @@
+description: "주문 상태가 ORDER_CONFIRMED가 아닌 경우 409를 반환한다"
+name: shouldReturn409WhenOrderNotConfirmed
+request:
+  method: POST
+  url: /internal/v1/orders/550e8400-e29b-41d4-a716-446655440001/payment-pending
+  headers:
+    Content-Type: application/json
+  body:
+    paymentId: "880e8400-e29b-41d4-a716-446655440000"
+response:
+  status: 409
+  headers:
+    Content-Type: application/json
+  body:
+    code: "ORDER_STATUS_INVALID"
+    message: "결제를 진행할 수 없는 주문 상태입니다. 주문이 확정된 후에 결제를 진행해주세요."

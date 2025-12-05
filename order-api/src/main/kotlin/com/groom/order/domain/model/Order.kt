@@ -90,10 +90,16 @@ class Order(
      * ORDER_CONFIRMED → PAYMENT_PENDING
      *
      * Payment 생성 시점에 호출되며 Order와 Payment를 연결합니다.
+     *
+     * @throws IllegalStateException 주문 상태가 ORDER_CONFIRMED가 아닌 경우
+     * @throws IllegalStateException 이미 결제가 진행 중인 경우
      */
     fun markPaymentPending(paymentId: UUID) {
+        check(this.paymentId == null) {
+            "이 주문은 이미 결제가 진행 중입니다. 기존 결제를 취소한 후 다시 시도해주세요."
+        }
         require(status == OrderStatus.ORDER_CONFIRMED) {
-            "Only ORDER_CONFIRMED orders can mark payment pending"
+            "결제를 진행할 수 없는 주문 상태입니다. 주문이 확정된 후에 결제를 진행해주세요."
         }
 
         this.status = OrderStatus.PAYMENT_PENDING

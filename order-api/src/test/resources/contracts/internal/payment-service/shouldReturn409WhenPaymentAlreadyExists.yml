@@ -1,0 +1,16 @@
+description: "이미 결제가 연결된 주문에 결제 대기 요청 시 409를 반환한다"
+name: shouldReturn409WhenPaymentAlreadyExists
+request:
+  method: POST
+  url: /internal/v1/orders/550e8400-e29b-41d4-a716-446655440002/payment-pending
+  headers:
+    Content-Type: application/json
+  body:
+    paymentId: "880e8400-e29b-41d4-a716-446655440000"
+response:
+  status: 409
+  headers:
+    Content-Type: application/json
+  body:
+    code: "PAYMENT_ALREADY_EXISTS"
+    message: "이 주문은 이미 결제가 진행 중입니다. 기존 결제를 취소한 후 다시 시도해주세요."

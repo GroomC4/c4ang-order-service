@@ -1,0 +1,22 @@
+description: "Order Service가 주문 정보를 반환한다"
+name: shouldGetOrder
+request:
+  method: GET
+  url: /internal/v1/orders/550e8400-e29b-41d4-a716-446655440000
+  headers:
+    Accept: application/json
+response:
+  status: 200
+  headers:
+    Content-Type: application/json
+  body:
+    orderId: "550e8400-e29b-41d4-a716-446655440000"
+    userId: "660e8400-e29b-41d4-a716-446655440000"
+    orderNumber: "ORD-2024-001"
+    status: "ORDER_CONFIRMED"
+    totalAmount: 50000
+    items:
+      - productId: "770e8400-e29b-41d4-a716-446655440000"
+        productName: "테스트 상품"
+        quantity: 2
+        unitPrice: 25000
