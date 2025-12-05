@@ -22,14 +22,16 @@ import java.util.UUID
 /**
  * OrderTimeoutScheduler 통합 테스트
  *
- * 실제 DB와 Redis를 사용하여 만료된 주문 타임아웃 처리를 검증합니다.
+ * 실제 DB를 사용하여 만료된 주문 타임아웃 처리를 검증합니다.
  *
- * 테스트 시나리오:
+ * 이벤트 기반 플로우:
  * 1. SQL 스크립트로 만료된/유효한 주문 생성
- * 2. Redis에 재고 예약 설정
- * 3. 스케줄러 수동 실행
- * 4. 만료된 주문이 PAYMENT_TIMEOUT으로 변경되었는지 검증
- * 5. 재고 예약이 취소되었는지 검증
+ * 2. 스케줄러 수동 실행
+ * 3. 만료된 주문이 PAYMENT_TIMEOUT으로 변경되었는지 검증
+ * 4. OrderTimeoutEvent 이벤트 발행 (재고 복구는 Product Service 책임)
+ *
+ * Note: 재고 예약 취소는 더 이상 Order Service에서 직접 수행하지 않습니다.
+ *       Product Service가 order.timeout 이벤트를 소비하여 재고를 복구합니다.
  */
 @SqlGroup(
     Sql(
@@ -113,17 +115,12 @@ class OrderTimeoutSchedulerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    @DisplayName("만료된 주문을 PAYMENT_TIMEOUT으로 변경하고 재고 예약을 취소한다")
-    fun `should timeout expired orders and cancel reservations`() {
+    @DisplayName("만료된 주문을 PAYMENT_TIMEOUT으로 변경하고 OrderTimeoutEvent를 발행한다")
+    fun `should timeout expired orders and publish OrderTimeoutEvent`() {
         // given: SQL 스크립트로 만료된 주문 생성됨
         val expiredOrder = loadOrderPort.loadById(EXPIRED_ORDER_ID)!!
         assertEquals(OrderStatus.PAYMENT_PENDING, expiredOrder.status, "초기 상태는 PAYMENT_PENDING")
         assertEquals(EXPIRED_RESERVATION_ID, expiredOrder.reservationId, "예약 ID가 설정되어 있어야 함")
-
-        // Redis 예약 확인
-        val reservationBefore =
-            redissonClient.getBucket<String>("product:reservation-stock:$EXPIRED_RESERVATION_ID").get()
-        assertNotNull(reservationBefore, "재고 예약이 존재해야 함")
 
         // when: 스케줄러 실행
         orderTimeoutScheduler.processExpiredOrders()
@@ -136,11 +133,10 @@ class OrderTimeoutSchedulerIntegrationTest : IntegrationTestBase() {
                 }!!
 
         assertEquals(OrderStatus.PAYMENT_TIMEOUT, updatedOrder.status, "만료된 주문은 PAYMENT_TIMEOUT으로 변경")
+        assertNotNull(updatedOrder.failureReason, "실패 사유가 기록되어야 함")
 
-        // Redis 예약이 취소됨
-        val reservationAfter =
-            redissonClient.getBucket<String>("product:reservation-stock:$EXPIRED_RESERVATION_ID").get()
-        assertNull(reservationAfter, "재고 예약이 취소되어야 함")
+        // Note: 재고 예약 취소는 Product Service에서 order.timeout 이벤트를 소비하여 처리합니다.
+        // 이벤트 발행 검증은 단위 테스트에서 수행합니다.
     }
 
     @Test

@@ -29,23 +29,26 @@ class PaymentCancelledKafkaListenerTest :
             val userId = UUID.randomUUID()
             val cancellationReason = PaymentCancellationReason.USER_CANCEL
 
-            val event = PaymentCancelled.newBuilder()
-                .setEventId(UUID.randomUUID().toString())
-                .setEventTimestamp(System.currentTimeMillis())
-                .setPaymentId(paymentId.toString())
-                .setOrderId(orderId.toString())
-                .setUserId(userId.toString())
-                .setCancellationReason(cancellationReason)
-                .setCancelledAt(System.currentTimeMillis())
-                .build()
+            val event =
+                PaymentCancelled
+                    .newBuilder()
+                    .setEventId(UUID.randomUUID().toString())
+                    .setEventTimestamp(System.currentTimeMillis())
+                    .setPaymentId(paymentId.toString())
+                    .setOrderId(orderId.toString())
+                    .setUserId(userId.toString())
+                    .setCancellationReason(cancellationReason)
+                    .setCancelledAt(System.currentTimeMillis())
+                    .build()
 
-            val record = ConsumerRecord<String, PaymentCancelled>(
-                "payment.cancelled",
-                0,
-                0L,
-                orderId.toString(),
-                event,
-            )
+            val record =
+                ConsumerRecord<String, PaymentCancelled>(
+                    "payment.cancelled",
+                    0,
+                    0L,
+                    orderId.toString(),
+                    event,
+                )
 
             val acknowledgment = mockk<Acknowledgment>()
 
@@ -85,23 +88,26 @@ class PaymentCancelledKafkaListenerTest :
             val userId = UUID.randomUUID()
             val cancellationReason = PaymentCancellationReason.STOCK_UNAVAILABLE
 
-            val event = PaymentCancelled.newBuilder()
-                .setEventId(UUID.randomUUID().toString())
-                .setEventTimestamp(System.currentTimeMillis())
-                .setPaymentId(paymentId.toString())
-                .setOrderId(orderId.toString())
-                .setUserId(userId.toString())
-                .setCancellationReason(cancellationReason)
-                .setCancelledAt(System.currentTimeMillis())
-                .build()
+            val event =
+                PaymentCancelled
+                    .newBuilder()
+                    .setEventId(UUID.randomUUID().toString())
+                    .setEventTimestamp(System.currentTimeMillis())
+                    .setPaymentId(paymentId.toString())
+                    .setOrderId(orderId.toString())
+                    .setUserId(userId.toString())
+                    .setCancellationReason(cancellationReason)
+                    .setCancelledAt(System.currentTimeMillis())
+                    .build()
 
-            val record = ConsumerRecord<String, PaymentCancelled>(
-                "payment.cancelled",
-                0,
-                0L,
-                orderId.toString(),
-                event,
-            )
+            val record =
+                ConsumerRecord<String, PaymentCancelled>(
+                    "payment.cancelled",
+                    0,
+                    0L,
+                    orderId.toString(),
+                    event,
+                )
 
             val acknowledgment = mockk<Acknowledgment>()
 
@@ -136,23 +142,26 @@ class PaymentCancelledKafkaListenerTest :
             val paymentId = UUID.randomUUID()
             val userId = UUID.randomUUID()
 
-            val event = PaymentCancelled.newBuilder()
-                .setEventId(UUID.randomUUID().toString())
-                .setEventTimestamp(System.currentTimeMillis())
-                .setPaymentId(paymentId.toString())
-                .setOrderId(orderId.toString())
-                .setUserId(userId.toString())
-                .setCancellationReason(PaymentCancellationReason.SYSTEM_ERROR)
-                .setCancelledAt(System.currentTimeMillis())
-                .build()
+            val event =
+                PaymentCancelled
+                    .newBuilder()
+                    .setEventId(UUID.randomUUID().toString())
+                    .setEventTimestamp(System.currentTimeMillis())
+                    .setPaymentId(paymentId.toString())
+                    .setOrderId(orderId.toString())
+                    .setUserId(userId.toString())
+                    .setCancellationReason(PaymentCancellationReason.SYSTEM_ERROR)
+                    .setCancelledAt(System.currentTimeMillis())
+                    .build()
 
-            val record = ConsumerRecord<String, PaymentCancelled>(
-                "payment.cancelled",
-                0,
-                0L,
-                orderId.toString(),
-                event,
-            )
+            val record =
+                ConsumerRecord<String, PaymentCancelled>(
+                    "payment.cancelled",
+                    0,
+                    0L,
+                    orderId.toString(),
+                    event,
+                )
 
             val acknowledgment = mockk<Acknowledgment>()
 

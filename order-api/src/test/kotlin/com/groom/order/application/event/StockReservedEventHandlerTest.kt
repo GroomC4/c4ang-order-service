@@ -36,16 +36,18 @@ class StockReservedEventHandlerTest :
             val expiresAt = LocalDateTime.now().plusMinutes(10)
             val occurredAt = LocalDateTime.now()
 
-            val event = StockReservedEvent(
-                orderId = orderId,
-                orderNumber = "ORD-20251202-ABC123",
-                reservationId = reservationId,
-                storeId = storeId,
-                products = listOf(
-                    ReservedProduct(productId = productId, quantity = 2),
-                ),
-                expiresAt = expiresAt,
-            )
+            val event =
+                StockReservedEvent(
+                    orderId = orderId,
+                    orderNumber = "ORD-20251202-ABC123",
+                    reservationId = reservationId,
+                    storeId = storeId,
+                    products =
+                        listOf(
+                            ReservedProduct(productId = productId, quantity = 2),
+                        ),
+                    expiresAt = expiresAt,
+                )
 
             val logSlot = slot<StockReservationLog>()
             every { saveStockReservationLogPort.save(capture(logSlot)) } answers { logSlot.captured }
@@ -99,17 +101,19 @@ class StockReservedEventHandlerTest :
             val productId2 = UUID.randomUUID()
             val reservationId = "RES-67890"
 
-            val event = StockReservedEvent(
-                orderId = orderId,
-                orderNumber = "ORD-20251202-XYZ789",
-                reservationId = reservationId,
-                storeId = storeId,
-                products = listOf(
-                    ReservedProduct(productId = productId1, quantity = 3),
-                    ReservedProduct(productId = productId2, quantity = 5),
-                ),
-                expiresAt = LocalDateTime.now().plusMinutes(15),
-            )
+            val event =
+                StockReservedEvent(
+                    orderId = orderId,
+                    orderNumber = "ORD-20251202-XYZ789",
+                    reservationId = reservationId,
+                    storeId = storeId,
+                    products =
+                        listOf(
+                            ReservedProduct(productId = productId1, quantity = 3),
+                            ReservedProduct(productId = productId2, quantity = 5),
+                        ),
+                    expiresAt = LocalDateTime.now().plusMinutes(15),
+                )
 
             val logSlot = slot<StockReservationLog>()
             every { saveStockReservationLogPort.save(capture(logSlot)) } answers { logSlot.captured }

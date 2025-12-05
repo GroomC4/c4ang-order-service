@@ -38,7 +38,6 @@ data class KafkaTopicProperties(
     val orderExpirationNotification: String = "order.expiration.notification",
     @DefaultValue("daily.statistics")
     val dailyStatistics: String = "daily.statistics",
-
     // ===== Consumer Topics =====
     @DefaultValue("stock.reserved")
     val stockReserved: String = "stock.reserved",

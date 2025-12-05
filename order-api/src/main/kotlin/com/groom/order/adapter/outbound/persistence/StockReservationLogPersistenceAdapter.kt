@@ -1,8 +1,8 @@
 package com.groom.order.adapter.outbound.persistence
 
+import com.groom.order.adapter.outbound.persistence.StockReservationLogJpaEntity
 import com.groom.order.domain.model.StockReservationLog
 import com.groom.order.domain.port.SaveStockReservationLogPort
-import com.groom.order.adapter.outbound.persistence.StockReservationLogJpaEntity
 import org.springframework.stereotype.Component
 
 /**

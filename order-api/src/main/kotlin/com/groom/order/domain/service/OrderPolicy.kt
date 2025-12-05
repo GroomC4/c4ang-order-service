@@ -3,7 +3,6 @@ package com.groom.order.domain.service
 import com.groom.order.common.exception.OrderException
 import com.groom.order.domain.model.Order
 import com.groom.order.domain.model.OrderStatus
-import com.groom.order.domain.model.ProductInfo
 import org.springframework.stereotype.Component
 import java.util.UUID
 
@@ -11,6 +10,9 @@ import java.util.UUID
  * 주문 정책 검증 서비스
  *
  * 주문 관련 비즈니스 규칙을 검증합니다.
+ *
+ * Note: 이벤트 기반 아키텍처에서 Order Service는 Product Service에 직접 접근하지 않습니다.
+ * 상품-스토어 소속 검증은 Product Service에서 수행합니다.
  */
 @Component
 class OrderPolicy {
@@ -60,14 +62,21 @@ class OrderPolicy {
     /**
      * 주문 취소 가능 여부 검증
      *
+     * 취소 가능 상태:
+     * - ORDER_CREATED: 재고 확인 대기 중
+     * - ORDER_CONFIRMED: 재고 예약 완료 (결제 대기)
+     * - PAYMENT_PENDING: 결제 대기 중
+     * - PAYMENT_PROCESSING: 결제 진행 중
+     * - PREPARING: 상품 준비 중
+     *
      * @param order 주문
      * @return 취소 가능 여부
      */
     fun canCancelOrder(order: Order): Boolean =
         order.status in
             listOf(
-                OrderStatus.PENDING,
-                OrderStatus.STOCK_RESERVED,
+                OrderStatus.ORDER_CREATED,
+                OrderStatus.ORDER_CONFIRMED,
                 OrderStatus.PAYMENT_PENDING,
                 OrderStatus.PAYMENT_PROCESSING,
                 OrderStatus.PREPARING,
@@ -80,23 +89,6 @@ class OrderPolicy {
      * @return 환불 가능 여부
      */
     fun canRefundOrder(order: Order): Boolean = order.status == OrderStatus.DELIVERED
-
-    /**
-     * 상품이 지정된 스토어에 속하는지 검증
-     *
-     * @param products 상품 목록
-     * @param storeId 스토어 ID
-     */
-    fun validateProductsBelongToStore(
-        products: List<ProductInfo>,
-        storeId: UUID,
-    ) {
-        products.forEach { product ->
-            require(product.storeId == storeId) {
-                "${product.name}(${product.id}) 스토어($storeId)의 상품이 아닙니다"
-            }
-        }
-    }
 }
 
 /**

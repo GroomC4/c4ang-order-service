@@ -48,10 +48,11 @@ class PaymentCompletedKafkaListener(
         try {
             // Avro의 decimal 타입은 자동으로 BigDecimal로 변환됨
             val totalAmount = event.totalAmount
-            val completedAt = LocalDateTime.ofInstant(
-                Instant.ofEpochMilli(event.completedAt),
-                ZoneId.systemDefault(),
-            )
+            val completedAt =
+                LocalDateTime.ofInstant(
+                    Instant.ofEpochMilli(event.completedAt),
+                    ZoneId.systemDefault(),
+                )
 
             orderEventHandler.handlePaymentCompleted(
                 orderId = orderId,

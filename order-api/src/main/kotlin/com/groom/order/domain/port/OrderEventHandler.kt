@@ -11,12 +11,11 @@ import java.util.UUID
  * Kafka Consumer가 이 인터페이스를 통해 도메인 로직을 호출합니다.
  */
 interface OrderEventHandler {
-
     /**
      * 재고 예약 완료 이벤트 처리
      *
      * Product Service에서 재고 예약이 완료되면 호출됩니다.
-     * 주문 상태: PENDING → STOCK_RESERVED → (OrderConfirmed 이벤트 발행)
+     * 주문 상태: ORDER_CREATED → ORDER_CONFIRMED → (OrderConfirmed 이벤트 발행)
      *
      * @param orderId 주문 ID
      * @param reservedItems 예약된 상품 목록
@@ -26,6 +25,24 @@ interface OrderEventHandler {
         orderId: UUID,
         reservedItems: List<ReservedItemInfo>,
         reservedAt: LocalDateTime,
+    )
+
+    /**
+     * 재고 예약 실패 이벤트 처리
+     *
+     * Product Service에서 재고 예약이 실패하면 호출됩니다.
+     * 주문 상태: ORDER_CREATED → ORDER_CANCELLED
+     *
+     * @param orderId 주문 ID
+     * @param failedItems 예약 실패한 상품 목록
+     * @param failureReason 실패 사유
+     * @param failedAt 실패 시각
+     */
+    fun handleStockReservationFailed(
+        orderId: UUID,
+        failedItems: List<FailedItemInfo>,
+        failureReason: String,
+        failedAt: LocalDateTime,
     )
 
     /**
@@ -91,5 +108,14 @@ interface OrderEventHandler {
         val productId: UUID,
         val quantity: Int,
         val reservedStock: Int,
+    )
+
+    /**
+     * 예약 실패한 상품 정보
+     */
+    data class FailedItemInfo(
+        val productId: UUID,
+        val requestedQuantity: Int,
+        val availableStock: Int,
     )
 }

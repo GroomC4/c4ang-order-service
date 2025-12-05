@@ -37,26 +37,28 @@ class OrderCancelledEventHandlerTest :
             val cancelReason = "고객 변심"
             val cancelledAt = LocalDateTime.now()
 
-            val event = OrderCancelledEvent(
-                orderId = orderId,
-                orderNumber = "ORD-20251202-ABC123",
-                userExternalId = userId,
-                storeId = storeId,
-                cancelReason = cancelReason,
-                cancelledAt = cancelledAt,
-            )
+            val event =
+                OrderCancelledEvent(
+                    orderId = orderId,
+                    orderNumber = "ORD-20251202-ABC123",
+                    userExternalId = userId,
+                    storeId = storeId,
+                    cancelReason = cancelReason,
+                    cancelledAt = cancelledAt,
+                )
 
-            val order = Order(
-                userExternalId = userId,
-                storeId = storeId,
-                orderNumber = "ORD-20251202-ABC123",
-                status = OrderStatus.ORDER_CANCELLED,
-                paymentSummary = mapOf("method" to "CARD"),
-                timeline = emptyList(),
-                cancelledAt = cancelledAt,
-            ).apply {
-                addItem(OrderItem(UUID.randomUUID(), "테스트 상품", 1, BigDecimal("10000")))
-            }
+            val order =
+                Order(
+                    userExternalId = userId,
+                    storeId = storeId,
+                    orderNumber = "ORD-20251202-ABC123",
+                    status = OrderStatus.ORDER_CANCELLED,
+                    paymentSummary = mapOf("method" to "CARD"),
+                    timeline = emptyList(),
+                    cancelledAt = cancelledAt,
+                ).apply {
+                    addItem(OrderItem(UUID.randomUUID(), "테스트 상품", 1, BigDecimal("10000")))
+                }
 
             every {
                 orderAuditRecorder.record(
@@ -103,25 +105,27 @@ class OrderCancelledEventHandlerTest :
             val userId = UUID.randomUUID()
             val storeId = UUID.randomUUID()
 
-            val event = OrderCancelledEvent(
-                orderId = orderId,
-                orderNumber = "ORD-20251202-XYZ789",
-                userExternalId = userId,
-                storeId = storeId,
-                cancelReason = null,
-                cancelledAt = LocalDateTime.now(),
-            )
+            val event =
+                OrderCancelledEvent(
+                    orderId = orderId,
+                    orderNumber = "ORD-20251202-XYZ789",
+                    userExternalId = userId,
+                    storeId = storeId,
+                    cancelReason = null,
+                    cancelledAt = LocalDateTime.now(),
+                )
 
-            val order = Order(
-                userExternalId = userId,
-                storeId = storeId,
-                orderNumber = "ORD-20251202-XYZ789",
-                status = OrderStatus.ORDER_CANCELLED,
-                paymentSummary = mapOf("method" to "CARD"),
-                timeline = emptyList(),
-            ).apply {
-                addItem(OrderItem(UUID.randomUUID(), "테스트 상품", 1, BigDecimal("10000")))
-            }
+            val order =
+                Order(
+                    userExternalId = userId,
+                    storeId = storeId,
+                    orderNumber = "ORD-20251202-XYZ789",
+                    status = OrderStatus.ORDER_CANCELLED,
+                    paymentSummary = mapOf("method" to "CARD"),
+                    timeline = emptyList(),
+                ).apply {
+                    addItem(OrderItem(UUID.randomUUID(), "테스트 상품", 1, BigDecimal("10000")))
+                }
 
             every {
                 orderAuditRecorder.record(
@@ -168,14 +172,15 @@ class OrderCancelledEventHandlerTest :
             val userId = UUID.randomUUID()
             val storeId = UUID.randomUUID()
 
-            val event = OrderCancelledEvent(
-                orderId = orderId,
-                orderNumber = "ORD-NOTFOUND",
-                userExternalId = userId,
-                storeId = storeId,
-                cancelReason = "테스트",
-                cancelledAt = LocalDateTime.now(),
-            )
+            val event =
+                OrderCancelledEvent(
+                    orderId = orderId,
+                    orderNumber = "ORD-NOTFOUND",
+                    userExternalId = userId,
+                    storeId = storeId,
+                    cancelReason = "테스트",
+                    cancelledAt = LocalDateTime.now(),
+                )
 
             every {
                 orderAuditRecorder.record(

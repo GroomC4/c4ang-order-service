@@ -98,7 +98,7 @@ class GetOrderDetailServiceTest :
                     userExternalId = orderOwnerId,
                     storeId = storeId,
                     orderNumber = "ORD-12345",
-                    status = OrderStatus.PENDING,
+                    status = OrderStatus.ORDER_CREATED,
                 )
 
             every { loadOrderPort.loadById(orderId) } returns order

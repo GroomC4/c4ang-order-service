@@ -5,7 +5,6 @@ import com.groom.order.domain.event.OrderCancelledEvent
 import com.groom.order.domain.model.Order
 import com.groom.order.domain.model.OrderItem
 import com.groom.order.domain.model.OrderStatus
-import com.groom.order.domain.model.ProductInfo
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
@@ -16,6 +15,9 @@ import java.util.UUID
  * 주문 관리자 (도메인 서비스)
  *
  * 주문 생성, 취소 등 복잡한 비즈니스 로직을 조율합니다.
+ *
+ * Note: 이벤트 기반 아키텍처에서 Order Service는 Product Service에 직접 접근하지 않습니다.
+ * 주문 생성 시 클라이언트에서 상품 정보(productName, unitPrice)를 전달받습니다.
  */
 @Component
 class OrderManager(
@@ -27,12 +29,15 @@ class OrderManager(
     /**
      * 주문 생성 (비즈니스 규칙 검증)
      *
+     * 이벤트 기반 플로우:
+     * 1. 주문 생성 (status: ORDER_CREATED)
+     * 2. OrderCreatedEvent 발행 → Product Service로 전달
+     * 3. Product Service에서 재고 예약 후 stock.reserved/stock.reservation.failed 발행
+     * 4. Order Service에서 해당 이벤트를 소비하여 주문 상태 업데이트
+     *
      * @param userId 사용자 ID
      * @param storeId 스토어 ID
-     * @param itemRequests 주문 상품 요청 정보 (productId, quantity)
-     * @param products 조회된 상품 목록
-     * @param reservationId 재고 예약 ID
-     * @param expiresAt 결제 만료 시각
+     * @param itemRequests 주문 상품 요청 정보 (productId, productName, quantity, unitPrice)
      * @param note 주문 메모
      * @return 생성된 주문
      */
@@ -40,20 +45,17 @@ class OrderManager(
         userId: UUID,
         storeId: UUID,
         itemRequests: List<OrderItemRequest>,
-        products: List<ProductInfo>,
-        reservationId: String,
-        expiresAt: LocalDateTime,
         note: String?,
         now: LocalDateTime = LocalDateTime.now(),
     ): Order {
         // 1. OrderItemData 생성 (도메인 객체 초기화)
         val items =
-            itemRequests.zip(products).map { (itemRequest, product) ->
+            itemRequests.map { request ->
                 OrderItemData(
-                    productId = product.id,
-                    productName = product.name,
-                    quantity = itemRequest.quantity,
-                    unitPrice = product.price,
+                    productId = request.productId,
+                    productName = request.productName,
+                    quantity = request.quantity,
+                    unitPrice = request.unitPrice,
                 )
             }
 
@@ -71,20 +73,20 @@ class OrderManager(
 
         logger.info { "Creating order: $orderNumber, total: $totalAmount" }
 
-        // 5. Order 엔티티 생성
+        // 5. Order 엔티티 생성 (초기 상태: ORDER_CREATED)
         val order =
             Order(
                 userExternalId = userId,
                 storeId = storeId,
                 orderNumber = orderNumber,
-                status = OrderStatus.PENDING,
+                status = OrderStatus.ORDER_CREATED,
                 paymentSummary = emptyMap(),
                 timeline =
                     listOf(
                         mapOf(
-                            "status" to OrderStatus.PENDING.name,
+                            "status" to OrderStatus.ORDER_CREATED.name,
                             "timestamp" to now.toString(),
-                            "description" to "주문 생성됨",
+                            "description" to "주문 생성됨 (재고 확인 대기 중)",
                         ),
                     ),
                 note = note,
@@ -102,9 +104,6 @@ class OrderManager(
             order.addItem(orderItem)
         }
 
-        // 7. 재고 예약 정보 설정
-        order.reserveStock(reservationId, expiresAt)
-
         logger.info { "Order created: $orderNumber (${items.size} items, total: $totalAmount)" }
 
         return order
@@ -112,10 +111,14 @@ class OrderManager(
 
     /**
      * 주문 상품 요청 정보
+     *
+     * 클라이언트에서 상품 정보를 함께 전달합니다.
      */
     data class OrderItemRequest(
         val productId: UUID,
+        val productName: String,
         val quantity: Int,
+        val unitPrice: BigDecimal,
     )
 
     /**

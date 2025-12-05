@@ -28,23 +28,26 @@ class PaymentFailedKafkaListenerTest :
             val userId = UUID.randomUUID()
             val failureReason = "카드 한도 초과"
 
-            val event = PaymentFailed.newBuilder()
-                .setEventId(UUID.randomUUID().toString())
-                .setEventTimestamp(System.currentTimeMillis())
-                .setPaymentId(paymentId.toString())
-                .setOrderId(orderId.toString())
-                .setUserId(userId.toString())
-                .setFailureReason(failureReason)
-                .setFailedAt(System.currentTimeMillis())
-                .build()
+            val event =
+                PaymentFailed
+                    .newBuilder()
+                    .setEventId(UUID.randomUUID().toString())
+                    .setEventTimestamp(System.currentTimeMillis())
+                    .setPaymentId(paymentId.toString())
+                    .setOrderId(orderId.toString())
+                    .setUserId(userId.toString())
+                    .setFailureReason(failureReason)
+                    .setFailedAt(System.currentTimeMillis())
+                    .build()
 
-            val record = ConsumerRecord<String, PaymentFailed>(
-                "payment.failed",
-                0,
-                0L,
-                orderId.toString(),
-                event,
-            )
+            val record =
+                ConsumerRecord<String, PaymentFailed>(
+                    "payment.failed",
+                    0,
+                    0L,
+                    orderId.toString(),
+                    event,
+                )
 
             val acknowledgment = mockk<Acknowledgment>()
 
@@ -83,23 +86,26 @@ class PaymentFailedKafkaListenerTest :
             val paymentId = UUID.randomUUID()
             val userId = UUID.randomUUID()
 
-            val event = PaymentFailed.newBuilder()
-                .setEventId(UUID.randomUUID().toString())
-                .setEventTimestamp(System.currentTimeMillis())
-                .setPaymentId(paymentId.toString())
-                .setOrderId(orderId.toString())
-                .setUserId(userId.toString())
-                .setFailureReason("실패 사유")
-                .setFailedAt(System.currentTimeMillis())
-                .build()
+            val event =
+                PaymentFailed
+                    .newBuilder()
+                    .setEventId(UUID.randomUUID().toString())
+                    .setEventTimestamp(System.currentTimeMillis())
+                    .setPaymentId(paymentId.toString())
+                    .setOrderId(orderId.toString())
+                    .setUserId(userId.toString())
+                    .setFailureReason("실패 사유")
+                    .setFailedAt(System.currentTimeMillis())
+                    .build()
 
-            val record = ConsumerRecord<String, PaymentFailed>(
-                "payment.failed",
-                0,
-                0L,
-                orderId.toString(),
-                event,
-            )
+            val record =
+                ConsumerRecord<String, PaymentFailed>(
+                    "payment.failed",
+                    0,
+                    0L,
+                    orderId.toString(),
+                    event,
+                )
 
             val acknowledgment = mockk<Acknowledgment>()
 

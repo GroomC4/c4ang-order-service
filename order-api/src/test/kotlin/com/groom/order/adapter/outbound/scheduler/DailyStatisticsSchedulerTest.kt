@@ -23,7 +23,6 @@ import java.util.UUID
 
 @DisplayName("DailyStatisticsScheduler 단위 테스트")
 class DailyStatisticsSchedulerTest {
-
     private lateinit var loadOrderPort: LoadOrderPort
     private lateinit var orderEventPublisher: OrderEventPublisher
     private lateinit var scheduler: DailyStatisticsScheduler
@@ -37,19 +36,21 @@ class DailyStatisticsSchedulerTest {
 
     private fun createTestOrder(
         confirmedAt: LocalDateTime = LocalDateTime.now(),
-        items: List<Pair<UUID, Pair<String, Int>>> = listOf(
-            UUID.randomUUID() to ("테스트 상품" to 1),
-        ),
+        items: List<Pair<UUID, Pair<String, Int>>> =
+            listOf(
+                UUID.randomUUID() to ("테스트 상품" to 1),
+            ),
     ): Order {
-        val order = Order(
-            userExternalId = UUID.randomUUID(),
-            storeId = UUID.randomUUID(),
-            orderNumber = "ORD-${UUID.randomUUID().toString().take(8)}",
-            status = OrderStatus.PREPARING,
-            paymentSummary = mapOf("method" to "CARD"),
-            timeline = emptyList(),
-            confirmedAt = confirmedAt,
-        )
+        val order =
+            Order(
+                userExternalId = UUID.randomUUID(),
+                storeId = UUID.randomUUID(),
+                orderNumber = "ORD-${UUID.randomUUID().toString().take(8)}",
+                status = OrderStatus.PREPARING,
+                paymentSummary = mapOf("method" to "CARD"),
+                timeline = emptyList(),
+                confirmedAt = confirmedAt,
+            )
 
         items.forEach { (productId, productInfo) ->
             val (productName, quantity) = productInfo
@@ -69,7 +70,6 @@ class DailyStatisticsSchedulerTest {
     @Nested
     @DisplayName("aggregateAndPublishDailyStatistics")
     inner class AggregateAndPublishDailyStatisticsTest {
-
         @Test
         @DisplayName("전일 확정된 주문이 없으면 빈 통계를 발행한다")
         fun `전일 확정된 주문이 없으면 빈 통계를 발행한다`() {
@@ -108,14 +108,16 @@ class DailyStatisticsSchedulerTest {
             val startDateTime = LocalDateTime.of(targetDate, LocalTime.MIN)
             val endDateTime = LocalDateTime.of(targetDate.plusDays(1), LocalTime.MIN)
 
-            val order1 = createTestOrder(
-                confirmedAt = LocalDateTime.of(targetDate, LocalTime.of(10, 0)),
-                items = listOf(UUID.randomUUID() to ("상품 A" to 2)),
-            )
-            val order2 = createTestOrder(
-                confirmedAt = LocalDateTime.of(targetDate, LocalTime.of(14, 0)),
-                items = listOf(UUID.randomUUID() to ("상품 B" to 3)),
-            )
+            val order1 =
+                createTestOrder(
+                    confirmedAt = LocalDateTime.of(targetDate, LocalTime.of(10, 0)),
+                    items = listOf(UUID.randomUUID() to ("상품 A" to 2)),
+                )
+            val order2 =
+                createTestOrder(
+                    confirmedAt = LocalDateTime.of(targetDate, LocalTime.of(14, 0)),
+                    items = listOf(UUID.randomUUID() to ("상품 B" to 3)),
+                )
 
             every {
                 loadOrderPort.loadConfirmedOrdersBetween(startDateTime, endDateTime)
@@ -153,20 +155,24 @@ class DailyStatisticsSchedulerTest {
             val productId3 = UUID.randomUUID()
 
             // 같은 상품이 여러 주문에 포함된 경우
-            val order1 = createTestOrder(
-                confirmedAt = LocalDateTime.of(targetDate, LocalTime.of(10, 0)),
-                items = listOf(
-                    productId1 to ("인기 상품 1" to 5),
-                    productId2 to ("인기 상품 2" to 3),
-                ),
-            )
-            val order2 = createTestOrder(
-                confirmedAt = LocalDateTime.of(targetDate, LocalTime.of(14, 0)),
-                items = listOf(
-                    productId1 to ("인기 상품 1" to 3),
-                    productId3 to ("인기 상품 3" to 2),
-                ),
-            )
+            val order1 =
+                createTestOrder(
+                    confirmedAt = LocalDateTime.of(targetDate, LocalTime.of(10, 0)),
+                    items =
+                        listOf(
+                            productId1 to ("인기 상품 1" to 5),
+                            productId2 to ("인기 상품 2" to 3),
+                        ),
+                )
+            val order2 =
+                createTestOrder(
+                    confirmedAt = LocalDateTime.of(targetDate, LocalTime.of(14, 0)),
+                    items =
+                        listOf(
+                            productId1 to ("인기 상품 1" to 3),
+                            productId3 to ("인기 상품 3" to 2),
+                        ),
+                )
 
             every {
                 loadOrderPort.loadConfirmedOrdersBetween(startDateTime, endDateTime)
@@ -202,14 +208,16 @@ class DailyStatisticsSchedulerTest {
             val startDateTime = LocalDateTime.of(targetDate, LocalTime.MIN)
             val endDateTime = LocalDateTime.of(targetDate.plusDays(1), LocalTime.MIN)
 
-            val products = (1..7).map { i ->
-                UUID.randomUUID() to ("상품 $i" to i)
-            }
+            val products =
+                (1..7).map { i ->
+                    UUID.randomUUID() to ("상품 $i" to i)
+                }
 
-            val order = createTestOrder(
-                confirmedAt = LocalDateTime.of(targetDate, LocalTime.of(10, 0)),
-                items = products,
-            )
+            val order =
+                createTestOrder(
+                    confirmedAt = LocalDateTime.of(targetDate, LocalTime.of(10, 0)),
+                    items = products,
+                )
 
             every {
                 loadOrderPort.loadConfirmedOrdersBetween(startDateTime, endDateTime)

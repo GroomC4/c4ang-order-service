@@ -50,7 +50,7 @@ class CancelOrderServiceIntegrationTest : IntegrationTestBase() {
         private val PRODUCT_MOUSE = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-000000000001")
     }
 
-    private var orderStockReserved: UUID = UUID.randomUUID()
+    private var orderOrderConfirmed: UUID = UUID.randomUUID()
     private var orderPaymentPending: UUID = UUID.randomUUID()
     private var orderPreparing: UUID = UUID.randomUUID()
     private var orderShipped: UUID = UUID.randomUUID()
@@ -68,9 +68,9 @@ class CancelOrderServiceIntegrationTest : IntegrationTestBase() {
             val now = LocalDateTime.now()
             val reservationId = "RES-${UUID.randomUUID()}"
 
-            // 1. STOCK_RESERVED 상태 주문
-            orderStockReserved = UUID.randomUUID()
-            createOrder(orderStockReserved, CUSTOMER_USER_1, "STOCK_RESERVED", "ORD-CANCEL-001", reservationId)
+            // 1. ORDER_CONFIRMED 상태 주문
+            orderOrderConfirmed = UUID.randomUUID()
+            createOrder(orderOrderConfirmed, CUSTOMER_USER_1, "ORDER_CONFIRMED", "ORD-CANCEL-001", reservationId)
 
             // 2. PAYMENT_PENDING 상태 주문
             orderPaymentPending = UUID.randomUUID()
@@ -90,7 +90,7 @@ class CancelOrderServiceIntegrationTest : IntegrationTestBase() {
 
             // 6. 다른 사용자의 주문
             orderOtherUser = UUID.randomUUID()
-            createOrder(orderOtherUser, CUSTOMER_USER_2, "STOCK_RESERVED", "ORD-CANCEL-006", reservationId)
+            createOrder(orderOtherUser, CUSTOMER_USER_2, "ORDER_CONFIRMED", "ORD-CANCEL-006", reservationId)
 
             entityManager.flush()
         }
@@ -143,21 +143,25 @@ class CancelOrderServiceIntegrationTest : IntegrationTestBase() {
 
         // 테스트 데이터 정리
         transactionApplier.applyPrimaryTransaction {
-            entityManager.createNativeQuery("DELETE FROM p_order_item WHERE order_id IN (SELECT id FROM p_order WHERE order_number LIKE 'ORD-CANCEL-%')").executeUpdate()
+            entityManager
+                .createNativeQuery(
+                    "DELETE FROM p_order_item WHERE order_id IN (SELECT id FROM p_order WHERE order_number LIKE 'ORD-CANCEL-%')",
+                ).executeUpdate()
             entityManager.createNativeQuery("DELETE FROM p_order WHERE order_number LIKE 'ORD-CANCEL-%'").executeUpdate()
             entityManager.flush()
         }
     }
 
     @Test
-    @DisplayName("STOCK_RESERVED 상태 주문 취소 성공")
-    fun cancelOrder_withStockReservedStatus_shouldSucceed() {
+    @DisplayName("ORDER_CONFIRMED 상태 주문 취소 성공")
+    fun cancelOrder_withOrderConfirmedStatus_shouldSucceed() {
         // given
-        val command = CancelOrderCommand(
-            orderId = orderStockReserved,
-            requestUserId = CUSTOMER_USER_1,
-            cancelReason = "단순 변심",
-        )
+        val command =
+            CancelOrderCommand(
+                orderId = orderOrderConfirmed,
+                requestUserId = CUSTOMER_USER_1,
+                cancelReason = "단순 변심",
+            )
 
         // when
         val result = cancelOrderService.cancelOrder(command)
@@ -168,7 +172,7 @@ class CancelOrderServiceIntegrationTest : IntegrationTestBase() {
         assertThat(result.cancelledAt).isNotNull()
 
         // DB 검증
-        val cancelledOrder = loadOrderPort.loadById(orderStockReserved)
+        val cancelledOrder = loadOrderPort.loadById(orderOrderConfirmed)
         assertThat(cancelledOrder).isNotNull
         assertThat(cancelledOrder!!.status).isEqualTo(OrderStatus.ORDER_CANCELLED)
     }
@@ -177,11 +181,12 @@ class CancelOrderServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("PAYMENT_PENDING 상태 주문 취소 성공")
     fun cancelOrder_withPaymentPendingStatus_shouldSucceed() {
         // given
-        val command = CancelOrderCommand(
-            orderId = orderPaymentPending,
-            requestUserId = CUSTOMER_USER_1,
-            cancelReason = "결제 중 취소",
-        )
+        val command =
+            CancelOrderCommand(
+                orderId = orderPaymentPending,
+                requestUserId = CUSTOMER_USER_1,
+                cancelReason = "결제 중 취소",
+            )
 
         // when
         val result = cancelOrderService.cancelOrder(command)
@@ -194,11 +199,12 @@ class CancelOrderServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("PREPARING 상태 주문 취소 성공")
     fun cancelOrder_withPreparingStatus_shouldSucceed() {
         // given
-        val command = CancelOrderCommand(
-            orderId = orderPreparing,
-            requestUserId = CUSTOMER_USER_1,
-            cancelReason = "준비 중 취소",
-        )
+        val command =
+            CancelOrderCommand(
+                orderId = orderPreparing,
+                requestUserId = CUSTOMER_USER_1,
+                cancelReason = "준비 중 취소",
+            )
 
         // when
         val result = cancelOrderService.cancelOrder(command)
@@ -211,11 +217,12 @@ class CancelOrderServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("SHIPPED 상태 주문 취소 시 실패")
     fun cancelOrder_withShippedStatus_shouldFail() {
         // given
-        val command = CancelOrderCommand(
-            orderId = orderShipped,
-            requestUserId = CUSTOMER_USER_1,
-            cancelReason = "배송 중 취소 시도",
-        )
+        val command =
+            CancelOrderCommand(
+                orderId = orderShipped,
+                requestUserId = CUSTOMER_USER_1,
+                cancelReason = "배송 중 취소 시도",
+            )
 
         // when & then
         assertThatThrownBy { cancelOrderService.cancelOrder(command) }
@@ -226,11 +233,12 @@ class CancelOrderServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("DELIVERED 상태 주문 취소 시 실패")
     fun cancelOrder_withDeliveredStatus_shouldFail() {
         // given
-        val command = CancelOrderCommand(
-            orderId = orderDelivered,
-            requestUserId = CUSTOMER_USER_1,
-            cancelReason = "배송 완료 후 취소 시도",
-        )
+        val command =
+            CancelOrderCommand(
+                orderId = orderDelivered,
+                requestUserId = CUSTOMER_USER_1,
+                cancelReason = "배송 완료 후 취소 시도",
+            )
 
         // when & then
         assertThatThrownBy { cancelOrderService.cancelOrder(command) }
@@ -242,11 +250,12 @@ class CancelOrderServiceIntegrationTest : IntegrationTestBase() {
     fun cancelOrder_withNonExistentOrder_shouldThrowOrderNotFound() {
         // given
         val nonExistentOrderId = UUID.randomUUID()
-        val command = CancelOrderCommand(
-            orderId = nonExistentOrderId,
-            requestUserId = CUSTOMER_USER_1,
-            cancelReason = "취소",
-        )
+        val command =
+            CancelOrderCommand(
+                orderId = nonExistentOrderId,
+                requestUserId = CUSTOMER_USER_1,
+                cancelReason = "취소",
+            )
 
         // when & then
         assertThatThrownBy { cancelOrderService.cancelOrder(command) }
@@ -257,11 +266,12 @@ class CancelOrderServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("다른 사용자의 주문 취소 시 OrderAccessDenied 예외 발생")
     fun cancelOrder_withOtherUsersOrder_shouldThrowOrderAccessDenied() {
         // given: CUSTOMER_USER_1이 CUSTOMER_USER_2의 주문 취소 시도
-        val command = CancelOrderCommand(
-            orderId = orderOtherUser,
-            requestUserId = CUSTOMER_USER_1,
-            cancelReason = "취소",
-        )
+        val command =
+            CancelOrderCommand(
+                orderId = orderOtherUser,
+                requestUserId = CUSTOMER_USER_1,
+                cancelReason = "취소",
+            )
 
         // when & then
         assertThatThrownBy { cancelOrderService.cancelOrder(command) }
@@ -272,11 +282,12 @@ class CancelOrderServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("취소 사유 없이 주문 취소 성공")
     fun cancelOrder_withoutCancelReason_shouldSucceed() {
         // given
-        val command = CancelOrderCommand(
-            orderId = orderStockReserved,
-            requestUserId = CUSTOMER_USER_1,
-            cancelReason = null,
-        )
+        val command =
+            CancelOrderCommand(
+                orderId = orderOrderConfirmed,
+                requestUserId = CUSTOMER_USER_1,
+                cancelReason = null,
+            )
 
         // when
         val result = cancelOrderService.cancelOrder(command)

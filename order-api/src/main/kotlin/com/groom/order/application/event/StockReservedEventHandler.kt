@@ -7,7 +7,6 @@ import com.groom.order.domain.model.StockReservationLog
 import com.groom.order.domain.model.StockReservationStatus
 import com.groom.order.domain.port.SaveStockReservationLogPort
 import com.groom.order.domain.service.OrderAuditRecorder
-import com.groom.order.adapter.outbound.persistence.StockReservationLogJpaEntity
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Propagation

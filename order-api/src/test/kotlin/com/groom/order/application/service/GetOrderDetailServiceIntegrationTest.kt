@@ -43,7 +43,7 @@ class GetOrderDetailServiceIntegrationTest : IntegrationTestBase() {
         private val PRODUCT_KEYBOARD = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-000000000002")
     }
 
-    private var orderStockReserved: UUID = UUID.randomUUID()
+    private var orderOrderConfirmed: UUID = UUID.randomUUID()
     private var orderPaymentCompleted: UUID = UUID.randomUUID()
     private var orderDelivered: UUID = UUID.randomUUID()
     private var orderCancelled: UUID = UUID.randomUUID()
@@ -58,17 +58,17 @@ class GetOrderDetailServiceIntegrationTest : IntegrationTestBase() {
         transactionApplier.applyPrimaryTransaction {
             val now = LocalDateTime.now()
 
-            // 1. STOCK_RESERVED 상태 주문 (단일 상품)
-            orderStockReserved = UUID.randomUUID()
+            // 1. ORDER_CONFIRMED 상태 주문 (단일 상품)
+            orderOrderConfirmed = UUID.randomUUID()
             createOrder(
-                orderStockReserved,
+                orderOrderConfirmed,
                 CUSTOMER_USER_1,
-                "STOCK_RESERVED",
+                "ORDER_CONFIRMED",
                 "ORD-DETAIL-001",
                 reservationId = "RES-001",
                 expiresAt = now.plusMinutes(10),
             )
-            createOrderItem(orderStockReserved, PRODUCT_MOUSE, "무선 마우스", 50000, 2)
+            createOrderItem(orderOrderConfirmed, PRODUCT_MOUSE, "무선 마우스", 50000, 2)
 
             // 2. PAYMENT_COMPLETED 상태 주문 (다중 상품)
             orderPaymentCompleted = UUID.randomUUID()
@@ -108,7 +108,7 @@ class GetOrderDetailServiceIntegrationTest : IntegrationTestBase() {
 
             // 5. 다른 사용자의 주문
             orderOtherUser = UUID.randomUUID()
-            createOrder(orderOtherUser, CUSTOMER_USER_2, "STOCK_RESERVED", "ORD-DETAIL-005")
+            createOrder(orderOtherUser, CUSTOMER_USER_2, "ORDER_CONFIRMED", "ORD-DETAIL-005")
             createOrderItem(orderOtherUser, PRODUCT_MOUSE, "무선 마우스", 50000, 1)
 
             entityManager.flush()
@@ -180,28 +180,32 @@ class GetOrderDetailServiceIntegrationTest : IntegrationTestBase() {
     @AfterEach
     fun tearDown() {
         transactionApplier.applyPrimaryTransaction {
-            entityManager.createNativeQuery("DELETE FROM p_order_item WHERE order_id IN (SELECT id FROM p_order WHERE order_number LIKE 'ORD-DETAIL-%')").executeUpdate()
+            entityManager
+                .createNativeQuery(
+                    "DELETE FROM p_order_item WHERE order_id IN (SELECT id FROM p_order WHERE order_number LIKE 'ORD-DETAIL-%')",
+                ).executeUpdate()
             entityManager.createNativeQuery("DELETE FROM p_order WHERE order_number LIKE 'ORD-DETAIL-%'").executeUpdate()
             entityManager.flush()
         }
     }
 
     @Test
-    @DisplayName("STOCK_RESERVED 상태 주문 상세 조회 성공")
-    fun getOrderDetail_withStockReservedStatus_shouldSucceed() {
+    @DisplayName("ORDER_CONFIRMED 상태 주문 상세 조회 성공")
+    fun getOrderDetail_withOrderConfirmedStatus_shouldSucceed() {
         // given
-        val query = GetOrderDetailQuery(
-            orderId = orderStockReserved,
-            requestUserId = CUSTOMER_USER_1,
-        )
+        val query =
+            GetOrderDetailQuery(
+                orderId = orderOrderConfirmed,
+                requestUserId = CUSTOMER_USER_1,
+            )
 
         // when
         val result = getOrderDetailService.getOrderDetail(query)
 
         // then
-        assertThat(result.orderId).isEqualTo(orderStockReserved)
+        assertThat(result.orderId).isEqualTo(orderOrderConfirmed)
         assertThat(result.orderNumber).isEqualTo("ORD-DETAIL-001")
-        assertThat(result.status).isEqualTo(OrderStatus.STOCK_RESERVED)
+        assertThat(result.status).isEqualTo(OrderStatus.ORDER_CONFIRMED)
         assertThat(result.totalAmount.toLong()).isEqualTo(100000L) // 50000 * 2
         assertThat(result.reservationId).isEqualTo("RES-001")
         assertThat(result.expiresAt).isNotNull()
@@ -214,10 +218,11 @@ class GetOrderDetailServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("PAYMENT_COMPLETED 상태 주문 상세 조회 - 다중 상품")
     fun getOrderDetail_withMultipleItems_shouldReturnAllItems() {
         // given
-        val query = GetOrderDetailQuery(
-            orderId = orderPaymentCompleted,
-            requestUserId = CUSTOMER_USER_1,
-        )
+        val query =
+            GetOrderDetailQuery(
+                orderId = orderPaymentCompleted,
+                requestUserId = CUSTOMER_USER_1,
+            )
 
         // when
         val result = getOrderDetailService.getOrderDetail(query)
@@ -233,10 +238,11 @@ class GetOrderDetailServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("DELIVERED 상태 주문 상세 조회")
     fun getOrderDetail_withDeliveredStatus_shouldIncludeConfirmedAt() {
         // given
-        val query = GetOrderDetailQuery(
-            orderId = orderDelivered,
-            requestUserId = CUSTOMER_USER_1,
-        )
+        val query =
+            GetOrderDetailQuery(
+                orderId = orderDelivered,
+                requestUserId = CUSTOMER_USER_1,
+            )
 
         // when
         val result = getOrderDetailService.getOrderDetail(query)
@@ -250,10 +256,11 @@ class GetOrderDetailServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("ORDER_CANCELLED 상태 주문 상세 조회 - 취소 사유 포함")
     fun getOrderDetail_withCancelledStatus_shouldIncludeFailureReason() {
         // given
-        val query = GetOrderDetailQuery(
-            orderId = orderCancelled,
-            requestUserId = CUSTOMER_USER_1,
-        )
+        val query =
+            GetOrderDetailQuery(
+                orderId = orderCancelled,
+                requestUserId = CUSTOMER_USER_1,
+            )
 
         // when
         val result = getOrderDetailService.getOrderDetail(query)
@@ -269,10 +276,11 @@ class GetOrderDetailServiceIntegrationTest : IntegrationTestBase() {
     fun getOrderDetail_withNonExistentOrder_shouldThrowOrderNotFound() {
         // given
         val nonExistentOrderId = UUID.randomUUID()
-        val query = GetOrderDetailQuery(
-            orderId = nonExistentOrderId,
-            requestUserId = CUSTOMER_USER_1,
-        )
+        val query =
+            GetOrderDetailQuery(
+                orderId = nonExistentOrderId,
+                requestUserId = CUSTOMER_USER_1,
+            )
 
         // when & then
         assertThatThrownBy { getOrderDetailService.getOrderDetail(query) }
@@ -283,10 +291,11 @@ class GetOrderDetailServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("다른 사용자의 주문 조회 시 OrderAccessDenied 예외 발생")
     fun getOrderDetail_withOtherUsersOrder_shouldThrowOrderAccessDenied() {
         // given: CUSTOMER_USER_1이 CUSTOMER_USER_2의 주문 조회 시도
-        val query = GetOrderDetailQuery(
-            orderId = orderOtherUser,
-            requestUserId = CUSTOMER_USER_1,
-        )
+        val query =
+            GetOrderDetailQuery(
+                orderId = orderOtherUser,
+                requestUserId = CUSTOMER_USER_1,
+            )
 
         // when & then
         assertThatThrownBy { getOrderDetailService.getOrderDetail(query) }
@@ -297,10 +306,11 @@ class GetOrderDetailServiceIntegrationTest : IntegrationTestBase() {
     @DisplayName("주문 소유자가 본인 주문 조회 성공")
     fun getOrderDetail_withOwner_shouldSucceed() {
         // given: CUSTOMER_USER_2가 본인 주문 조회
-        val query = GetOrderDetailQuery(
-            orderId = orderOtherUser,
-            requestUserId = CUSTOMER_USER_2,
-        )
+        val query =
+            GetOrderDetailQuery(
+                orderId = orderOtherUser,
+                requestUserId = CUSTOMER_USER_2,
+            )
 
         // when
         val result = getOrderDetailService.getOrderDetail(query)

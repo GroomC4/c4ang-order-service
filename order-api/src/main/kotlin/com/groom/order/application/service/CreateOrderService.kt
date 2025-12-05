@@ -1,52 +1,52 @@
 package com.groom.order.application.service
 
-import com.groom.order.common.domain.DomainEventPublisher
-import com.groom.order.common.exception.OrderException
-import com.groom.order.common.exception.ProductException
-import com.groom.order.common.exception.StoreException
-import com.groom.order.common.idempotency.IdempotencyService
 import com.groom.order.application.dto.CreateOrderCommand
 import com.groom.order.application.dto.CreateOrderResult
+import com.groom.order.common.domain.DomainEventPublisher
+import com.groom.order.common.exception.OrderException
+import com.groom.order.common.idempotency.IdempotencyService
 import com.groom.order.domain.event.OrderCreatedEvent
-import com.groom.order.domain.event.ReservedProduct
-import com.groom.order.domain.event.StockReservedEvent
-import com.groom.order.domain.port.ProductPort
-import com.groom.order.domain.port.StorePort
-import com.groom.order.domain.service.OrderManager
-import com.groom.order.domain.service.OrderPolicy
-import com.groom.order.domain.service.StockReservationManager
 import com.groom.order.domain.port.LoadOrderPort
 import com.groom.order.domain.port.SaveOrderPort
+import com.groom.order.domain.service.OrderManager
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
+import java.util.UUID
 
 /**
- * 주문 생성 서비스 (비동기 플로우)
+ * 주문 생성 서비스 (이벤트 기반 비동기 플로우)
  *
- * 애플리케이션 서비스의 책임:
- * 1. 트랜잭션 관리
- * 2. 인프라 계층 접근 (Repository, Redis 등)
- * 3. 도메인 서비스 오케스트레이션
- * 4. 도메인 이벤트 발행
+ * 이벤트 기반 아키텍처:
+ * 1. 주문 생성 (status: ORDER_CREATED)
+ * 2. OrderCreatedEvent 발행 → Kafka → Product Service
+ * 3. Product Service에서 재고 예약 후 stock.reserved/stock.reservation.failed 발행
+ * 4. Order Service에서 해당 이벤트를 소비하여 주문 상태 업데이트
  *
- * 비즈니스 로직은 도메인 계층(OrderManager, OrderPolicy)에 위임
+ * Note: Order Service는 Product Service에 직접 접근하지 않습니다.
+ * 상품 정보(productName, unitPrice)는 클라이언트에서 전달받습니다.
  */
 @Service
 class CreateOrderService(
     private val loadOrderPort: LoadOrderPort,
     private val saveOrderPort: SaveOrderPort,
-    private val productPort: ProductPort,
-    private val storePort: StorePort,
-    private val stockReservationManager: StockReservationManager,
     private val orderManager: OrderManager,
-    private val orderPolicy: OrderPolicy,
     private val idempotencyService: IdempotencyService,
     private val domainEventPublisher: DomainEventPublisher,
 ) {
     private val logger = KotlinLogging.logger {}
 
+    /**
+     * 주문 생성
+     *
+     * 빠른 응답 (~100ms)을 위해 재고 확인을 기다리지 않고 즉시 주문을 접수합니다.
+     * 재고 예약은 비동기로 Product Service에서 처리됩니다.
+     *
+     * @param command 주문 생성 커맨드
+     * @param now 현재 시각
+     * @return 생성된 주문 결과
+     */
     @Transactional
     fun createOrder(
         command: CreateOrderCommand,
@@ -57,8 +57,8 @@ class CreateOrderService(
         if (existingOrderId != null) {
             logger.info { "Duplicate request detected, returning existing order: $existingOrderId" }
             val existingOrder =
-                loadOrderPort.loadById(java.util.UUID.fromString(existingOrderId))
-                    ?: throw OrderException.OrderNotFound(java.util.UUID.fromString(existingOrderId))
+                loadOrderPort.loadById(UUID.fromString(existingOrderId))
+                    ?: throw OrderException.OrderNotFound(UUID.fromString(existingOrderId))
             return CreateOrderResult.from(existingOrder, now)
         }
 
@@ -69,52 +69,21 @@ class CreateOrderService(
             if (concurrentOrderId != null) {
                 logger.info { "Concurrent request detected, returning existing order: $concurrentOrderId" }
                 val concurrentOrder =
-                    loadOrderPort.loadById(java.util.UUID.fromString(concurrentOrderId))
-                        ?: throw OrderException.OrderNotFound(java.util.UUID.fromString(concurrentOrderId))
+                    loadOrderPort.loadById(UUID.fromString(concurrentOrderId))
+                        ?: throw OrderException.OrderNotFound(UUID.fromString(concurrentOrderId))
                 return CreateOrderResult.from(concurrentOrder, now)
             }
             throw OrderException.DuplicateOrderRequest(command.idempotencyKey)
         }
 
-        // 2. 스토어 존재 확인 (Port를 통한 접근)
-        if (!storePort.existsById(command.storeId)) {
-            throw StoreException.StoreNotFound(command.storeId)
-        }
-
-        // 3. 상품 조회 (Port를 통한 접근)
-        val products =
-            command.items.map { itemDto ->
-                productPort
-                    .loadById(itemDto.productId)
-                    ?: throw ProductException.ProductNotFound(itemDto.productId)
-            }
-
-        // 4. 상품 검증 (도메인 로직 위임)
-        orderPolicy.validateProductsBelongToStore(products, command.storeId)
-
-        // 5. 재고 예약 (도메인 서비스 위임)
-        val reservationItems =
-            command.items.map { itemDto ->
-                StockReservationManager.ReservationItemRequest(
-                    productId = itemDto.productId,
-                    quantity = itemDto.quantity,
-                )
-            }
-
-        val stockReservation =
-            stockReservationManager
-                .generateStockReservation(
-                    storeId = command.storeId,
-                    items = reservationItems,
-                    now = now,
-                ).apply(stockReservationManager::tryReserve)
-
-        // 6. 주문 생성 (도메인 서비스 오케스트레이션)
+        // 2. 주문 생성 (도메인 서비스 오케스트레이션)
         val orderItemRequests =
             command.items.map { itemDto ->
                 OrderManager.OrderItemRequest(
                     productId = itemDto.productId,
+                    productName = itemDto.productName,
                     quantity = itemDto.quantity,
+                    unitPrice = itemDto.unitPrice,
                 )
             }
 
@@ -124,24 +93,19 @@ class CreateOrderService(
                     userId = command.userExternalId,
                     storeId = command.storeId,
                     itemRequests = orderItemRequests,
-                    products = products,
-                    reservationId = stockReservation.reservationId,
-                    expiresAt = stockReservation.expiresAt,
                     note = command.note,
                     now = now,
                 ).let { order ->
-                    // 재고 예약 성공 시 즉시 상태를 STOCK_RESERVED로 변경
-                    order.markStockReserved()
                     saveOrderPort.save(order)
                     order
                 }
 
-        logger.info { "Order created successfully: ${savedOrder.orderNumber}" }
+        logger.info { "Order created successfully: ${savedOrder.orderNumber} (status: ${savedOrder.status})" }
 
-        // 6-1. 멱등성 키에 주문 ID 저장 (Stripe 방식)
+        // 3. 멱등성 키에 주문 ID 저장 (Stripe 방식)
         idempotencyService.storeOrderId(command.idempotencyKey, savedOrder.id.toString())
 
-        // 7. 도메인 이벤트 발행
+        // 4. 도메인 이벤트 발행 (order.created → Product Service로 전달)
         val orderCreatedEvent =
             OrderCreatedEvent(
                 orderId = savedOrder.id,
@@ -150,25 +114,17 @@ class CreateOrderService(
                 storeId = savedOrder.storeId,
                 totalAmount = savedOrder.calculateTotalAmount(),
                 status = savedOrder.status,
-            )
-        domainEventPublisher.publish(orderCreatedEvent)
-
-        val stockReservedEvent =
-            StockReservedEvent(
-                orderId = savedOrder.id,
-                orderNumber = savedOrder.orderNumber,
-                reservationId = stockReservation.reservationId,
-                storeId = savedOrder.storeId,
-                products =
+                items =
                     command.items.map { itemDto ->
-                        ReservedProduct(
+                        OrderCreatedEvent.OrderItem(
                             productId = itemDto.productId,
                             quantity = itemDto.quantity,
                         )
                     },
-                expiresAt = stockReservation.expiresAt,
             )
-        domainEventPublisher.publish(stockReservedEvent)
+        domainEventPublisher.publish(orderCreatedEvent)
+
+        logger.info { "OrderCreatedEvent published for order: ${savedOrder.orderNumber}" }
 
         return CreateOrderResult.from(savedOrder, now)
     }

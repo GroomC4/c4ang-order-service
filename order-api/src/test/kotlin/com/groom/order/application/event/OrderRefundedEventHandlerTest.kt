@@ -28,14 +28,15 @@ class OrderRefundedEventHandlerTest :
             val refundAmount = 50000L
             val refundReason = "상품 불량"
 
-            val event = OrderRefundedEvent(
-                orderId = orderId,
-                orderNumber = "ORD-20251202-ABC123",
-                userExternalId = userId,
-                refundAmount = refundAmount,
-                refundId = refundId,
-                refundReason = refundReason,
-            )
+            val event =
+                OrderRefundedEvent(
+                    orderId = orderId,
+                    orderNumber = "ORD-20251202-ABC123",
+                    userExternalId = userId,
+                    refundAmount = refundAmount,
+                    refundId = refundId,
+                    refundReason = refundReason,
+                )
 
             every {
                 orderAuditRecorder.record(
@@ -55,11 +56,12 @@ class OrderRefundedEventHandlerTest :
                         orderAuditRecorder.record(
                             orderId = orderId,
                             eventType = OrderAuditEventType.ORDER_REFUNDED,
-                            changeSummary = match {
-                                it.contains(refundId) &&
-                                    it.contains("$refundAmount") &&
-                                    it.contains(refundReason)
-                            },
+                            changeSummary =
+                                match {
+                                    it.contains(refundId) &&
+                                        it.contains("$refundAmount") &&
+                                        it.contains(refundReason)
+                                },
                             actorUserId = userId,
                             metadata = any(),
                         )
@@ -77,14 +79,15 @@ class OrderRefundedEventHandlerTest :
             val refundId = "REFUND-67890"
             val refundAmount = 30000L
 
-            val event = OrderRefundedEvent(
-                orderId = orderId,
-                orderNumber = "ORD-20251202-XYZ789",
-                userExternalId = userId,
-                refundAmount = refundAmount,
-                refundId = refundId,
-                refundReason = null,
-            )
+            val event =
+                OrderRefundedEvent(
+                    orderId = orderId,
+                    orderNumber = "ORD-20251202-XYZ789",
+                    userExternalId = userId,
+                    refundAmount = refundAmount,
+                    refundId = refundId,
+                    refundReason = null,
+                )
 
             every {
                 orderAuditRecorder.record(

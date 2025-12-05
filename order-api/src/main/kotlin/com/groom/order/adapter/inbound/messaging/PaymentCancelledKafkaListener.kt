@@ -47,10 +47,11 @@ class PaymentCancelledKafkaListener(
         }
 
         try {
-            val cancelledAt = LocalDateTime.ofInstant(
-                Instant.ofEpochMilli(event.cancelledAt),
-                ZoneId.systemDefault(),
-            )
+            val cancelledAt =
+                LocalDateTime.ofInstant(
+                    Instant.ofEpochMilli(event.cancelledAt),
+                    ZoneId.systemDefault(),
+                )
 
             orderEventHandler.handlePaymentCancelled(
                 orderId = orderId,

@@ -47,23 +47,27 @@ class TestStoreClient : StoreClient {
         // ========================================
         // Stub Store Data
         // ========================================
-        private val STUB_STORES = mapOf(
-            STORE_1 to StoreClient.StoreResponse(
-                storeId = STORE_1,
-                name = "Test Store 1",
-                status = "ACTIVE",
-            ),
-            STORE_2 to StoreClient.StoreResponse(
-                storeId = STORE_2,
-                name = "Test Store 2",
-                status = "ACTIVE",
-            ),
-            STORE_INACTIVE to StoreClient.StoreResponse(
-                storeId = STORE_INACTIVE,
-                name = "Inactive Store",
-                status = "INACTIVE",
-            ),
-        )
+        private val STUB_STORES =
+            mapOf(
+                STORE_1 to
+                    StoreClient.StoreResponse(
+                        storeId = STORE_1,
+                        name = "Test Store 1",
+                        status = "ACTIVE",
+                    ),
+                STORE_2 to
+                    StoreClient.StoreResponse(
+                        storeId = STORE_2,
+                        name = "Test Store 2",
+                        status = "ACTIVE",
+                    ),
+                STORE_INACTIVE to
+                    StoreClient.StoreResponse(
+                        storeId = STORE_INACTIVE,
+                        name = "Inactive Store",
+                        status = "INACTIVE",
+                    ),
+            )
 
         /**
          * 테스트에서 사용할 수 있는 모든 스토어 ID 목록
@@ -73,17 +77,15 @@ class TestStoreClient : StoreClient {
         /**
          * 활성 상태의 스토어 ID 목록
          */
-        val ACTIVE_STORE_IDS: List<UUID> = STUB_STORES
-            .filter { it.value.status == "ACTIVE" }
-            .keys
-            .toList()
+        val ACTIVE_STORE_IDS: List<UUID> =
+            STUB_STORES
+                .filter { it.value.status == "ACTIVE" }
+                .keys
+                .toList()
     }
 
-    override fun getStore(storeId: UUID): StoreClient.StoreResponse? {
-        return STUB_STORES[storeId]
-    }
+    override fun getStore(storeId: UUID): StoreClient.StoreResponse? = STUB_STORES[storeId]
 
-    override fun existsStore(storeId: UUID): StoreClient.ExistsResponse {
-        return StoreClient.ExistsResponse(exists = STUB_STORES.containsKey(storeId))
-    }
+    override fun existsStore(storeId: UUID): StoreClient.ExistsResponse =
+        StoreClient.ExistsResponse(exists = STUB_STORES.containsKey(storeId))
 }

@@ -39,19 +39,20 @@ class KafkaConsumerConfig(
 ) {
     @Bean
     fun consumerFactory(): ConsumerFactory<String, SpecificRecord> {
-        val configProps = mutableMapOf<String, Any>(
-            ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
-            ConsumerConfig.GROUP_ID_CONFIG to groupId,
-            ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
-            ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to KafkaAvroDeserializer::class.java,
-            ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to autoOffsetReset,
-            ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG to enableAutoCommit,
-            ConsumerConfig.MAX_POLL_RECORDS_CONFIG to maxPollRecords,
-            // Schema Registry 설정
-            KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG to schemaRegistryUrl,
-            // SpecificRecord로 역직렬화 (GenericRecord 대신)
-            KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG to true,
-        )
+        val configProps =
+            mutableMapOf<String, Any>(
+                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
+                ConsumerConfig.GROUP_ID_CONFIG to groupId,
+                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
+                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to KafkaAvroDeserializer::class.java,
+                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to autoOffsetReset,
+                ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG to enableAutoCommit,
+                ConsumerConfig.MAX_POLL_RECORDS_CONFIG to maxPollRecords,
+                // Schema Registry 설정
+                KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG to schemaRegistryUrl,
+                // SpecificRecord로 역직렬화 (GenericRecord 대신)
+                KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG to true,
+            )
         return DefaultKafkaConsumerFactory(configProps)
     }
 

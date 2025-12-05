@@ -4,10 +4,10 @@
 -- Order Service는 p_order, p_order_item, p_order_audit만 관리
 
 -- 테스트용 주문 데이터 (CUSTOMER_USER_1 소유: 33333333-3333-3333-3333-333333333333)
--- ORDER_1: STOCK_RESERVED (최신)
+-- ORDER_1: ORDER_CONFIRMED (최신)
 INSERT INTO p_order (id, user_id, store_id, order_number, status, payment_summary, timeline, reservation_id, expires_at, created_at, updated_at)
 VALUES ('11111111-1111-1111-1111-000000000001', '33333333-3333-3333-3333-333333333333', 'bbbbbbbb-bbbb-bbbb-bbbb-000000000001', 'ORD-20251028-001',
-        'STOCK_RESERVED', '{}'::json, '[]'::json, 'reservation-001', NOW() + INTERVAL '10 minutes', NOW(), NOW());
+        'ORDER_CONFIRMED', '{}'::json, '[]'::json, 'reservation-001', NOW() + INTERVAL '10 minutes', NOW(), NOW());
 
 -- ORDER_2: PAYMENT_COMPLETED
 INSERT INTO p_order (id, user_id, store_id, order_number, status, payment_summary, timeline, reservation_id, payment_id, created_at, updated_at)

@@ -1,19 +1,29 @@
 package com.groom.order.domain.model
 
 /**
- * 주문 상태 (비동기 주문-결제 플로우)
+ * 주문 상태 (이벤트 기반 비동기 플로우)
+ *
+ * 상태 전이:
+ * - ORDER_CREATED → ORDER_CONFIRMED (stock.reserved 이벤트)
+ * - ORDER_CREATED → ORDER_CANCELLED (stock.reservation.failed 이벤트)
+ * - ORDER_CONFIRMED → PAYMENT_PENDING (order.confirmed 이벤트 → Payment Service)
  */
 enum class OrderStatus {
     // ===== 주문 접수 단계 =====
-    /**
-     * 주문 접수됨 (최초 상태)
-     */
-    PENDING,
 
     /**
-     * 재고 예약 완료
+     * 주문 생성됨 (재고 확인 대기 중)
+     * - order.created 이벤트 발행됨
+     * - Product Service에서 재고 예약 진행 중
      */
-    STOCK_RESERVED,
+    ORDER_CREATED,
+
+    /**
+     * 주문 확정됨 (재고 예약 완료)
+     * - stock.reserved 이벤트 수신
+     * - order.confirmed 이벤트 발행
+     */
+    ORDER_CONFIRMED,
 
     // ===== 결제 단계 =====
 

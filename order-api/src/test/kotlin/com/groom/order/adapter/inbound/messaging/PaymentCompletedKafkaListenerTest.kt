@@ -30,25 +30,28 @@ class PaymentCompletedKafkaListenerTest :
             val userId = UUID.randomUUID()
             val totalAmount = BigDecimal("50000")
 
-            val event = PaymentCompleted.newBuilder()
-                .setEventId(UUID.randomUUID().toString())
-                .setEventTimestamp(System.currentTimeMillis())
-                .setPaymentId(paymentId.toString())
-                .setOrderId(orderId.toString())
-                .setUserId(userId.toString())
-                .setTotalAmount(totalAmount)
-                .setPaymentMethod(PaymentMethod.CARD)
-                .setPgApprovalNumber("APPROVAL-123")
-                .setCompletedAt(System.currentTimeMillis())
-                .build()
+            val event =
+                PaymentCompleted
+                    .newBuilder()
+                    .setEventId(UUID.randomUUID().toString())
+                    .setEventTimestamp(System.currentTimeMillis())
+                    .setPaymentId(paymentId.toString())
+                    .setOrderId(orderId.toString())
+                    .setUserId(userId.toString())
+                    .setTotalAmount(totalAmount)
+                    .setPaymentMethod(PaymentMethod.CARD)
+                    .setPgApprovalNumber("APPROVAL-123")
+                    .setCompletedAt(System.currentTimeMillis())
+                    .build()
 
-            val record = ConsumerRecord<String, PaymentCompleted>(
-                "payment.completed",
-                0,
-                0L,
-                orderId.toString(),
-                event,
-            )
+            val record =
+                ConsumerRecord<String, PaymentCompleted>(
+                    "payment.completed",
+                    0,
+                    0L,
+                    orderId.toString(),
+                    event,
+                )
 
             val acknowledgment = mockk<Acknowledgment>()
 
@@ -88,25 +91,28 @@ class PaymentCompletedKafkaListenerTest :
             val userId = UUID.randomUUID()
             val totalAmount = BigDecimal("50000")
 
-            val event = PaymentCompleted.newBuilder()
-                .setEventId(UUID.randomUUID().toString())
-                .setEventTimestamp(System.currentTimeMillis())
-                .setPaymentId(paymentId.toString())
-                .setOrderId(orderId.toString())
-                .setUserId(userId.toString())
-                .setTotalAmount(totalAmount)
-                .setPaymentMethod(PaymentMethod.CARD)
-                .setPgApprovalNumber("APPROVAL-123")
-                .setCompletedAt(System.currentTimeMillis())
-                .build()
+            val event =
+                PaymentCompleted
+                    .newBuilder()
+                    .setEventId(UUID.randomUUID().toString())
+                    .setEventTimestamp(System.currentTimeMillis())
+                    .setPaymentId(paymentId.toString())
+                    .setOrderId(orderId.toString())
+                    .setUserId(userId.toString())
+                    .setTotalAmount(totalAmount)
+                    .setPaymentMethod(PaymentMethod.CARD)
+                    .setPgApprovalNumber("APPROVAL-123")
+                    .setCompletedAt(System.currentTimeMillis())
+                    .build()
 
-            val record = ConsumerRecord<String, PaymentCompleted>(
-                "payment.completed",
-                0,
-                0L,
-                orderId.toString(),
-                event,
-            )
+            val record =
+                ConsumerRecord<String, PaymentCompleted>(
+                    "payment.completed",
+                    0,
+                    0L,
+                    orderId.toString(),
+                    event,
+                )
 
             val acknowledgment = mockk<Acknowledgment>()
 

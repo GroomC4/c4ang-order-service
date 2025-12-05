@@ -47,7 +47,7 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
         private val CUSTOMER_USER_2 = UUID.fromString("22222222-2222-2222-2222-222222222222")
 
         // Test Orders (CUSTOMER_USER_1 소유)
-        private val ORDER_1_STOCK_RESERVED = UUID.fromString("11111111-1111-1111-1111-000000000001")
+        private val ORDER_1_ORDER_CONFIRMED = UUID.fromString("11111111-1111-1111-1111-000000000001")
         private val ORDER_2_PAYMENT_COMPLETED = UUID.fromString("11111111-1111-1111-1111-000000000002")
         private val ORDER_3_DELIVERED = UUID.fromString("11111111-1111-1111-1111-000000000003")
         private val ORDER_4_CANCELLED = UUID.fromString("11111111-1111-1111-1111-000000000004")
@@ -92,9 +92,9 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
                     ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.orders[0].orderId").value(ORDER_1_STOCK_RESERVED.toString())) // 최신 (NOW())
+            .andExpect(jsonPath("$.orders[0].orderId").value(ORDER_1_ORDER_CONFIRMED.toString())) // 최신 (NOW())
             .andExpect(jsonPath("$.orders[0].orderNumber").value("ORD-20251028-001"))
-            .andExpect(jsonPath("$.orders[0].status").value("STOCK_RESERVED"))
+            .andExpect(jsonPath("$.orders[0].status").value("ORDER_CONFIRMED"))
             .andExpect(jsonPath("$.orders[1].orderId").value(ORDER_2_PAYMENT_COMPLETED.toString())) // 1일 전
             .andExpect(jsonPath("$.orders[2].orderId").value(ORDER_4_CANCELLED.toString())) // 3일 전
             .andExpect(jsonPath("$.orders[3].orderId").value(ORDER_3_DELIVERED.toString())) // 5일 전
@@ -192,16 +192,16 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
         // when & then
         mockMvc
             .perform(
-                get("/api/v1/orders/$ORDER_1_STOCK_RESERVED")
+                get("/api/v1/orders/$ORDER_1_ORDER_CONFIRMED")
                     .header(
                         IstioHeaderExtractor.USER_ID_HEADER,
                         CUSTOMER_USER_1.toString(),
                     ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.orderId").value(ORDER_1_STOCK_RESERVED.toString()))
+            .andExpect(jsonPath("$.orderId").value(ORDER_1_ORDER_CONFIRMED.toString()))
             .andExpect(jsonPath("$.orderNumber").value("ORD-20251028-001"))
-            .andExpect(jsonPath("$.status").value("STOCK_RESERVED"))
+            .andExpect(jsonPath("$.status").value("ORDER_CONFIRMED"))
             .andExpect(jsonPath("$.totalAmount").value(30000))
             .andExpect(jsonPath("$.reservationId").value("reservation-001"))
             .andExpect(jsonPath("$.expiresAt").exists())
@@ -320,13 +320,13 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
     // ========== 추가 분기 테스트 ==========
 
     @Test
-    @DisplayName("GET /api/v1/orders?status=STOCK_RESERVED - 재고 예약 상태 필터링")
+    @DisplayName("GET /api/v1/orders?status=ORDER_CONFIRMED - 재고 예약 상태 필터링")
     fun listOrders_withStockReservedStatus_shouldReturnFilteredOrders() {
         // when & then
         mockMvc
             .perform(
                 get("/api/v1/orders")
-                    .param("status", "STOCK_RESERVED")
+                    .param("status", "ORDER_CONFIRMED")
                     .header(
                         IstioHeaderExtractor.USER_ID_HEADER,
                         CUSTOMER_USER_1.toString(),
@@ -335,7 +335,7 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orders").isArray)
             .andExpect(jsonPath("$.orders.length()").value(1))
-            .andExpect(jsonPath("$.orders[0].status").value("STOCK_RESERVED"))
+            .andExpect(jsonPath("$.orders[0].status").value("ORDER_CONFIRMED"))
     }
 
     @Test
@@ -359,10 +359,10 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
     @Test
     @DisplayName("GET /api/v1/orders/{orderId} - 주문 상세에서 주문 항목이 정확하게 반환되는지 확인")
     fun getOrderDetail_shouldReturnAllOrderItems() {
-        // when & then: ORDER_1_STOCK_RESERVED는 2개의 아이템을 가짐
+        // when & then: ORDER_1_ORDER_CONFIRMED는 2개의 아이템을 가짐
         mockMvc
             .perform(
-                get("/api/v1/orders/$ORDER_1_STOCK_RESERVED")
+                get("/api/v1/orders/$ORDER_1_ORDER_CONFIRMED")
                     .header(
                         IstioHeaderExtractor.USER_ID_HEADER,
                         CUSTOMER_USER_1.toString(),

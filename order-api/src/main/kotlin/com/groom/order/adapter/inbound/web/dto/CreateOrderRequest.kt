@@ -1,14 +1,19 @@
 package com.groom.order.adapter.inbound.web.dto
 
 import io.swagger.v3.oas.annotations.media.Schema
+import jakarta.validation.constraints.DecimalMin
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.Size
+import java.math.BigDecimal
 import java.util.UUID
 
 /**
  * 주문 생성 요청 DTO
+ *
+ * Note: 이벤트 기반 아키텍처에서 Order Service는 Product Service에 직접 접근하지 않습니다.
+ * 클라이언트가 상품 정보(productName, unitPrice)를 함께 전달해야 합니다.
  */
 @Schema(description = "주문 생성 요청")
 data class CreateOrderRequest(
@@ -30,8 +35,15 @@ data class CreateOrderRequest(
     data class OrderItemRequest(
         @Schema(description = "상품 ID", example = "123e4567-e89b-12d3-a456-426614174001")
         val productId: UUID,
+        @field:NotBlank(message = "Product name is required")
+        @field:Size(max = 200, message = "Product name must be less than 200 characters")
+        @Schema(description = "상품명", example = "Gaming Mouse")
+        val productName: String,
         @field:Min(value = 1, message = "Quantity must be at least 1")
         @Schema(description = "수량", example = "2", minimum = "1")
         val quantity: Int,
+        @field:DecimalMin(value = "0", inclusive = false, message = "Unit price must be positive")
+        @Schema(description = "단가", example = "29000")
+        val unitPrice: BigDecimal,
     )
 }

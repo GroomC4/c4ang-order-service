@@ -66,10 +66,11 @@ class OrderAuditRecorderTest :
             }
 
             When("메타데이터와 함께 기록하면") {
-                val metadata = mapOf(
-                    "orderNumber" to "ORD-12345",
-                    "totalAmount" to 50000,
-                )
+                val metadata =
+                    mapOf(
+                        "orderNumber" to "ORD-12345",
+                        "totalAmount" to 50000,
+                    )
 
                 recorder.record(
                     orderId = orderId,

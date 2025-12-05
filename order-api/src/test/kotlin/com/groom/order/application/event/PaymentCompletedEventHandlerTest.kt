@@ -26,13 +26,14 @@ class PaymentCompletedEventHandlerTest :
             val paymentId = UUID.randomUUID()
             val paymentAmount = 50000L
 
-            val event = PaymentCompletedEvent(
-                orderId = orderId,
-                orderNumber = "ORD-20251202-ABC123",
-                paymentId = paymentId,
-                paymentAmount = paymentAmount,
-                pgTransactionId = "PG-TXN-123456",
-            )
+            val event =
+                PaymentCompletedEvent(
+                    orderId = orderId,
+                    orderNumber = "ORD-20251202-ABC123",
+                    paymentId = paymentId,
+                    paymentAmount = paymentAmount,
+                    pgTransactionId = "PG-TXN-123456",
+                )
 
             every {
                 orderAuditRecorder.record(
@@ -76,13 +77,14 @@ class PaymentCompletedEventHandlerTest :
             } just runs
 
             When("소액 결제가 완료되면") {
-                val event = PaymentCompletedEvent(
-                    orderId = UUID.randomUUID(),
-                    orderNumber = "ORD-20251202-SMALL",
-                    paymentId = UUID.randomUUID(),
-                    paymentAmount = 1000L,
-                    pgTransactionId = "PG-TXN-SMALL",
-                )
+                val event =
+                    PaymentCompletedEvent(
+                        orderId = UUID.randomUUID(),
+                        orderNumber = "ORD-20251202-SMALL",
+                        paymentId = UUID.randomUUID(),
+                        paymentAmount = 1000L,
+                        pgTransactionId = "PG-TXN-SMALL",
+                    )
                 handler.handlePaymentCompleted(event)
 
                 Then("감사 로그가 기록된다") {
@@ -99,13 +101,14 @@ class PaymentCompletedEventHandlerTest :
             }
 
             When("대액 결제가 완료되면") {
-                val event = PaymentCompletedEvent(
-                    orderId = UUID.randomUUID(),
-                    orderNumber = "ORD-20251202-LARGE",
-                    paymentId = UUID.randomUUID(),
-                    paymentAmount = 10000000L,
-                    pgTransactionId = "PG-TXN-LARGE",
-                )
+                val event =
+                    PaymentCompletedEvent(
+                        orderId = UUID.randomUUID(),
+                        orderNumber = "ORD-20251202-LARGE",
+                        paymentId = UUID.randomUUID(),
+                        paymentAmount = 10000000L,
+                        pgTransactionId = "PG-TXN-LARGE",
+                    )
                 handler.handlePaymentCompleted(event)
 
                 Then("감사 로그가 기록된다") {

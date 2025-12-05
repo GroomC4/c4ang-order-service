@@ -21,7 +21,7 @@ import java.util.UUID
  * 토픽: stock.reserved
  */
 @Component
-class StockReservedKafkaListener(
+class StockReservationCompletedKafkaListener(
     private val orderEventHandler: OrderEventHandler,
 ) {
     private val logger = KotlinLogging.logger {}
@@ -45,18 +45,20 @@ class StockReservedKafkaListener(
         }
 
         try {
-            val reservedItems = event.reservedItems.map { item ->
-                OrderEventHandler.ReservedItemInfo(
-                    productId = UUID.fromString(item.productId),
-                    quantity = item.quantity,
-                    reservedStock = item.reservedStock,
-                )
-            }
+            val reservedItems =
+                event.reservedItems.map { item ->
+                    OrderEventHandler.ReservedItemInfo(
+                        productId = UUID.fromString(item.productId),
+                        quantity = item.quantity,
+                        reservedStock = item.reservedStock,
+                    )
+                }
 
-            val reservedAt = LocalDateTime.ofInstant(
-                Instant.ofEpochMilli(event.reservedAt),
-                ZoneId.systemDefault(),
-            )
+            val reservedAt =
+                LocalDateTime.ofInstant(
+                    Instant.ofEpochMilli(event.reservedAt),
+                    ZoneId.systemDefault(),
+                )
 
             orderEventHandler.handleStockReserved(
                 orderId = orderId,
