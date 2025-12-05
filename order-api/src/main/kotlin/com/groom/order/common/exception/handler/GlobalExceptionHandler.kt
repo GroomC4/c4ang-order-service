@@ -9,16 +9,14 @@ import com.groom.order.common.exception.RefreshTokenException
 import com.groom.order.common.exception.ResourceException
 import com.groom.order.common.exception.StoreException
 import com.groom.order.common.exception.UserException
-// import com.groom.product.domain.port.ProductDescriptionGenerationException
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
-import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler
 
 @RestControllerAdvice
-class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
+class GlobalExceptionHandler {
     private val logger = KotlinLogging.logger {}
 
     @ExceptionHandler(value = [IllegalArgumentException::class])
@@ -58,10 +56,12 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
                     logger.warn(e) { "User not found by email: ${e.email}" }
                     ErrorCode.USER_NOT_FOUND_BY_EMAIL
                 }
+
                 is AuthenticationException.InvalidPassword -> {
                     logger.warn(e) { "Invalid password for email: ${e.email}" }
                     ErrorCode.INVALID_PASSWORD
                 }
+
                 is AuthenticationException.InvalidCredentials -> {
                     logger.warn(e) { "Invalid credentials: clue=${e.clue}" }
                     ErrorCode.INVALID_CREDENTIALS
@@ -93,10 +93,12 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
                     logger.warn(e) { "Refresh token not found" }
                     ErrorCode.REFRESH_TOKEN_NOT_FOUND
                 }
+
                 is RefreshTokenException.RefreshTokenExpired -> {
                     logger.warn(e) { "Refresh token expired" }
                     ErrorCode.REFRESH_TOKEN_EXPIRED
                 }
+
                 is RefreshTokenException.RefreshTokenMismatch -> {
                     logger.warn(e) { "Refresh token mismatch for userId: ${e.userId}" }
                     ErrorCode.REFRESH_TOKEN_MISMATCH
@@ -129,14 +131,17 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
                     logger.warn(e) { "Duplicate email: ${e.email}" }
                     ErrorCode.DUPLICATE_EMAIL to HttpStatus.CONFLICT
                 }
+
                 is UserException.UserNotFound -> {
                     logger.warn(e) { "User not found: ${e.userId}" }
                     ErrorCode.USER_NOT_FOUND to HttpStatus.NOT_FOUND
                 }
+
                 is UserException.UserAlreadyExists -> {
                     logger.warn(e) { "User already exists: ${e.identifier}" }
                     ErrorCode.USER_ALREADY_EXISTS to HttpStatus.CONFLICT
                 }
+
                 is UserException.InsufficientPermission -> {
                     logger.warn(e) { "Insufficient permission: userId=${e.userId}, required=${e.requiredRole}, current=${e.currentRole}" }
                     ErrorCode.INSUFFICIENT_PERMISSION to HttpStatus.FORBIDDEN
@@ -160,6 +165,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
                     logger.warn(e) { "Access denied: userId=${e.userId}, resource=${e.resource}" }
                     ErrorCode.ACCESS_DENIED
                 }
+
                 is PermissionException.InsufficientPermissions -> {
                     logger.warn(e) { "Insufficient permissions: userId=${e.userId}, required=${e.required}" }
                     ErrorCode.INSUFFICIENT_PERMISSIONS
@@ -183,10 +189,12 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
                     logger.warn(e) { "Resource not found: type=${e.resourceType}, id=${e.identifier}, clue=${e.clue}" }
                     ErrorCode.RESOURCE_NOT_FOUND to HttpStatus.NOT_FOUND
                 }
+
                 is ResourceException.ResourceAlreadyExists -> {
                     logger.warn(e) { "Resource already exists: type=${e.resourceType}, id=${e.identifier}, clue=${e.clue}" }
                     ErrorCode.RESOURCE_ALREADY_EXISTS to HttpStatus.CONFLICT
                 }
+
                 is ResourceException.ResourceConflict -> {
                     logger.warn(e) { "Resource conflict: type=${e.resourceType}, reason=${e.reason}, clue=${e.clue}" }
                     ErrorCode.RESOURCE_CONFLICT to HttpStatus.CONFLICT
@@ -218,32 +226,39 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
                     logger.warn(e) { "Duplicate store for userId: ${e.ownerUserId}" }
                     ErrorCode.DUPLICATE_STORE to HttpStatus.BAD_REQUEST
                 }
+
                 is StoreException.StoreNotFound -> {
                     logger.warn(e) { "Store not found: ${e.storeId}" }
                     ErrorCode.STORE_NOT_FOUND to HttpStatus.NOT_FOUND
                 }
+
                 is StoreException.StoreAlreadyDeleted -> {
                     logger.warn(e) { "Store already deleted: ${e.storeId}" }
                     ErrorCode.STORE_ALREADY_DELETED to HttpStatus.BAD_REQUEST
                 }
+
                 is StoreException.StoreAlreadySuspended -> {
                     logger.warn(e) { "Store already suspended: ${e.storeId}" }
                     ErrorCode.STORE_ALREADY_SUSPENDED to HttpStatus.BAD_REQUEST
                 }
+
                 is StoreException.InvalidStoreStatusTransition -> {
                     logger.warn(
                         e,
                     ) { "Invalid store status transition: storeId=${e.storeId}, from=${e.currentStatus}, to=${e.targetStatus}" }
                     ErrorCode.INVALID_STORE_STATUS_TRANSITION to HttpStatus.BAD_REQUEST
                 }
+
                 is StoreException.StoreAccessDenied -> {
                     logger.warn(e) { "Store access denied: storeId=${e.storeId}, userId=${e.userId}" }
                     ErrorCode.STORE_ACCESS_DENIED to HttpStatus.FORBIDDEN
                 }
+
                 is StoreException.CannotUpdateSuspendedStore -> {
                     logger.warn(e) { "Cannot update suspended store: ${e.storeId}" }
                     ErrorCode.CANNOT_UPDATE_SUSPENDED_STORE to HttpStatus.BAD_REQUEST
                 }
+
                 is StoreException.CannotUpdateDeletedStore -> {
                     logger.warn(e) { "Cannot update deleted store: ${e.storeId}" }
                     ErrorCode.CANNOT_UPDATE_DELETED_STORE to HttpStatus.BAD_REQUEST
@@ -278,18 +293,22 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
                     logger.warn(e) { "Product not found: ${e.productId}" }
                     ErrorCode.PRODUCT_NOT_FOUND to HttpStatus.NOT_FOUND
                 }
+
                 is ProductException.ProductAccessDenied -> {
                     logger.warn(e) { "Product access denied: productId=${e.productId}, userId=${e.userId}" }
                     ErrorCode.PRODUCT_ACCESS_DENIED to HttpStatus.FORBIDDEN
                 }
+
                 is ProductException.ProductAlreadyDeleted -> {
                     logger.warn(e) { "Product already deleted: ${e.productId}" }
                     ErrorCode.PRODUCT_ALREADY_DELETED to HttpStatus.BAD_REQUEST
                 }
+
                 is ProductException.ProductAlreadyHidden -> {
                     logger.warn(e) { "Product already hidden: ${e.productId}" }
                     ErrorCode.PRODUCT_ALREADY_HIDDEN to HttpStatus.BAD_REQUEST
                 }
+
                 is ProductException.DuplicateProductName -> {
                     logger.warn(e) { "Duplicate product name: ${e.name}" }
                     ErrorCode.DUPLICATE_PRODUCT_NAME to HttpStatus.BAD_REQUEST
@@ -322,26 +341,32 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
                     logger.warn(e) { "Duplicate order request: ${e.idempotencyKey}" }
                     ErrorCode.DUPLICATE_ORDER_REQUEST to HttpStatus.CONFLICT
                 }
+
                 is OrderException.InsufficientStock -> {
                     logger.warn(e) { "Insufficient stock: storeId=${e.storeId}" }
                     ErrorCode.INSUFFICIENT_STOCK to HttpStatus.CONFLICT // 409 - 재고 부족(리소스 상태 충돌)
                 }
+
                 is OrderException.StoreClosed -> {
                     logger.warn(e) { "Store closed: storeId=${e.storeId}" }
                     ErrorCode.STORE_CLOSED to HttpStatus.BAD_REQUEST
                 }
+
                 is OrderException.OrderNotFound -> {
                     logger.warn(e) { "Order not found: ${e.orderId}" }
                     ErrorCode.ORDER_NOT_FOUND to HttpStatus.NOT_FOUND
                 }
+
                 is OrderException.CannotCancelOrder -> {
                     logger.warn(e) { "Cannot cancel order: orderId=${e.orderId}, status=${e.currentStatus}" }
                     ErrorCode.CANNOT_CANCEL_ORDER to HttpStatus.CONFLICT // 409 - 리소스 상태 충돌
                 }
+
                 is OrderException.CannotRefundOrder -> {
                     logger.warn(e) { "Cannot refund order: orderId=${e.orderId}, status=${e.currentStatus}" }
                     ErrorCode.CANNOT_REFUND_ORDER to HttpStatus.BAD_REQUEST
                 }
+
                 is OrderException.OrderAccessDenied -> {
                     logger.warn(e) { "Order access denied: orderId=${e.orderId}, userId=${e.userId}" }
                     ErrorCode.ORDER_ACCESS_DENIED to HttpStatus.FORBIDDEN
@@ -356,38 +381,4 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
             httpStatus,
         )
     }
-
-    // TODO: Product 도메인 의존성 제거 - MSA 환경에서는 필요 없음
-    // /**
-    //  * AI 상품 설명 생성 관련 예외 처리
-    //  *
-    //  * 발생 위치:
-    //  * - GenerateProductDescriptionService.generate(): PromptTooLong, InvalidPrompt, ServiceUnavailable
-    //  */
-    // @ExceptionHandler(ProductDescriptionGenerationException::class)
-    // fun handleProductDescriptionGenerationException(e: ProductDescriptionGenerationException): ResponseEntity<ErrorResponse> {
-    //     val (errorCode, httpStatus) =
-    //         when (e) {
-    //             is ProductDescriptionGenerationException.PromptTooLong -> {
-    //                 logger.warn(e) { "Prompt too long: actualLength=${e.actualLength}, maxLength=${e.maxLength}" }
-    //                 ErrorCode.PROMPT_TOO_LONG to HttpStatus.BAD_REQUEST
-    //             }
-    //             is ProductDescriptionGenerationException.InvalidPrompt -> {
-    //                 logger.warn(e) { "Invalid product description prompt: ${e.prompt}" }
-    //                 ErrorCode.INVALID_PRODUCT_DESCRIPTION_PROMPT to HttpStatus.BAD_REQUEST
-    //             }
-    //             is ProductDescriptionGenerationException.ServiceUnavailable -> {
-    //                 logger.error(e) { "AI service unavailable" }
-    //                 ErrorCode.PRODUCT_DESCRIPTION_GENERATION_FAILED to HttpStatus.SERVICE_UNAVAILABLE
-    //             }
-    //         }
-    //
-    //     return ResponseEntity(
-    //         ErrorResponse(
-    //             code = errorCode,
-    //             message = e.message ?: "AI 상품 설명 생성에 실패하였습니다.",
-    //         ),
-    //         httpStatus,
-    //     )
-    // }
 }
