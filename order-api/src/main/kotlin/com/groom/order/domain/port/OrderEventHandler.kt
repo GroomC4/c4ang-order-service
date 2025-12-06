@@ -123,6 +123,28 @@ interface OrderEventHandler {
     )
 
     /**
+     * 결제 완료 후 재고 확정 실패에 대한 보상 이벤트 처리 (SAGA 보상)
+     *
+     * Product Service에서 재고 확정이 실패하면 Payment Service가 환불 처리 후
+     * 이 이벤트를 발행합니다. Order Service는 주문을 취소합니다.
+     *
+     * 주문 상태: PAYMENT_COMPLETED → ORDER_CANCELLED
+     *
+     * 토픽: saga.payment-completion.compensate
+     *
+     * @param orderId 주문 ID
+     * @param paymentId 결제 ID
+     * @param compensationReason 보상 사유 (재고 확정 실패)
+     * @param compensatedAt 보상 처리 시각
+     */
+    fun handlePaymentCompletionCompensate(
+        orderId: UUID,
+        paymentId: UUID,
+        compensationReason: String,
+        compensatedAt: LocalDateTime,
+    )
+
+    /**
      * 예약된 상품 정보
      */
     data class ReservedItemInfo(

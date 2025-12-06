@@ -326,4 +326,54 @@ class OrderEventHandlerService(
 
         logger.info { "PaymentInitializationFailed processed: orderId=$orderId, newStatus=${order.status}" }
     }
+
+    /**
+     * 결제 완료 후 재고 확정 실패에 대한 보상 이벤트 처리 (SAGA 보상)
+     *
+     * Product Service에서 재고 확정이 실패하면 Payment Service가 환불 처리 후
+     * 이 이벤트를 발행합니다. Order Service는 주문을 취소합니다.
+     *
+     * 주문 상태: PAYMENT_COMPLETED → ORDER_CANCELLED
+     *
+     * 토픽: saga.payment-completion.compensate
+     */
+    @Transactional
+    override fun handlePaymentCompletionCompensate(
+        orderId: UUID,
+        paymentId: UUID,
+        compensationReason: String,
+        compensatedAt: LocalDateTime,
+    ) {
+        logger.info {
+            "Processing PaymentCompletionCompensate event: orderId=$orderId, " +
+                "paymentId=$paymentId, reason=$compensationReason"
+        }
+
+        val order =
+            loadOrderPort.loadById(orderId)
+                ?: throw OrderException.OrderNotFound(orderId)
+
+        // 상태 전이: PAYMENT_COMPLETED → ORDER_CANCELLED
+        order.cancel("결제 보상 처리: $compensationReason", compensatedAt)
+        saveOrderPort.save(order)
+
+        // 감사 로그 기록
+        orderAuditRecorder.record(
+            orderId = orderId,
+            eventType = OrderAuditEventType.ORDER_CANCELLED,
+            changeSummary = "결제 완료 후 재고 확정 실패로 인한 주문 취소 (SAGA 보상)",
+            actorUserId = null,
+            metadata =
+                mapOf(
+                    "paymentId" to paymentId.toString(),
+                    "compensationReason" to compensationReason,
+                    "compensatedAt" to compensatedAt.toString(),
+                ),
+        )
+
+        // Note: 이미 Payment Service에서 환불 처리됨, Product Service는 재고 확정 전이므로
+        // 추가 이벤트 발행 불필요 (Redis 예약은 TTL로 자동 만료됨)
+
+        logger.info { "PaymentCompletionCompensate processed: orderId=$orderId, newStatus=${order.status}" }
+    }
 }
