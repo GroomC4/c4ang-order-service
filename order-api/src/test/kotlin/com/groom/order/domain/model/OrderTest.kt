@@ -68,7 +68,7 @@ class OrderTest :
                     order.markPaymentPending(paymentId)
                 }
 
-            exception.message shouldBe "Only ORDER_CONFIRMED orders can mark payment pending"
+            exception.message shouldBe "결제를 진행할 수 없는 주문 상태입니다. 주문이 확정된 후에 결제를 진행해주세요."
         }
 
         test("markPaymentPending should throw exception if order is PAYMENT_COMPLETED") {
@@ -86,7 +86,26 @@ class OrderTest :
                     order.markPaymentPending(newPaymentId)
                 }
 
-            exception.message shouldBe "Only ORDER_CONFIRMED orders can mark payment pending"
+            exception.message shouldBe "결제를 진행할 수 없는 주문 상태입니다. 주문이 확정된 후에 결제를 진행해주세요."
+        }
+
+        test("markPaymentPending should throw exception if payment already exists") {
+            // Given: ORDER_CONFIRMED 상태지만 이미 paymentId가 있는 Order
+            val order = OrderTestFixture.createOrderConfirmedOrder()
+            val existingPaymentId = UUID.randomUUID()
+            order.markPaymentPending(existingPaymentId) // 첫 번째 결제 연결
+
+            // 상태를 다시 ORDER_CONFIRMED로 변경 (테스트 목적)
+            // 실제로는 paymentId가 이미 존재하면 check에서 실패함
+            val newPaymentId = UUID.randomUUID()
+
+            // When & Then: IllegalStateException 발생
+            val exception =
+                shouldThrow<IllegalStateException> {
+                    order.markPaymentPending(newPaymentId)
+                }
+
+            exception.message shouldBe "이 주문은 이미 결제가 진행 중입니다. 기존 결제를 취소한 후 다시 시도해주세요."
         }
 
         // ===== completePayment 테스트 =====

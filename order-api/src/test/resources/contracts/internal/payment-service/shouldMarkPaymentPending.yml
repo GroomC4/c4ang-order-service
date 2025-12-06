@@ -1,0 +1,17 @@
+description: "주문을 결제 대기 상태로 변경한다"
+name: shouldMarkPaymentPending
+request:
+  method: POST
+  url: /internal/v1/orders/550e8400-e29b-41d4-a716-446655440003/payment-pending
+  headers:
+    Content-Type: application/json
+  body:
+    paymentId: "880e8400-e29b-41d4-a716-446655440000"
+response:
+  status: 200
+  headers:
+    Content-Type: application/json
+  body:
+    orderId: "550e8400-e29b-41d4-a716-446655440003"
+    status: "PAYMENT_PENDING"
+    paymentId: "880e8400-e29b-41d4-a716-446655440000"

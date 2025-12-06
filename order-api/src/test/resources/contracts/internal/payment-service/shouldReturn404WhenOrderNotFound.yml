@@ -1,0 +1,14 @@
+description: "존재하지 않는 주문 조회 시 404를 반환한다"
+name: shouldReturn404WhenOrderNotFound
+request:
+  method: GET
+  url: /internal/v1/orders/00000000-0000-0000-0000-000000000000
+  headers:
+    Accept: application/json
+response:
+  status: 404
+  headers:
+    Content-Type: application/json
+  body:
+    code: "ORDER_NOT_FOUND"
+    message: "요청하신 주문을 찾을 수 없습니다. 주문 번호를 확인해주세요."
