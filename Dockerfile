@@ -8,7 +8,7 @@ RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
 
 # Copy pre-built JAR from GitHub Actions build
-ARG JAR_FILE=product-api/build/libs/*.jar
+ARG JAR_FILE=order-api/build/libs/*.jar
 COPY ${JAR_FILE} app.jar
 
 # Metadata
