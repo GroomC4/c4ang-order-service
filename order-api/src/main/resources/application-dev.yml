@@ -82,3 +82,8 @@ kafka:
   topics:
     store-info-updated: store.info.updated
     store-deleted: store.deleted
+
+# Platform Core Saga Tracker 설정
+platform:
+  saga:
+    enabled: true  # dev 환경에서 활성화

@@ -41,6 +41,11 @@ encryption:
   encoder:
     bcrypt-strength: 10
 
+# Platform Core Saga Tracker 설정
+platform:
+  saga:
+    enabled: false  # 로컬 환경에서는 비활성화 (dev/prod에서 활성화)
+
 springdoc:
   api-docs:
     path: /api-docs

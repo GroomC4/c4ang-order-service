@@ -11,6 +11,7 @@ import com.groom.order.domain.port.LoadOrderPort
 import com.groom.order.domain.port.SaveOrderPort
 import com.groom.order.domain.service.OrderManager
 import com.groom.order.fixture.OrderTestFixture
+import com.groom.platform.saga.SagaTrackerClient
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.BehaviorSpec
@@ -36,6 +37,7 @@ class CreateOrderServiceTest :
             val orderManager = mockk<OrderManager>()
             val idempotencyService = mockk<IdempotencyService>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
+            val sagaTrackerClient = mockk<SagaTrackerClient>(relaxed = true)
 
             val service =
                 CreateOrderService(
@@ -44,6 +46,7 @@ class CreateOrderServiceTest :
                     orderManager,
                     idempotencyService,
                     domainEventPublisher,
+                    sagaTrackerClient,
                 )
 
             val storeId = UUID.randomUUID()
@@ -120,6 +123,7 @@ class CreateOrderServiceTest :
             val orderManager = mockk<OrderManager>()
             val idempotencyService = mockk<IdempotencyService>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
+            val sagaTrackerClient = mockk<SagaTrackerClient>(relaxed = true)
 
             val service =
                 CreateOrderService(
@@ -128,6 +132,7 @@ class CreateOrderServiceTest :
                     orderManager,
                     idempotencyService,
                     domainEventPublisher,
+                    sagaTrackerClient,
                 )
 
             val command =
@@ -165,6 +170,7 @@ class CreateOrderServiceTest :
             val orderManager = mockk<OrderManager>()
             val idempotencyService = mockk<IdempotencyService>()
             val domainEventPublisher = mockk<DomainEventPublisher>()
+            val sagaTrackerClient = mockk<SagaTrackerClient>(relaxed = true)
 
             val service =
                 CreateOrderService(
@@ -173,6 +179,7 @@ class CreateOrderServiceTest :
                     orderManager,
                     idempotencyService,
                     domainEventPublisher,
+                    sagaTrackerClient,
                 )
 
             val existingOrderId = UUID.randomUUID()

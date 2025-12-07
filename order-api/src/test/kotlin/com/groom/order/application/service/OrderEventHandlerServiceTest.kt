@@ -11,6 +11,7 @@ import com.groom.order.domain.port.OrderEventPublisher
 import com.groom.order.domain.port.SaveOrderPort
 import com.groom.order.domain.service.OrderAuditRecorder
 import com.groom.order.fixture.OrderTestFixture
+import com.groom.platform.saga.SagaTrackerClient
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.BehaviorSpec
@@ -32,6 +33,7 @@ class OrderEventHandlerServiceTest :
         val saveOrderPort = mockk<SaveOrderPort>()
         val orderEventPublisher = mockk<OrderEventPublisher>()
         val orderAuditRecorder = mockk<OrderAuditRecorder>()
+        val sagaTrackerClient = mockk<SagaTrackerClient>(relaxed = true)
 
         val service =
             OrderEventHandlerService(
@@ -39,6 +41,7 @@ class OrderEventHandlerServiceTest :
                 saveOrderPort,
                 orderEventPublisher,
                 orderAuditRecorder,
+                sagaTrackerClient,
             )
 
         Given("PENDING 상태의 주문이 있을 때") {

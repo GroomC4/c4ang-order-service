@@ -7,6 +7,9 @@ import com.groom.order.domain.port.OrderEventHandler
 import com.groom.order.domain.port.OrderEventPublisher
 import com.groom.order.domain.port.SaveOrderPort
 import com.groom.order.domain.service.OrderAuditRecorder
+import com.groom.platform.saga.SagaSteps
+import com.groom.platform.saga.SagaTrackerClient
+import com.groom.platform.saga.SagaType
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -26,6 +29,7 @@ class OrderEventHandlerService(
     private val saveOrderPort: SaveOrderPort,
     private val orderEventPublisher: OrderEventPublisher,
     private val orderAuditRecorder: OrderAuditRecorder,
+    private val sagaTrackerClient: SagaTrackerClient,
 ) : OrderEventHandler {
     private val logger = KotlinLogging.logger {}
 
@@ -67,6 +71,18 @@ class OrderEventHandlerService(
 
         // OrderConfirmed 이벤트 발행 → Payment Service가 결제 대기 생성
         orderEventPublisher.publishOrderConfirmed(order)
+
+        // Saga Tracker 기록 (STOCK_RESERVED, IN_PROGRESS)
+        sagaTrackerClient.recordProgress(
+            sagaId = orderId.toString(),
+            sagaType = SagaType.ORDER_CREATION,
+            step = SagaSteps.STOCK_RESERVED,
+            orderId = order.orderNumber,
+            metadata = mapOf(
+                "reservedItems" to reservedItems.size,
+                "reservedAt" to reservedAt.toString(),
+            ),
+        )
 
         logger.info { "StockReserved processed: orderId=$orderId, newStatus=${order.status}" }
     }
@@ -111,6 +127,19 @@ class OrderEventHandlerService(
 
         // Note: 재고가 예약되지 않았으므로 OrderCancelled 이벤트 발행 불필요
         // Product Service에서 이미 실패 처리됨
+
+        // Saga Tracker 기록 (STOCK_RESERVATION_FAILED, FAILED)
+        sagaTrackerClient.recordFailure(
+            sagaId = orderId.toString(),
+            sagaType = SagaType.ORDER_CREATION,
+            step = SagaSteps.STOCK_RESERVATION_FAILED,
+            orderId = order.orderNumber,
+            failureReason = failureReason,
+            metadata = mapOf(
+                "failedItems" to failedItems.size,
+                "failedAt" to failedAt.toString(),
+            ),
+        )
 
         logger.info { "StockReservationFailed processed: orderId=$orderId, newStatus=${order.status}" }
     }
@@ -177,6 +206,19 @@ class OrderEventHandlerService(
                 confirmedAt = completedAt,
             )
 
+            // Saga Tracker 기록 (ORDER_CONFIRMED, COMPLETED)
+            sagaTrackerClient.recordComplete(
+                sagaId = orderId.toString(),
+                sagaType = SagaType.ORDER_CREATION,
+                step = SagaSteps.ORDER_CONFIRMED,
+                orderId = order.orderNumber,
+                metadata = mapOf(
+                    "paymentId" to paymentId.toString(),
+                    "totalAmount" to totalAmount.toString(),
+                    "completedAt" to completedAt.toString(),
+                ),
+            )
+
             logger.info { "PaymentCompleted processed: orderId=$orderId, newStatus=${order.status}" }
         } catch (e: Exception) {
             logger.error(e) { "Failed to process PaymentCompleted event: orderId=$orderId" }
@@ -234,6 +276,19 @@ class OrderEventHandlerService(
         // OrderCancelled 이벤트 발행 → Product Service가 재고 복원
         orderEventPublisher.publishOrderCancelled(order, "PAYMENT_FAILED: $failureReason")
 
+        // Saga Tracker 기록 (ORDER_CANCELLED, FAILED)
+        sagaTrackerClient.recordFailure(
+            sagaId = orderId.toString(),
+            sagaType = SagaType.ORDER_CREATION,
+            step = SagaSteps.ORDER_CANCELLED,
+            orderId = order.orderNumber,
+            failureReason = "PAYMENT_FAILED: $failureReason",
+            metadata = mapOf(
+                "paymentId" to paymentId.toString(),
+                "failedAt" to failedAt.toString(),
+            ),
+        )
+
         logger.info { "PaymentFailed processed: orderId=$orderId, newStatus=${order.status}" }
     }
 
@@ -277,6 +332,19 @@ class OrderEventHandlerService(
 
         // OrderCancelled 이벤트 발행 → Product Service가 재고 복원
         orderEventPublisher.publishOrderCancelled(order, "PAYMENT_CANCELLED: $cancellationReason")
+
+        // Saga Tracker 기록 (ORDER_CANCELLED, FAILED)
+        sagaTrackerClient.recordFailure(
+            sagaId = orderId.toString(),
+            sagaType = SagaType.ORDER_CREATION,
+            step = SagaSteps.ORDER_CANCELLED,
+            orderId = order.orderNumber,
+            failureReason = "PAYMENT_CANCELLED: $cancellationReason",
+            metadata = mapOf(
+                "paymentId" to paymentId.toString(),
+                "cancelledAt" to cancelledAt.toString(),
+            ),
+        )
 
         logger.info { "PaymentCancelled processed: orderId=$orderId, newStatus=${order.status}" }
     }
@@ -323,6 +391,18 @@ class OrderEventHandlerService(
 
         // OrderCancelled 이벤트 발행 → Product Service가 재고 복원
         orderEventPublisher.publishOrderCancelled(order, "PAYMENT_INITIALIZATION_FAILED: $failureReason")
+
+        // Saga Tracker 기록 (COMPENSATION_ORDER, COMPENSATED)
+        sagaTrackerClient.recordCompensation(
+            sagaId = orderId.toString(),
+            sagaType = SagaType.ORDER_CREATION,
+            step = SagaSteps.COMPENSATION_ORDER,
+            orderId = order.orderNumber,
+            metadata = mapOf(
+                "compensationReason" to "PAYMENT_INITIALIZATION_FAILED: $failureReason",
+                "failedAt" to failedAt.toString(),
+            ),
+        )
 
         logger.info { "PaymentInitializationFailed processed: orderId=$orderId, newStatus=${order.status}" }
     }
@@ -373,6 +453,19 @@ class OrderEventHandlerService(
 
         // Note: 이미 Payment Service에서 환불 처리됨, Product Service는 재고 확정 전이므로
         // 추가 이벤트 발행 불필요 (Redis 예약은 TTL로 자동 만료됨)
+
+        // Saga Tracker 기록 (COMPENSATION_ORDER, COMPENSATED)
+        sagaTrackerClient.recordCompensation(
+            sagaId = orderId.toString(),
+            sagaType = SagaType.ORDER_CREATION,
+            step = SagaSteps.COMPENSATION_ORDER,
+            orderId = order.orderNumber,
+            metadata = mapOf(
+                "paymentId" to paymentId.toString(),
+                "compensationReason" to compensationReason,
+                "compensatedAt" to compensatedAt.toString(),
+            ),
+        )
 
         logger.info { "PaymentCompletionCompensate processed: orderId=$orderId, newStatus=${order.status}" }
     }
