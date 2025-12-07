@@ -49,6 +49,40 @@ import org.springframework.web.context.WebApplicationContext
         "testcontainers.kafka.topics[6].name=payment.failed",
         "testcontainers.kafka.topics[6].partitions=1",
         "testcontainers.kafka.topics[6].replication-factor=1",
+
+        // Kafka Topics - Additional Producer Topics
+        "testcontainers.kafka.topics[7].name=order.expiration.notification",
+        "testcontainers.kafka.topics[7].partitions=1",
+        "testcontainers.kafka.topics[7].replication-factor=1",
+
+        "testcontainers.kafka.topics[8].name=analytics.daily.statistics",
+        "testcontainers.kafka.topics[8].partitions=1",
+        "testcontainers.kafka.topics[8].replication-factor=1",
+
+        "testcontainers.kafka.topics[9].name=order.stock.confirmed",
+        "testcontainers.kafka.topics[9].partitions=3",
+        "testcontainers.kafka.topics[9].replication-factor=1",
+
+        // Kafka Topics - SAGA Events
+        "testcontainers.kafka.topics[10].name=saga.stock-confirmation.failed",
+        "testcontainers.kafka.topics[10].partitions=1",
+        "testcontainers.kafka.topics[10].replication-factor=1",
+
+        "testcontainers.kafka.topics[11].name=saga.order-confirmation.compensate",
+        "testcontainers.kafka.topics[11].partitions=1",
+        "testcontainers.kafka.topics[11].replication-factor=1",
+
+        "testcontainers.kafka.topics[12].name=saga.stock-reservation.failed",
+        "testcontainers.kafka.topics[12].partitions=1",
+        "testcontainers.kafka.topics[12].replication-factor=1",
+
+        "testcontainers.kafka.topics[13].name=saga.payment-initialization.failed",
+        "testcontainers.kafka.topics[13].partitions=1",
+        "testcontainers.kafka.topics[13].replication-factor=1",
+
+        "testcontainers.kafka.topics[14].name=saga.payment-completion.compensate",
+        "testcontainers.kafka.topics[14].partitions=1",
+        "testcontainers.kafka.topics[14].replication-factor=1",
     ],
 )
 @AutoConfigureMockMvc
