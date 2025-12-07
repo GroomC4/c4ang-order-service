@@ -9,7 +9,7 @@ plugins {
 }
 
 // Platform Core 버전 관리
-val platformCoreVersion = "2.4.5"
+val platformCoreVersion = "2.5.0"
 // Spring Cloud Contract 버전
 val springCloudContractVersion = "4.1.4"
 
