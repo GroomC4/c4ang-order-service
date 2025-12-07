@@ -5,6 +5,10 @@ WORKDIR /app
 
 # Create non-root user for security
 RUN addgroup -S spring && adduser -S spring -G spring
+
+# Create log directory
+RUN mkdir -p /app/logs && chown -R spring:spring /app/logs
+
 USER spring:spring
 
 # Copy pre-built JAR from GitHub Actions build
