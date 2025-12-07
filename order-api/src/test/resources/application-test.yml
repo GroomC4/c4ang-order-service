@@ -50,8 +50,22 @@ kafka:
   schema-registry:
     url: ${testcontainers.schema-registry.url:http://localhost:8081}
   topics:
+    # Producer Topics - Business Events
     order-created: order.created
     order-confirmed: order.confirmed
     order-cancelled: order.cancelled
     order-expiration-notification: order.expiration.notification
-    daily-statistics: daily.statistics
+    daily-statistics: analytics.daily.statistics
+    # Producer Topics - Payment Saga
+    order-stock-confirmed: order.stock.confirmed
+    # Producer Topics - SAGA Events
+    saga-stock-confirmation-failed: saga.stock-confirmation.failed
+    saga-order-confirmation-compensate: saga.order-confirmation.compensate
+    # Consumer Topics - Business Events
+    stock-reserved: stock.reserved
+    payment-completed: payment.completed
+    payment-failed: payment.failed
+    # Consumer Topics - SAGA Events
+    saga-stock-reservation-failed: saga.stock-reservation.failed
+    saga-payment-initialization-failed: saga.payment-initialization.failed
+    saga-payment-completion-compensate: saga.payment-completion.compensate
