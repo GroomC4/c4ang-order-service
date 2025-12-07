@@ -35,6 +35,8 @@ spring:
 platform:
   datasource:
     replica-enabled: true
+  saga:
+    enabled: true  # prod 환경에서 활성화
   jpa:
     hibernate:
       ddl-auto: none

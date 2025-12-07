@@ -9,6 +9,9 @@ import com.groom.order.domain.event.OrderCreatedEvent
 import com.groom.order.domain.port.LoadOrderPort
 import com.groom.order.domain.port.SaveOrderPort
 import com.groom.order.domain.service.OrderManager
+import com.groom.platform.saga.SagaSteps
+import com.groom.platform.saga.SagaTrackerClient
+import com.groom.platform.saga.SagaType
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -34,6 +37,7 @@ class CreateOrderService(
     private val orderManager: OrderManager,
     private val idempotencyService: IdempotencyService,
     private val domainEventPublisher: DomainEventPublisher,
+    private val sagaTrackerClient: SagaTrackerClient,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -125,6 +129,20 @@ class CreateOrderService(
         domainEventPublisher.publish(orderCreatedEvent)
 
         logger.info { "OrderCreatedEvent published for order: ${savedOrder.orderNumber}" }
+
+        // 5. Saga Tracker 기록 (ORDER_CREATED, STARTED)
+        sagaTrackerClient.recordStart(
+            sagaId = savedOrder.id.toString(),
+            sagaType = SagaType.ORDER_CREATION,
+            step = SagaSteps.ORDER_CREATED,
+            orderId = savedOrder.orderNumber,
+            metadata = mapOf(
+                "userId" to savedOrder.userExternalId,
+                "storeId" to savedOrder.storeId.toString(),
+                "totalAmount" to savedOrder.calculateTotalAmount().toString(),
+                "itemCount" to command.items.size,
+            ),
+        )
 
         return CreateOrderResult.from(savedOrder, now)
     }
