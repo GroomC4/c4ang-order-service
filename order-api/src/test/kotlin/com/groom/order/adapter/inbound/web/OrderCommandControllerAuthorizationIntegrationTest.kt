@@ -30,7 +30,7 @@ import java.util.UUID
  * - Istio 헤더를 사용한 인증 플로우 테스트
  * - CUSTOMER 역할: 모든 주문 명령 API 접근 가능
  * - SELLER 역할: 본인 주문만 접근 가능 (다른 사용자 주문 시 403 Forbidden)
- * - 인증 없음: 접근 불가 (500 Internal Server Error - Istio 헤더 누락)
+ * - 인증 없음: 접근 불가 (400 Bad Request - @RequestHeader required 헤더 누락)
  *
  * Note: 이 테스트는 인증/인가만 검증합니다. 비즈니스 로직(주문 생성, 이벤트 발행 등)은
  *       별도의 비즈니스 로직 통합 테스트에서 검증합니다.
@@ -116,8 +116,8 @@ class OrderCommandControllerAuthorizationIntegrationTest : IntegrationTestBase()
     }
 
     @Test
-    @DisplayName("POST /api/v1/orders - Istio 헤더 없이 주문 생성 시 500 Internal Server Error (IllegalStateException)")
-    fun createOrder_withoutIstioHeaders_shouldReturn500() {
+    @DisplayName("POST /api/v1/orders - Istio 헤더 없이 주문 생성 시 400 Bad Request (@RequestHeader required)")
+    fun createOrder_withoutIstioHeaders_shouldReturn400() {
         // given
         val request =
             CreateOrderRequest(
@@ -141,7 +141,7 @@ class OrderCommandControllerAuthorizationIntegrationTest : IntegrationTestBase()
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
-            .andExpect(status().isInternalServerError)
+            .andExpect(status().isBadRequest)
     }
 
     @Test
@@ -202,20 +202,20 @@ class OrderCommandControllerAuthorizationIntegrationTest : IntegrationTestBase()
     }
 
     @Test
-    @DisplayName("PATCH /api/v1/orders/{orderId}/cancel - Istio 헤더 없이 주문 취소 시 500 Internal Server Error (IllegalStateException)")
-    fun cancelOrder_withoutIstioHeaders_shouldReturn500() {
+    @DisplayName("PATCH /api/v1/orders/{orderId}/cancel - Istio 헤더 없이 주문 취소 시 400 Bad Request (@RequestHeader required)")
+    fun cancelOrder_withoutIstioHeaders_shouldReturn400() {
         // given
         val request = CancelOrderRequest(cancelReason = "단순 변심")
 
         // when & then
-        // Istio 환경에서는 인증이 게이트웨이에서 처리되며, 헤더가 없으면 IllegalStateException 발생
+        // @RequestHeader(required=true) 누락 시 Spring이 자동으로 400 Bad Request 반환
         mockMvc
             .perform(
                 patch("/api/v1/orders/$ORDER_PAYMENT_COMPLETED/cancel")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
-            .andExpect(status().isInternalServerError)
+            .andExpect(status().isBadRequest)
     }
 
     @Test
@@ -263,20 +263,20 @@ class OrderCommandControllerAuthorizationIntegrationTest : IntegrationTestBase()
     }
 
     @Test
-    @DisplayName("PATCH /api/v1/orders/{orderId}/refund - Istio 헤더 없이 주문 환불 시 500 Internal Server Error (IllegalStateException)")
-    fun refundOrder_withoutIstioHeaders_shouldReturn500() {
+    @DisplayName("PATCH /api/v1/orders/{orderId}/refund - Istio 헤더 없이 주문 환불 시 400 Bad Request (@RequestHeader required)")
+    fun refundOrder_withoutIstioHeaders_shouldReturn400() {
         // given
         val request = RefundOrderRequest(refundReason = "상품 불량")
 
         // when & then
-        // Istio 환경에서는 인증이 게이트웨이에서 처리되며, 헤더가 없으면 IllegalStateException 발생
+        // @RequestHeader(required=true) 누락 시 Spring이 자동으로 400 Bad Request 반환
         mockMvc
             .perform(
                 patch("/api/v1/orders/$ORDER_DELIVERED/refund")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andDo(print())
-            .andExpect(status().isInternalServerError)
+            .andExpect(status().isBadRequest)
     }
 
     @Test

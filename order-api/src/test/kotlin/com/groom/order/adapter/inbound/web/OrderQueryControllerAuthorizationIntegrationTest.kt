@@ -18,7 +18,7 @@ import java.util.UUID
  * 주문 조회(목록, 상세) API의 인증/인가를 검증합니다.
  * - CUSTOMER 역할: 모든 주문 조회 API 접근 가능
  * - SELLER 역할: 접근 불가 (403 Forbidden)
- * - 인증 없음: 접근 불가 (500 Internal Server Error)
+ * - 인증 없음: 접근 불가 (400 Bad Request - @RequestHeader required 헤더 누락)
  */
 @DisplayName("주문 조회(Query) 컨트롤러 통합 테스트 - 인증/인가")
 @AutoConfigureMockMvc
@@ -55,13 +55,13 @@ class OrderQueryControllerAuthorizationIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    @DisplayName("GET /api/v1/orders - Istio 헤더 없이 주문 목록 조회 시 500 Internal Server Error")
-    fun listOrders_withoutAuthentication_shouldReturn401() {
+    @DisplayName("GET /api/v1/orders - Istio 헤더 없이 주문 목록 조회 시 400 Bad Request (@RequestHeader required)")
+    fun listOrders_withoutAuthentication_shouldReturn400() {
         // when & then
         mockMvc
             .perform(get("/api/v1/orders"))
             .andDo(print())
-            .andExpect(status().isInternalServerError)
+            .andExpect(status().isBadRequest)
     }
 
     @Test
@@ -115,13 +115,13 @@ class OrderQueryControllerAuthorizationIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    @DisplayName("GET /api/v1/orders/{orderId} - 인증 없이 주문 상세 조회 시 500 Internal Server Error")
-    fun getOrderDetail_withoutAuthentication_shouldReturn401() {
+    @DisplayName("GET /api/v1/orders/{orderId} - 인증 없이 주문 상세 조회 시 400 Bad Request (@RequestHeader required)")
+    fun getOrderDetail_withoutAuthentication_shouldReturn400() {
         // when & then
         mockMvc
             .perform(get("/api/v1/orders/$TEST_ORDER_ID"))
             .andDo(print())
-            .andExpect(status().isInternalServerError)
+            .andExpect(status().isBadRequest)
     }
 
     @Test
