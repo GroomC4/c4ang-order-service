@@ -7,7 +7,7 @@ import com.groom.order.adapter.inbound.web.dto.RefundOrderRequest
 import com.groom.order.adapter.outbound.client.TestStoreClient
 import com.groom.order.common.IntegrationTestBase
 import com.groom.order.common.TransactionApplier
-import com.groom.order.common.util.IstioHeaderExtractor
+
 import com.groom.order.domain.model.OrderStatus
 import jakarta.persistence.EntityManager
 import org.junit.jupiter.api.AfterEach
@@ -258,8 +258,8 @@ class OrderCommandControllerIntegrationTest : IntegrationTestBase() {
             mockMvc
                 .perform(
                     post("/api/v1/orders")
-                        .header(IstioHeaderExtractor.USER_ID_HEADER, CUSTOMER_USER_1.toString())
-                        .header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                        .header("X-User-Id", CUSTOMER_USER_1.toString())
+                        .header("X-User-Role", "CUSTOMER")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andDo(print())
@@ -301,8 +301,8 @@ class OrderCommandControllerIntegrationTest : IntegrationTestBase() {
             mockMvc
                 .perform(
                     post("/api/v1/orders")
-                        .header(IstioHeaderExtractor.USER_ID_HEADER, CUSTOMER_USER_1.toString())
-                        .header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                        .header("X-User-Id", CUSTOMER_USER_1.toString())
+                        .header("X-User-Role", "CUSTOMER")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andDo(print())
@@ -337,8 +337,8 @@ class OrderCommandControllerIntegrationTest : IntegrationTestBase() {
                 mockMvc
                     .perform(
                         post("/api/v1/orders")
-                            .header(IstioHeaderExtractor.USER_ID_HEADER, CUSTOMER_USER_1.toString())
-                            .header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                            .header("X-User-Id", CUSTOMER_USER_1.toString())
+                            .header("X-User-Role", "CUSTOMER")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)),
                     ).andExpect(status().isCreated)
@@ -350,8 +350,8 @@ class OrderCommandControllerIntegrationTest : IntegrationTestBase() {
             mockMvc
                 .perform(
                     post("/api/v1/orders")
-                        .header(IstioHeaderExtractor.USER_ID_HEADER, CUSTOMER_USER_1.toString())
-                        .header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                        .header("X-User-Id", CUSTOMER_USER_1.toString())
+                        .header("X-User-Role", "CUSTOMER")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andDo(print())
@@ -377,8 +377,8 @@ class OrderCommandControllerIntegrationTest : IntegrationTestBase() {
             mockMvc
                 .perform(
                     post("/api/v1/orders")
-                        .header(IstioHeaderExtractor.USER_ID_HEADER, CUSTOMER_USER_1.toString())
-                        .header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                        .header("X-User-Id", CUSTOMER_USER_1.toString())
+                        .header("X-User-Role", "CUSTOMER")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andDo(print())
@@ -401,8 +401,8 @@ class OrderCommandControllerIntegrationTest : IntegrationTestBase() {
             mockMvc
                 .perform(
                     patch("/api/v1/orders/$ORDER_CREATED_ID/cancel")
-                        .header(IstioHeaderExtractor.USER_ID_HEADER, CUSTOMER_USER_1.toString())
-                        .header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                        .header("X-User-Id", CUSTOMER_USER_1.toString())
+                        .header("X-User-Role", "CUSTOMER")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andDo(print())
@@ -422,8 +422,8 @@ class OrderCommandControllerIntegrationTest : IntegrationTestBase() {
             mockMvc
                 .perform(
                     patch("/api/v1/orders/$ORDER_CONFIRMED_ID/cancel")
-                        .header(IstioHeaderExtractor.USER_ID_HEADER, CUSTOMER_USER_1.toString())
-                        .header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                        .header("X-User-Id", CUSTOMER_USER_1.toString())
+                        .header("X-User-Role", "CUSTOMER")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andDo(print())
@@ -441,8 +441,8 @@ class OrderCommandControllerIntegrationTest : IntegrationTestBase() {
             mockMvc
                 .perform(
                     patch("/api/v1/orders/$ORDER_PAYMENT_COMPLETED_ID/cancel")
-                        .header(IstioHeaderExtractor.USER_ID_HEADER, CUSTOMER_USER_1.toString())
-                        .header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                        .header("X-User-Id", CUSTOMER_USER_1.toString())
+                        .header("X-User-Role", "CUSTOMER")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andDo(print())
@@ -459,8 +459,8 @@ class OrderCommandControllerIntegrationTest : IntegrationTestBase() {
             mockMvc
                 .perform(
                     patch("/api/v1/orders/$ORDER_SHIPPED_ID/cancel")
-                        .header(IstioHeaderExtractor.USER_ID_HEADER, CUSTOMER_USER_1.toString())
-                        .header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                        .header("X-User-Id", CUSTOMER_USER_1.toString())
+                        .header("X-User-Role", "CUSTOMER")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andDo(print())
@@ -477,8 +477,8 @@ class OrderCommandControllerIntegrationTest : IntegrationTestBase() {
             mockMvc
                 .perform(
                     patch("/api/v1/orders/$ORDER_USER2_ID/cancel")
-                        .header(IstioHeaderExtractor.USER_ID_HEADER, CUSTOMER_USER_1.toString())
-                        .header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                        .header("X-User-Id", CUSTOMER_USER_1.toString())
+                        .header("X-User-Role", "CUSTOMER")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andDo(print())
@@ -496,8 +496,8 @@ class OrderCommandControllerIntegrationTest : IntegrationTestBase() {
             mockMvc
                 .perform(
                     patch("/api/v1/orders/$nonExistentOrderId/cancel")
-                        .header(IstioHeaderExtractor.USER_ID_HEADER, CUSTOMER_USER_1.toString())
-                        .header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                        .header("X-User-Id", CUSTOMER_USER_1.toString())
+                        .header("X-User-Role", "CUSTOMER")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andDo(print())
@@ -520,8 +520,8 @@ class OrderCommandControllerIntegrationTest : IntegrationTestBase() {
             mockMvc
                 .perform(
                     patch("/api/v1/orders/$ORDER_DELIVERED_ID/refund")
-                        .header(IstioHeaderExtractor.USER_ID_HEADER, CUSTOMER_USER_1.toString())
-                        .header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                        .header("X-User-Id", CUSTOMER_USER_1.toString())
+                        .header("X-User-Role", "CUSTOMER")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andDo(print())
@@ -541,8 +541,8 @@ class OrderCommandControllerIntegrationTest : IntegrationTestBase() {
             mockMvc
                 .perform(
                     patch("/api/v1/orders/$ORDER_SHIPPED_ID/refund")
-                        .header(IstioHeaderExtractor.USER_ID_HEADER, CUSTOMER_USER_1.toString())
-                        .header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                        .header("X-User-Id", CUSTOMER_USER_1.toString())
+                        .header("X-User-Role", "CUSTOMER")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andDo(print())
@@ -559,8 +559,8 @@ class OrderCommandControllerIntegrationTest : IntegrationTestBase() {
             mockMvc
                 .perform(
                     patch("/api/v1/orders/$ORDER_USER2_ID/refund")
-                        .header(IstioHeaderExtractor.USER_ID_HEADER, CUSTOMER_USER_1.toString())
-                        .header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER")
+                        .header("X-User-Id", CUSTOMER_USER_1.toString())
+                        .header("X-User-Role", "CUSTOMER")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)),
                 ).andDo(print())

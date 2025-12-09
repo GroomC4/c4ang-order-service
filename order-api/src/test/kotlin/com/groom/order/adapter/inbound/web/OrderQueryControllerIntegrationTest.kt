@@ -1,7 +1,7 @@
 package com.groom.order.adapter.inbound.web
 
 import com.groom.order.common.IntegrationTestBase
-import com.groom.order.common.util.IstioHeaderExtractor
+
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -68,9 +68,9 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
             .perform(
                 get("/api/v1/orders")
                     .header(
-                        IstioHeaderExtractor.USER_ID_HEADER,
+                        "X-User-Id",
                         CUSTOMER_USER_1.toString(),
-                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
+                    ).header("X-User-Role", "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orders").isArray)
@@ -87,9 +87,9 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
             .perform(
                 get("/api/v1/orders")
                     .header(
-                        IstioHeaderExtractor.USER_ID_HEADER,
+                        "X-User-Id",
                         CUSTOMER_USER_1.toString(),
-                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
+                    ).header("X-User-Role", "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orders[0].orderId").value(ORDER_1_ORDER_CONFIRMED.toString())) // 최신 (NOW())
@@ -111,9 +111,9 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
                 get("/api/v1/orders")
                     .param("status", "PAYMENT_COMPLETED")
                     .header(
-                        IstioHeaderExtractor.USER_ID_HEADER,
+                        "X-User-Id",
                         CUSTOMER_USER_1.toString(),
-                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
+                    ).header("X-User-Role", "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orders").isArray)
@@ -133,9 +133,9 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
                 get("/api/v1/orders")
                     .param("status", "DELIVERED")
                     .header(
-                        IstioHeaderExtractor.USER_ID_HEADER,
+                        "X-User-Id",
                         CUSTOMER_USER_1.toString(),
-                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
+                    ).header("X-User-Role", "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orders.length()").value(1))
@@ -154,9 +154,9 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
                 get("/api/v1/orders")
                     .param("status", "ORDER_CANCELLED")
                     .header(
-                        IstioHeaderExtractor.USER_ID_HEADER,
+                        "X-User-Id",
                         CUSTOMER_USER_1.toString(),
-                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
+                    ).header("X-User-Role", "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orders.length()").value(1))
@@ -174,8 +174,8 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
         mockMvc
             .perform(
                 get("/api/v1/orders")
-                    .header(IstioHeaderExtractor.USER_ID_HEADER, userWithNoOrders.toString())
-                    .header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
+                    .header("X-User-Id", userWithNoOrders.toString())
+                    .header("X-User-Role", "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orders").isArray)
@@ -194,9 +194,9 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
             .perform(
                 get("/api/v1/orders/$ORDER_1_ORDER_CONFIRMED")
                     .header(
-                        IstioHeaderExtractor.USER_ID_HEADER,
+                        "X-User-Id",
                         CUSTOMER_USER_1.toString(),
-                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
+                    ).header("X-User-Role", "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orderId").value(ORDER_1_ORDER_CONFIRMED.toString()))
@@ -226,9 +226,9 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
             .perform(
                 get("/api/v1/orders/$ORDER_2_PAYMENT_COMPLETED")
                     .header(
-                        IstioHeaderExtractor.USER_ID_HEADER,
+                        "X-User-Id",
                         CUSTOMER_USER_1.toString(),
-                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
+                    ).header("X-User-Role", "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orderId").value(ORDER_2_PAYMENT_COMPLETED.toString()))
@@ -250,9 +250,9 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
             .perform(
                 get("/api/v1/orders/$ORDER_3_DELIVERED")
                     .header(
-                        IstioHeaderExtractor.USER_ID_HEADER,
+                        "X-User-Id",
                         CUSTOMER_USER_1.toString(),
-                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
+                    ).header("X-User-Role", "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orderId").value(ORDER_3_DELIVERED.toString()))
@@ -272,9 +272,9 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
             .perform(
                 get("/api/v1/orders/$ORDER_4_CANCELLED")
                     .header(
-                        IstioHeaderExtractor.USER_ID_HEADER,
+                        "X-User-Id",
                         CUSTOMER_USER_1.toString(),
-                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
+                    ).header("X-User-Role", "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orderId").value(ORDER_4_CANCELLED.toString()))
@@ -293,9 +293,9 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
             .perform(
                 get("/api/v1/orders/$nonExistentOrderId")
                     .header(
-                        IstioHeaderExtractor.USER_ID_HEADER,
+                        "X-User-Id",
                         CUSTOMER_USER_1.toString(),
-                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
+                    ).header("X-User-Role", "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isNotFound)
     }
@@ -310,9 +310,9 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
             .perform(
                 get("/api/v1/orders/$ORDER_5_USER2")
                     .header(
-                        IstioHeaderExtractor.USER_ID_HEADER,
+                        "X-User-Id",
                         CUSTOMER_USER_1.toString(),
-                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
+                    ).header("X-User-Role", "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isForbidden) // 또는 404 (구현에 따라)
     }
@@ -328,9 +328,9 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
                 get("/api/v1/orders")
                     .param("status", "ORDER_CONFIRMED")
                     .header(
-                        IstioHeaderExtractor.USER_ID_HEADER,
+                        "X-User-Id",
                         CUSTOMER_USER_1.toString(),
-                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
+                    ).header("X-User-Role", "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orders").isArray)
@@ -347,9 +347,9 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
                 get("/api/v1/orders")
                     .param("status", "PREPARING")
                     .header(
-                        IstioHeaderExtractor.USER_ID_HEADER,
+                        "X-User-Id",
                         CUSTOMER_USER_1.toString(),
-                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
+                    ).header("X-User-Role", "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orders").isArray)
@@ -364,9 +364,9 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
             .perform(
                 get("/api/v1/orders/$ORDER_1_ORDER_CONFIRMED")
                     .header(
-                        IstioHeaderExtractor.USER_ID_HEADER,
+                        "X-User-Id",
                         CUSTOMER_USER_1.toString(),
-                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
+                    ).header("X-User-Role", "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.items").isArray)
@@ -385,9 +385,9 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
             .perform(
                 get("/api/v1/orders")
                     .header(
-                        IstioHeaderExtractor.USER_ID_HEADER,
+                        "X-User-Id",
                         CUSTOMER_USER_1.toString(),
-                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
+                    ).header("X-User-Role", "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orders[0].orderId").exists())
@@ -409,9 +409,9 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
             .perform(
                 get("/api/v1/orders/$ORDER_3_DELIVERED")
                     .header(
-                        IstioHeaderExtractor.USER_ID_HEADER,
+                        "X-User-Id",
                         CUSTOMER_USER_1.toString(),
-                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
+                    ).header("X-User-Role", "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.orderId").value(ORDER_3_DELIVERED.toString()))
@@ -426,9 +426,9 @@ class OrderQueryControllerIntegrationTest : IntegrationTestBase() {
             .perform(
                 get("/api/v1/orders/invalid-uuid-format")
                     .header(
-                        IstioHeaderExtractor.USER_ID_HEADER,
+                        "X-User-Id",
                         CUSTOMER_USER_1.toString(),
-                    ).header(IstioHeaderExtractor.USER_ROLE_HEADER, "CUSTOMER"),
+                    ).header("X-User-Role", "CUSTOMER"),
             ).andDo(print())
             .andExpect(status().isBadRequest)
     }

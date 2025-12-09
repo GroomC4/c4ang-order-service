@@ -12,19 +12,18 @@ import com.groom.order.application.dto.RefundOrderCommand
 import com.groom.order.application.service.CancelOrderService
 import com.groom.order.application.service.CreateOrderService
 import com.groom.order.application.service.RefundOrderService
-import com.groom.order.common.util.IstioHeaderExtractor
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
-import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
@@ -43,7 +42,6 @@ class OrderCommandController(
     private val createOrderService: CreateOrderService,
     private val cancelOrderService: CancelOrderService,
     private val refundOrderService: RefundOrderService,
-    private val istioHeaderExtractor: IstioHeaderExtractor,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -76,10 +74,9 @@ class OrderCommandController(
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun createOrder(
+        @RequestHeader("X-User-Id") userId: UUID,
         @Valid @RequestBody request: CreateOrderRequest,
-        httpRequest: HttpServletRequest,
     ): CreateOrderResponse {
-        val userId = istioHeaderExtractor.extractUserId(httpRequest)
         logger.info { "Creating order for user: $userId, idempotencyKey: ${request.idempotencyKey}" }
 
         val command =
@@ -138,11 +135,10 @@ class OrderCommandController(
     )
     @PatchMapping("/{orderId}/cancel")
     fun cancelOrder(
+        @RequestHeader("X-User-Id") userId: UUID,
         @PathVariable orderId: UUID,
         @Valid @RequestBody request: CancelOrderRequest,
-        httpRequest: HttpServletRequest,
     ): CancelOrderResponse {
-        val userId = istioHeaderExtractor.extractUserId(httpRequest)
         logger.info { "Cancelling order: $orderId, user: $userId" }
 
         val command =
@@ -192,11 +188,10 @@ class OrderCommandController(
     )
     @PatchMapping("/{orderId}/refund")
     fun refundOrder(
+        @RequestHeader("X-User-Id") userId: UUID,
         @PathVariable orderId: UUID,
         @Valid @RequestBody request: RefundOrderRequest,
-        httpRequest: HttpServletRequest,
     ): RefundOrderResponse {
-        val userId = istioHeaderExtractor.extractUserId(httpRequest)
         logger.info { "Refunding order: $orderId, user: $userId" }
 
         val command =

@@ -1,6 +1,5 @@
 package com.groom.order.common.config
 
-import com.groom.order.common.util.IstioHeaderExtractor
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
@@ -34,6 +33,8 @@ class LocalDevAuthFilter : OncePerRequestFilter() {
     private val logger = KotlinLogging.logger {}
 
     companion object {
+        private const val USER_ID_HEADER = "X-User-Id"
+        private const val USER_ROLE_HEADER = "X-User-Role"
         // 기본 로컬 개발용 사용자
         private const val DEFAULT_USER_ID = "00000000-0000-0000-0000-000000000001"
         private const val DEFAULT_USER_ROLE = "CUSTOMER"
@@ -44,8 +45,8 @@ class LocalDevAuthFilter : OncePerRequestFilter() {
         response: HttpServletResponse,
         filterChain: FilterChain,
     ) {
-        val userId = request.getHeader(IstioHeaderExtractor.USER_ID_HEADER)
-        val userRole = request.getHeader(IstioHeaderExtractor.USER_ROLE_HEADER)
+        val userId = request.getHeader(USER_ID_HEADER)
+        val userRole = request.getHeader(USER_ROLE_HEADER)
 
         // 이미 헤더가 있으면 그대로 통과 (테스트 등에서 커스텀 헤더 사용 가능)
         if (userId != null && userRole != null) {
@@ -61,8 +62,8 @@ class LocalDevAuthFilter : OncePerRequestFilter() {
             object : HttpServletRequestWrapper(request) {
                 override fun getHeader(name: String): String? =
                     when (name) {
-                        IstioHeaderExtractor.USER_ID_HEADER -> userId ?: DEFAULT_USER_ID
-                        IstioHeaderExtractor.USER_ROLE_HEADER -> userRole ?: DEFAULT_USER_ROLE
+                        USER_ID_HEADER -> userId ?: DEFAULT_USER_ID
+                        USER_ROLE_HEADER -> userRole ?: DEFAULT_USER_ROLE
                         else -> super.getHeader(name)
                     }
 
@@ -78,8 +79,8 @@ class LocalDevAuthFilter : OncePerRequestFilter() {
                 override fun getHeaderNames(): java.util.Enumeration<String> {
                     val names = mutableSetOf<String>()
                     super.getHeaderNames()?.toList()?.let { names.addAll(it) }
-                    if (userId == null) names.add(IstioHeaderExtractor.USER_ID_HEADER)
-                    if (userRole == null) names.add(IstioHeaderExtractor.USER_ROLE_HEADER)
+                    if (userId == null) names.add(USER_ID_HEADER)
+                    if (userRole == null) names.add(USER_ROLE_HEADER)
                     return java.util.Collections.enumeration(names)
                 }
             }

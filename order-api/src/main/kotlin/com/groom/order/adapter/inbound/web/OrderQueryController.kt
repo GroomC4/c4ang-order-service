@@ -6,16 +6,15 @@ import com.groom.order.application.dto.GetOrderDetailQuery
 import com.groom.order.application.dto.ListOrdersQuery
 import com.groom.order.application.service.GetOrderDetailService
 import com.groom.order.application.service.ListOrdersService
-import com.groom.order.common.util.IstioHeaderExtractor
 import com.groom.order.domain.model.OrderStatus
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
-import jakarta.servlet.http.HttpServletRequest
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -33,7 +32,6 @@ import java.util.UUID
 class OrderQueryController(
     private val getOrderDetailService: GetOrderDetailService,
     private val listOrdersService: ListOrdersService,
-    private val istioHeaderExtractor: IstioHeaderExtractor,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -60,10 +58,9 @@ class OrderQueryController(
     )
     @GetMapping
     fun listOrders(
+        @RequestHeader("X-User-Id") userId: UUID,
         @RequestParam(required = false) status: OrderStatus?,
-        httpRequest: HttpServletRequest,
     ): ListOrdersResponse {
-        val userId = istioHeaderExtractor.extractUserId(httpRequest)
         logger.info { "Listing orders for user: $userId, status filter: $status" }
 
         val query =
@@ -104,10 +101,9 @@ class OrderQueryController(
     )
     @GetMapping("/{orderId}")
     fun getOrderDetail(
+        @RequestHeader("X-User-Id") userId: UUID,
         @PathVariable orderId: UUID,
-        httpRequest: HttpServletRequest,
     ): GetOrderDetailResponse {
-        val userId = istioHeaderExtractor.extractUserId(httpRequest)
         logger.info { "Retrieving order detail: orderId=$orderId, user=$userId" }
 
         val query =

@@ -5,7 +5,7 @@ import com.groom.order.adapter.inbound.web.dto.CancelOrderRequest
 import com.groom.order.adapter.inbound.web.dto.CreateOrderRequest
 import com.groom.order.adapter.inbound.web.dto.RefundOrderRequest
 import com.groom.order.common.IntegrationTestBase
-import com.groom.order.common.util.IstioHeaderExtractor
+
 import org.hamcrest.CoreMatchers.not
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
