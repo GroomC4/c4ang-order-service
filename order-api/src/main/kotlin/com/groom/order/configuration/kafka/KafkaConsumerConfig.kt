@@ -14,6 +14,7 @@ import org.springframework.kafka.core.ConsumerFactory
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory
 import org.springframework.kafka.listener.ContainerProperties
 import org.springframework.kafka.listener.DefaultErrorHandler
+import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
 import org.springframework.util.backoff.FixedBackOff
 
 /**
@@ -44,6 +45,9 @@ class KafkaConsumerConfig(
 ) {
     /**
      * Consumer Factory 생성
+     *
+     * ErrorHandlingDeserializer를 사용하여 역직렬화 실패 시에도
+     * 무한 재시도를 방지하고 정상 메시지 처리를 계속합니다.
      */
     private fun createConsumerFactory(groupId: String): ConsumerFactory<String, SpecificRecord> {
         val consumer = properties.consumer
@@ -51,8 +55,11 @@ class KafkaConsumerConfig(
             mutableMapOf<String, Any>(
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to properties.bootstrapServers,
                 ConsumerConfig.GROUP_ID_CONFIG to groupId,
-                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
-                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to KafkaAvroDeserializer::class.java,
+                // ErrorHandlingDeserializer로 래핑하여 역직렬화 에러 처리
+                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to ErrorHandlingDeserializer::class.java,
+                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ErrorHandlingDeserializer::class.java,
+                ErrorHandlingDeserializer.KEY_DESERIALIZER_CLASS to StringDeserializer::class.java.name,
+                ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS to KafkaAvroDeserializer::class.java.name,
                 ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to consumer.autoOffsetReset,
                 ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG to consumer.enableAutoCommit,
                 ConsumerConfig.MAX_POLL_RECORDS_CONFIG to consumer.maxPollRecords,
