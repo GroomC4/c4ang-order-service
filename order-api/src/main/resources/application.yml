@@ -103,6 +103,3 @@ kafka:
     payment-completed: payment.completed
     payment-failed: payment.failed
     payment-cancelled: payment.cancelled
-    # Store Service Consumer Topics (레거시)
-    store-info-updated: store.info.updated
-    store-deleted: store.deleted

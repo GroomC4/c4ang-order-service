@@ -82,8 +82,11 @@ kafka:
   schema-registry:
     url: ${SCHEMA_REGISTRY_URL:http://schema-registry:8081}
   topics:
-    store-info-updated: store.info.updated
-    store-deleted: store.deleted
+    # Consumer Topics (다른 서비스 → Order Service)
+    stock-reserved: stock.reserved
+    payment-completed: payment.completed
+    payment-failed: payment.failed
+    payment-cancelled: payment.cancelled
 
 # Platform Core Saga Tracker 설정
 platform:
